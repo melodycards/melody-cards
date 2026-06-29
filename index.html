@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" />
+    <meta
+      name="description"
+      content="Melody Cards komponiert individuelle Songs und verbindet sie mit personalisierten Premium-Karten per QR-Code."
+    />
+    <meta property="og:title" content="Melody Cards | Premium-Karten mit eigenem Lied" />
+    <meta
+      property="og:description"
+      content="Personalisierte Karten mit QR-Code, individuellem Lied, Geschenkbox und luxuriöser Verpackung."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/images/melody-cards-premium-hero.png" />
+    <title>Melody Cards | Premium QR-Code Karten mit eigenem Lied</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23050505'/%3E%3Cpath d='M18 45V18h7l7 14 7-14h7v27h-6V28L34 41h-4l-6-13v17z' fill='%23d6b35a'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Melody Cards",
+        "url": "https://melody-cards.example",
+        "description": "Premium-E-Commerce für personalisierte Karten mit QR-Code und individuell komponiertem Lied.",
+        "sameAs": ["https://instagram.com/", "https://www.tiktok.com/", "https://www.youtube.com/"]
+      }
+    </script>
+  </head>
+  <body>
+    <div class="loader" data-loader>
+      <div class="loader-ring"></div>
+      <span>Melody Cards</span>
+    </div>
+
+    <header class="site-header" data-header>
+      <a class="brand" href="#home" aria-label="Melody Cards Startseite">
+        <span class="brand-mark">MC</span>
+        <span class="brand-text">Melody Cards</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Menü öffnen" aria-expanded="false" data-nav-toggle>
+        <span></span><span></span>
+      </button>
+      <nav class="main-nav" data-nav>
+        <a href="#home">Startseite</a>
+        <a href="#products">Produkte</a>
+        <a href="#examples">Beispiele</a>
+        <a href="#process">So funktioniert es</a>
+        <a href="#reviews">Bewertungen</a>
+        <a href="#gallery">Galerie</a>
+        <a href="#faq">FAQ</a>
+        <a href="#blog">Blog</a>
+        <a href="#about">Über uns</a>
+        <a href="#contact">Kontakt</a>
+        <a class="nav-order" href="#order">Bestellung</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero section-visual" id="home">
+        <div class="hero-motion" aria-hidden="true">
+          <span class="motion-line line-a"></span>
+          <span class="motion-line line-b"></span>
+          <span class="motion-orbit"></span>
+        </div>
+        <div class="hero-media" data-parallax>
+          <img src="assets/images/melody-cards-premium-hero.png" alt="Luxuriöse Melody Cards mit QR-Code und Smartphone-Musikplayer" />
+        </div>
+        <div class="hero-content reveal">
+          <p class="eyebrow">Luxury sound gifting</p>
+          <h1><span>Personalisierte Karten.</span><span>Ein Lied, das bleibt.</span></h1>
+          <p>
+            Melody Cards verbindet hochwertige Grußkarten, individuelle Kompositionen und elegante QR-Code-Technologie zu einem Geschenk, das sofort berührt.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#order">Jetzt bestellen</a>
+            <a class="btn btn-glass" href="#demo">Live Demo testen</a>
+          </div>
+          <div class="hero-kpis" aria-label="Melody Cards Kennzahlen">
+            <div><strong>12+</strong><span>Anlässe</span></div>
+            <div><strong>48h</strong><span>Express möglich</span></div>
+            <div><strong>4.9</strong><span>Sterne Feedback</span></div>
+          </div>
+        </div>
+        <div class="qr-float" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="music-widget glass" aria-hidden="true">
+          <div class="album-art"></div>
+          <div>
+            <strong>Birthday Gold</strong>
+            <small>00:42 · personal song</small>
+            <div class="mini-eq"><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+        <a class="scroll-indicator" href="#products" aria-label="Weiter scrollen"><span></span></a>
+      </section>
+
+      <section class="section" id="products">
+        <div class="section-head reveal">
+          <p class="eyebrow">Produkte</p>
+          <h2>Premium-Karten für jeden Anlass</h2>
+          <p>Zwölf kuratierte Designs, alle mit individuellem Song, privater QR-Seite und optionaler Geschenkbox.</p>
+        </div>
+        <div class="product-grid" data-products></div>
+      </section>
+
+      <section class="section split-section" id="examples">
+        <div class="section-head reveal">
+          <p class="eyebrow">Beispiele</p>
+          <h2>Von der Karte zum Gänsehautmoment</h2>
+          <p>Jede Karte erhält eine eigene digitale Song-Seite. QR-Code scannen, Musik starten, Erinnerung teilen.</p>
+        </div>
+        <div class="example-stage reveal">
+          <div class="lux-card">
+            <span class="foil">Melody</span>
+            <div class="card-qr"></div>
+            <p>Für Amelie</p>
+          </div>
+          <div class="phone-demo">
+            <div class="phone-screen">
+              <div class="cover-pulse"></div>
+              <strong>Dein Lied</strong>
+              <span>Pop Ballad · Deutsch</span>
+              <button class="play-demo" type="button" data-play-demo>Play</button>
+              <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="process">
+        <div class="section-head reveal">
+          <p class="eyebrow">So funktioniert es</p>
+          <h2>Ein Premium-Erlebnis in vier Schritten</h2>
+        </div>
+        <div class="steps">
+          <article class="step reveal"><span>01</span><h3>Anlass wählen</h3><p>Geburtstag, Hochzeit, Firmenjubiläum oder ein ganz persönlicher Moment.</p></article>
+          <article class="step reveal"><span>02</span><h3>Song briefen</h3><p>Du gibst Sprache, Stil, Stimmung, Namen und Erinnerungen an.</p></article>
+          <article class="step reveal"><span>03</span><h3>Design konfigurieren</h3><p>Farbe, Typografie, QR-Code, Verpackung und Geschenkbox werden live sichtbar.</p></article>
+          <article class="step reveal"><span>04</span><h3>Verschenken</h3><p>Die Karte kommt hochwertig verpackt und ist sofort per QR-Code abspielbar.</p></article>
+        </div>
+      </section>
+
+      <section class="section demo-section" id="demo">
+        <div class="section-head reveal">
+          <p class="eyebrow">Live Demo</p>
+          <h2>Teste deinen QR-Code</h2>
+          <p>Klicke auf eine Karte. Das Smartphone öffnet den Song und startet eine Musikanimation.</p>
+        </div>
+        <div class="demo-grid reveal">
+          <div class="demo-cards" data-demo-cards></div>
+          <div class="demo-phone glass" data-demo-phone>
+            <div class="phone-notch"></div>
+            <div class="demo-cover"></div>
+            <strong data-demo-title>Wähle eine Karte</strong>
+            <span data-demo-subtitle>QR-Code bereit</span>
+            <button class="btn btn-primary" type="button" data-demo-play>Musik starten</button>
+            <div class="sound-wave" data-sound-wave><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section music-section" id="music">
+        <div class="section-head reveal">
+          <p class="eyebrow">Musikbereich</p>
+          <h2>Mehrere Song-Stile mit animierten Playern</h2>
+        </div>
+        <div class="audio-grid" data-audio></div>
+      </section>
+
+      <section class="section configurator-section" id="configurator">
+        <div class="section-head reveal">
+          <p class="eyebrow">Produktkonfigurator</p>
+          <h2>Gestalte deine Karte live</h2>
+        </div>
+        <div class="configurator">
+          <form class="config-panel glass" data-config-form></form>
+          <aside class="preview-panel glass">
+            <div class="preview-card" data-preview-card>
+              <span data-preview-occasion>Geburtstag</span>
+              <strong data-preview-design>Royal Noir</strong>
+              <div class="preview-qr" data-preview-qr></div>
+              <small data-preview-music>Pop Ballade · Deutsch</small>
+            </div>
+            <div class="preview-meta">
+              <p><strong>Verpackung:</strong> <span data-preview-package>Geschenkbox</span></p>
+              <p><strong>Stimme:</strong> <span data-preview-voice>Weiblich</span></p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="reviews">
+        <div class="section-head reveal">
+          <p class="eyebrow">Bewertungen</p>
+          <h2>Verifizierte Kundenstimmen</h2>
+        </div>
+        <div class="review-grid" data-reviews></div>
+      </section>
+
+      <section class="section" id="gallery">
+        <div class="section-head reveal">
+          <p class="eyebrow">Galerie</p>
+          <h2>40 visuelle Eindrücke</h2>
+          <p>Karten, QR-Codes, Smartphones, Verpackungen, Detailaufnahmen und Geschenk-Momente.</p>
+        </div>
+        <div class="gallery-grid" data-gallery></div>
+      </section>
+
+      <section class="section" id="faq">
+        <div class="section-head reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2>25 Antworten vor der Bestellung</h2>
+        </div>
+        <div class="faq-list" data-faq></div>
+      </section>
+
+      <section class="section about-section" id="about">
+        <div class="section-head reveal">
+          <p class="eyebrow">Über uns</p>
+          <h2>Wir machen persönliche Musik verschenksam</h2>
+          <p>Melody Cards ist ein Studio für emotionale Geschenkprodukte: Design, Musikproduktion und digitale Erlebnisse aus einer Hand.</p>
+        </div>
+        <div class="stats reveal">
+          <div><strong>18k</strong><span>verschenkte Minuten Musik</span></div>
+          <div><strong>97%</strong><span>Weiterempfehlung</span></div>
+          <div><strong>24</strong><span>Design-Kollektionen</span></div>
+          <div><strong>6</strong><span>Sprachen</span></div>
+        </div>
+        <div class="timeline reveal">
+          <article><span>2024</span><h3>Idee</h3><p>Die erste Karte mit privater Song-Seite entsteht.</p></article>
+          <article><span>2025</span><h3>Studio</h3><p>Design, Gesang und Verpackung werden professionalisiert.</p></article>
+          <article><span>2026</span><h3>Premium Shop</h3><p>Melody Cards wird als skalierbares Geschenk-Erlebnis aufgebaut.</p></article>
+        </div>
+        <div class="team-grid reveal">
+          <article><div class="avatar">AM</div><h3>Art Direction</h3><p>Karten, Papier, Folien und Packaging.</p></article>
+          <article><div class="avatar">LS</div><h3>Music Studio</h3><p>Komposition, Gesang und Mastering.</p></article>
+          <article><div class="avatar">QR</div><h3>Experience</h3><p>QR-Seiten, Player und digitale Journey.</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="blog">
+        <div class="section-head reveal">
+          <p class="eyebrow">Blog</p>
+          <h2>Inspiration für persönliche Geschenke</h2>
+        </div>
+        <div class="blog-grid" data-blog></div>
+      </section>
+
+      <section class="section order-section" id="order">
+        <div class="section-head reveal">
+          <p class="eyebrow">Bestellung</p>
+          <h2>Starte deine Melody Card</h2>
+          <p>Alle wichtigen Daten in einem Formular: Karte, Musik, Uploads und persönliche Wünsche.</p>
+        </div>
+        <form class="order-form glass reveal" data-order-form>
+          <label>Name<input name="name" type="text" required placeholder="Dein Name" /></label>
+          <label>E-Mail<input name="email" type="email" required placeholder="name@example.com" /></label>
+          <label>Telefon<input name="phone" type="tel" placeholder="+49 ..." /></label>
+          <label>Adresse<textarea name="address" rows="3" placeholder="Straße, PLZ, Ort"></textarea></label>
+          <label>Text für Karte<textarea name="cardText" rows="4" placeholder="Deine persönliche Botschaft"></textarea></label>
+          <label>Musikwunsch<textarea name="musicWish" rows="4" placeholder="Stil, Stimmung, Namen, Erinnerungen"></textarea></label>
+          <label>Nachricht<textarea name="message" rows="4" placeholder="Weitere Hinweise"></textarea></label>
+          <label>Dateiupload<input type="file" name="files" /></label>
+          <label>Bildupload<input type="file" name="image" accept="image/*" /></label>
+          <label>Videoupload<input type="file" name="video" accept="video/*" /></label>
+          <label>Audioaufnahme<input type="file" name="audio" accept="audio/*" /></label>
+          <button class="btn btn-primary" type="submit">Premium-Anfrage senden</button>
+          <p class="form-status" data-form-status role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="section contact-section" id="contact">
+        <div class="contact-card glass reveal">
+          <p class="eyebrow">Kontakt</p>
+          <h2>Bereit für dein persönliches Lied?</h2>
+          <p>Schreibe uns direkt per WhatsApp, E-Mail oder über das Bestellformular. Wir melden uns mit Preis, Timing und Designvorschlag.</p>
+          <a class="btn btn-glass" href="mailto:hello@melody-cards.example">hello@melody-cards.example</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-mark">MC</span>
+        <strong>Melody Cards</strong>
+        <p>Premium-Karten mit QR-Code und eigens komponiertem Lied.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#products">Produkte</a><a href="#about">Über uns</a><a href="#contact">Kontakt</a>
+        <a href="#impressum">Impressum</a><a href="#datenschutz">Datenschutz</a><a href="#agb">AGB</a><a href="#widerruf">Widerruf</a>
+      </div>
+      <form class="newsletter" data-newsletter>
+        <label>Newsletter<input type="email" placeholder="E-Mail-Adresse" /></label>
+        <button class="btn btn-primary" type="submit">Anmelden</button>
+      </form>
+      <div class="socials" aria-label="Social Media">
+        <a href="https://instagram.com/" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://www.tiktok.com/" target="_blank" rel="noopener">TikTok</a>
+        <a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a>
+      </div>
+    </footer>
+
+    <div class="cookie-banner glass" data-cookie>
+      <p>Wir nutzen funktionale Cookies für Warenkorb, Sprache und Demo-Animationen.</p>
+      <button class="btn btn-primary" type="button" data-cookie-accept>Akzeptieren</button>
+    </div>
+    <button class="back-top" type="button" aria-label="Zurück nach oben" data-back-top>↑</button>
+    <a class="whatsapp-chat" href="https://wa.me/491701234567?text=Hallo%20Melody%20Cards%2C%20ich%20m%C3%B6chte%20eine%20Premium-Karte%20bestellen." target="_blank" rel="noopener">WhatsApp</a>
+    <div class="lightbox" data-lightbox aria-hidden="true">
+      <button type="button" data-lightbox-close aria-label="Lightbox schließen">×</button>
+      <div class="lightbox-art" data-lightbox-art></div>
+      <h3 data-lightbox-title></h3>
+      <p data-lightbox-text></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="site-data.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
