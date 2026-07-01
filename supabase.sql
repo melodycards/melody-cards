@@ -267,11 +267,11 @@ values (
     "footerText": "Premium-Karten mit QR-Code und eigens komponiertem Lied."
   }'::jsonb,
   '{
-    "gold": "#d6b35a",
-    "gold2": "#f4d984",
-    "background": "#050505",
-    "text": "#f7f0df",
-    "muted": "#b9b09b"
+    "gold": "#F4C542",
+    "gold2": "#ffe086",
+    "background": "#fbf8ef",
+    "text": "#2f2f2f",
+    "muted": "#74706a"
   }'::jsonb
 )
 on conflict (id) do update

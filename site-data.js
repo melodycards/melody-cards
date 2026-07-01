@@ -59,11 +59,11 @@
         socialYouTube: "https://www.youtube.com/"
       },
       design: {
-        gold: "#d6b35a",
-        gold2: "#f4d984",
-        background: "#050505",
-        text: "#f7f0df",
-        muted: "#b9b09b"
+        gold: "#F4C542",
+        gold2: "#ffe086",
+        background: "#fbf8ef",
+        text: "#2f2f2f",
+        muted: "#74706a"
       }
     },
     products: productNames.map(([title, description, price], index) => ({
@@ -81,7 +81,7 @@
       return {
         id: `demo-gallery-${index + 1}`,
         title: `${type} ${String(index + 1).padStart(2, "0")}`,
-        description: `Premium-Beispiel: ${type.toLowerCase()} mit schwarzer Gold-Ästhetik.`,
+        description: `Premium-Beispiel: ${type.toLowerCase()} mit heller Gold-Ästhetik.`,
         category: type,
         image_url: imageAssets[index % imageAssets.length],
         sort_order: index + 1,
