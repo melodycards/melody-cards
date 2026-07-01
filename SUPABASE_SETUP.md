@@ -22,10 +22,14 @@ Das Script erstellt:
 - `reviews`
 - `faqs`
 - `blog_posts`
+- `premium_orders`
 - `admin_profiles`
 - RLS Policies
 - Storage Bucket `melody-assets`
 - Beispielinhalte
+
+Nur Bestellformular nachrüsten:
+Wenn deine bestehenden Tabellen schon existieren, kannst du alternativ nur `outputs/premium_orders.sql` im SQL Editor ausführen. Diese Datei erstellt `premium_orders` und erlaubt öffentliche Formular-Einträge sowie Uploads unter `orders/` im Bucket `melody-assets`.
 
 ## 3. Auth aktivieren
 
@@ -57,6 +61,7 @@ Prüfe unter `Storage`:
 - Bucket `melody-assets` existiert
 - Bucket ist public
 - Policies für Lesen, Upload, Update und Löschen sind vorhanden
+- Policy `Public can upload premium order files` ist vorhanden, wenn das Anfrageformular Datei-Uploads speichern soll
 
 ## 6. API Keys eintragen
 

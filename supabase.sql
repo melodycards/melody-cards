@@ -85,11 +85,30 @@ create table if not exists public.blog_posts (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.premium_orders (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  phone text,
+  address text,
+  card_text text,
+  music_wish text,
+  message text,
+  file_url text,
+  image_url text,
+  video_url text,
+  audio_url text,
+  status text not null default 'new',
+  created_at timestamptz not null default now()
+);
+
 create unique index if not exists products_title_unique on public.products (title);
 create unique index if not exists gallery_items_title_unique on public.gallery_items (title);
 create unique index if not exists reviews_name_unique on public.reviews (name);
 create unique index if not exists faqs_question_unique on public.faqs (question);
 create unique index if not exists blog_posts_title_unique on public.blog_posts (title);
+create index if not exists premium_orders_created_at_idx on public.premium_orders (created_at desc);
+create index if not exists premium_orders_status_idx on public.premium_orders (status);
 
 alter table public.admin_profiles enable row level security;
 alter table public.site_settings enable row level security;
@@ -98,6 +117,7 @@ alter table public.gallery_items enable row level security;
 alter table public.reviews enable row level security;
 alter table public.faqs enable row level security;
 alter table public.blog_posts enable row level security;
+alter table public.premium_orders enable row level security;
 
 drop policy if exists "Admins can read admin profiles" on public.admin_profiles;
 create policy "Admins can read admin profiles"
@@ -170,6 +190,27 @@ on public.blog_posts for all
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "Public can create premium orders" on public.premium_orders;
+create policy "Public can create premium orders"
+on public.premium_orders for insert
+with check (true);
+
+drop policy if exists "Admins can read premium orders" on public.premium_orders;
+create policy "Admins can read premium orders"
+on public.premium_orders for select
+using (public.is_admin());
+
+drop policy if exists "Admins can update premium orders" on public.premium_orders;
+create policy "Admins can update premium orders"
+on public.premium_orders for update
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Admins can delete premium orders" on public.premium_orders;
+create policy "Admins can delete premium orders"
+on public.premium_orders for delete
+using (public.is_admin());
+
 insert into storage.buckets (id, name, public)
 values ('melody-assets', 'melody-assets', true)
 on conflict (id) do update set public = excluded.public;
@@ -183,6 +224,11 @@ drop policy if exists "Admins can upload melody assets" on storage.objects;
 create policy "Admins can upload melody assets"
 on storage.objects for insert
 with check (bucket_id = 'melody-assets' and public.is_admin());
+
+drop policy if exists "Public can upload premium order files" on storage.objects;
+create policy "Public can upload premium order files"
+on storage.objects for insert
+with check (bucket_id = 'melody-assets' and (storage.foldername(name))[1] = 'orders');
 
 drop policy if exists "Admins can update melody assets" on storage.objects;
 create policy "Admins can update melody assets"

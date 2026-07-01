@@ -1,3 +1,74 @@
+(function bindPremiumOrderForm() {
+  const form = document.getElementById("premium-order-form");
+  if (!form || form.dataset.submitBound === "true") return;
+  form.dataset.submitBound = "true";
+  const requestTimeoutMs = 15000;
+
+  function withTimeout(promise, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error(`${label} dauert zu lange. Bitte pruefe Supabase-Verbindung, Tabelle premium_orders und RLS-Policies.`)), requestTimeoutMs);
+      })
+    ]);
+  }
+
+  form.querySelector('button[type="submit"]')?.addEventListener("click", () => {
+    const status = document.getElementById("premium-order-status") || form.querySelector("[data-form-status]");
+    if (form.checkValidity() && status) status.textContent = "Sende Anfrage…";
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    const status = document.getElementById("premium-order-status") || form.querySelector("[data-form-status]");
+    const formData = new FormData(form);
+
+    if (status) status.textContent = "Sende Anfrage…";
+    if (submitButton) submitButton.disabled = true;
+    form.setAttribute("aria-busy", "true");
+
+    try {
+      if (!window.MelodySupabase?.isConfigured()) {
+        throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
+      }
+
+      const [fileUrl, imageUrl, videoUrl, audioUrl] = await withTimeout(Promise.all([
+        window.MelodySupabase.uploadOrderFile(form.elements.files?.files?.[0], "files"),
+        window.MelodySupabase.uploadOrderFile(form.elements.image?.files?.[0], "images"),
+        window.MelodySupabase.uploadOrderFile(form.elements.video?.files?.[0], "videos"),
+        window.MelodySupabase.uploadOrderFile(form.elements.audio?.files?.[0], "audio")
+      ]), "Dateiupload");
+
+      await withTimeout(window.MelodySupabase.createPremiumOrder({
+        name: formData.get("name")?.trim() || "",
+        email: formData.get("email")?.trim() || "",
+        phone: formData.get("phone")?.trim() || "",
+        address: formData.get("address")?.trim() || "",
+        card_text: formData.get("cardText")?.trim() || "",
+        music_wish: formData.get("musicWish")?.trim() || "",
+        message: formData.get("message")?.trim() || "",
+        file_url: fileUrl,
+        image_url: imageUrl,
+        video_url: videoUrl,
+        audio_url: audioUrl,
+        status: "new"
+      }), "Speichern der Premium-Anfrage");
+
+      if (status) status.textContent = "Danke. Deine Premium-Anfrage wurde erfolgreich gesendet.";
+      form.reset();
+    } catch (error) {
+      console.error("Premium order submit failed:", error);
+      if (status) {
+        status.textContent = error.message || "Die Premium-Anfrage konnte nicht gespeichert werden. Bitte pruefe Supabase.";
+      }
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+      form.removeAttribute("aria-busy");
+    }
+  });
+})();
+
 (async function () {
   const data = await window.MelodySupabase.fetchContent();
   const settings = data.settings?.content || {};
@@ -216,11 +287,6 @@
       lightbox.setAttribute("aria-hidden", "true");
     });
 
-    document.querySelector("[data-order-form]")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      document.querySelector("[data-form-status]").textContent = "Danke. Deine Premium-Anfrage ist vorbereitet und kann jetzt angebunden werden.";
-      event.currentTarget.reset();
-    });
     document.querySelector("[data-newsletter]")?.addEventListener("submit", (event) => event.preventDefault());
     document.querySelector("[data-cookie-accept]")?.addEventListener("click", () => document.querySelector("[data-cookie]")?.classList.add("is-hidden"));
     document.querySelector("[data-back-top]")?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));

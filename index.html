@@ -259,7 +259,7 @@
           <h2>Starte deine Melody Card</h2>
           <p>Alle wichtigen Daten in einem Formular: Karte, Musik, Uploads und persönliche Wünsche.</p>
         </div>
-        <form class="order-form glass reveal" data-order-form>
+        <form id="premium-order-form" class="order-form glass reveal" data-order-form>
           <label>Name<input name="name" type="text" required placeholder="Dein Name" /></label>
           <label>E-Mail<input name="email" type="email" required placeholder="name@example.com" /></label>
           <label>Telefon<input name="phone" type="tel" placeholder="+49 ..." /></label>
@@ -272,7 +272,7 @@
           <label>Videoupload<input type="file" name="video" accept="video/*" /></label>
           <label>Audioaufnahme<input type="file" name="audio" accept="audio/*" /></label>
           <button class="btn btn-primary" type="submit">Premium-Anfrage senden</button>
-          <p class="form-status" data-form-status role="status" aria-live="polite"></p>
+          <p id="premium-order-status" class="form-status" data-form-status role="status" aria-live="polite"></p>
         </form>
       </section>
 
@@ -321,9 +321,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="site-data.js"></script>
-    <script src="supabase-client.js"></script>
-    <script src="script.js"></script>
+    <script src="config.js?v=20260629-submitfix2"></script>
+    <script src="site-data.js?v=20260629-submitfix2"></script>
+    <script src="supabase-client.js?v=20260629-submitfix2"></script>
+    <script src="script.js?v=20260629-submitfix2"></script>
   </body>
 </html>

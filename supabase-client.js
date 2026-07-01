@@ -65,10 +65,46 @@
     return data.publicUrl;
   }
 
+  function readableOrderError(error) {
+    const message = error?.message || "Unbekannter Supabase-Fehler.";
+    const code = error?.code || "";
+    if (code === "PGRST205" || code === "42P01" || message.toLowerCase().includes("premium_orders")) {
+      return "Die Supabase-Tabelle premium_orders fehlt. Bitte fuehre die SQL-Datei premium_orders.sql oder supabase.sql im Supabase SQL Editor aus.";
+    }
+    if (code === "42501" || message.toLowerCase().includes("row-level security") || message.toLowerCase().includes("permission")) {
+      return "Supabase verweigert das Speichern. Bitte pruefe die RLS-Policy fuer premium_orders und die Storage-Policy fuer orders-Uploads.";
+    }
+    return `Supabase-Fehler: ${message}`;
+  }
+
+  async function uploadOrderFile(file, kind) {
+    if (!file) return null;
+    if (!getClient()) {
+      throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
+    }
+    try {
+      return await uploadFile(file, `orders/${kind}`);
+    } catch (error) {
+      throw new Error(`Upload fuer ${kind} fehlgeschlagen: ${readableOrderError(error)}`);
+    }
+  }
+
+  async function createPremiumOrder(order) {
+    const client = getClient();
+    if (!client) {
+      throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
+    }
+    const { error } = await client.from("premium_orders").insert(order);
+    if (error) throw new Error(readableOrderError(error));
+    return true;
+  }
+
   window.MelodySupabase = {
     isConfigured,
     getClient,
     fetchContent,
-    uploadFile
+    uploadFile,
+    uploadOrderFile,
+    createPremiumOrder
   };
 })();
