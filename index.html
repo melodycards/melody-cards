@@ -3,31 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fffaf2" />
+    <meta name="theme-color" content="#ffffff" />
     <meta
       name="description"
-      content="Melody Cards gestaltet handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code für besondere Momente."
+      content="Melody Cards gestaltet handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code für besondere Momente."
     />
-    <meta property="og:title" content="Melody Cards | Handgemachte Karten mit persönlichem Lied" />
+    <meta property="og:title" content="Melody Cards | Handgemachte Karten für persönliche Momente" />
     <meta
       property="og:description"
-      content="Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und privatem QR-Code."
+      content="Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="assets/images/melody-cards-premium-hero.png" />
-    <title>Melody Cards | Handgemachte Premium-Grußkarten mit persönlichem Lied</title>
+    <title>Melody Cards | Handgemachte Karten für persönliche Momente</title>
+    <script src="scroll-guard.js?v=20260702-cleaner-relaunch"></script>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23050505'/%3E%3Cpath d='M18 45V18h7l7 14 7-14h7v27h-6V28L34 41h-4l-6-13v17z' fill='%23d6b35a'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="styles.css?v=20260702-apple-relaunch" />
+    <link rel="stylesheet" href="styles.css?v=20260702-cleaner-relaunch" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Melody Cards",
         "url": "https://melody-cards.example",
-        "description": "Melody Cards gestaltet handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code.",
+        "description": "Melody Cards gestaltet handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.",
         "sameAs": ["https://instagram.com/", "https://www.tiktok.com/", "https://www.youtube.com/"]
       }
     </script>
@@ -49,184 +49,100 @@
       <nav class="main-nav" data-nav>
         <a href="#home">Startseite</a>
         <a href="#process">So funktioniert es</a>
-        <a href="#products">Produkte</a>
+        <a href="#products">Anlässe</a>
         <a href="#examples">Beispiele</a>
         <a href="#gallery">Galerie</a>
         <a href="#about">Über uns</a>
-        <a href="#reviews">Bewertungen</a>
         <a href="#faq">FAQ</a>
         <a href="#contact">Kontakt</a>
-        <a class="nav-order" href="#order">Bestellung</a>
+        <a class="nav-order" href="#order">Karte gestalten</a>
       </nav>
     </header>
 
     <main>
-      <section class="hero section-visual" id="home">
-        <div class="hero-motion" aria-hidden="true">
-          <span class="motion-line line-a"></span>
-          <span class="motion-line line-b"></span>
-          <span class="motion-orbit"></span>
-        </div>
-        <div class="hero-media" data-parallax>
-          <img src="assets/images/melody-cards-premium-hero.png" alt="Luxuriöse Melody Cards mit QR-Code und Smartphone-Musikplayer" />
-        </div>
+      <section class="hero clean-hero" id="home">
         <div class="hero-content reveal">
-          <p class="eyebrow">Handmade sound gifting</p>
-          <h1><span>Grußkarten, die singen.</span><span>Persönlich. Warm. Unvergesslich.</span></h1>
+          <p class="eyebrow">Melody Cards</p>
+          <h1><span>Handgemachte Karten</span><span>für persönliche Momente.</span></h1>
           <p>
-            Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird.
+            Eine ruhige, hochwertige Karte mit deiner Botschaft, einem Foto und auf Wunsch einem Lied oder QR-Code. Schlicht gestaltet, persönlich erzählt, bewusst verschenkt.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#order">Jetzt bestellen</a>
-            <a class="btn btn-glass" href="#demo">Live Demo testen</a>
-          </div>
-          <div class="hero-kpis" aria-label="Melody Cards Kennzahlen">
-            <div><strong>12+</strong><span>Anlässe</span></div>
-            <div><strong>48h</strong><span>Express auf Anfrage</span></div>
-            <div><strong>100%</strong><span>persönlich gestaltet</span></div>
+            <a class="btn btn-primary" href="#order">Karte gestalten</a>
+            <a class="text-link" href="#examples">Beispiele ansehen</a>
           </div>
         </div>
-        <div class="qr-float" aria-hidden="true">
-          <span></span><span></span><span></span><span></span>
-        </div>
-        <div class="music-widget glass" aria-hidden="true">
-          <div class="album-art"></div>
-          <div>
-            <strong>Birthday Gold</strong>
-            <small>00:42 · personal song</small>
-            <div class="mini-eq"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="hero-visual reveal" aria-hidden="true">
+          <div class="quiet-card card-one">
+            <span>Melody Cards</span>
+            <strong>Für dich</strong>
+            <i></i>
           </div>
+          <div class="quiet-card card-two">
+            <span>Foto</span>
+            <strong>Erinnerung</strong>
+            <i></i>
+          </div>
+          <div class="quiet-qr"></div>
         </div>
-        <a class="scroll-indicator" href="#products" aria-label="Weiter scrollen"><span></span></a>
       </section>
 
-      <section class="section intro-section" aria-label="Melody Cards Versprechen">
+      <section class="section intro-section" aria-label="Melody Cards Ansatz">
         <div class="intro-copy reveal">
-          <p class="eyebrow">Das Geschenk danach</p>
-          <h2>Ein Moment, den man nicht einfach weglegt.</h2>
+          <p class="eyebrow">Der Gedanke</p>
+          <h2>Ein Geschenk, das nicht laut sein muss.</h2>
           <p>
-            Die Karte wird geöffnet, der QR-Code gescannt und plötzlich läuft ein Lied, das Namen, Erinnerungen und Gefühl trägt. Kein Massenprodukt, sondern ein ruhiger, hochwertiger Moment zum Behalten.
+            Melody Cards ist für Geburtstage, Hochzeiten, Liebe, Familie, Muttertag und Erinnerungen gemacht. Jede Karte beginnt mit einer echten Botschaft und wird anschließend ruhig, klar und hochwertig gestaltet.
           </p>
         </div>
         <div class="promise-grid reveal">
-          <article><span>01</span><strong>Handgemacht</strong><p>Papier, Layout und Details werden für deinen Anlass abgestimmt.</p></article>
-          <article><span>02</span><strong>Persönlich</strong><p>Foto, Text, Namen und Musikwunsch fließen in das Ergebnis ein.</p></article>
-          <article><span>03</span><strong>Einfach</strong><p>QR-Code scannen, Songseite öffnen und das Lied sofort abspielen.</p></article>
+          <article><span>01</span><strong>Botschaft</strong><p>Du erzählst, für wen die Karte ist und was sie ausdrücken soll.</p></article>
+          <article><span>02</span><strong>Gestaltung</strong><p>Wir verbinden Text, Foto, Papierwirkung und digitale Elemente zu einem klaren Entwurf.</p></article>
+          <article><span>03</span><strong>Erinnerung</strong><p>Optional ergänzen wir ein Lied oder einen QR-Code, wenn es zur Geschichte passt.</p></article>
         </div>
       </section>
 
       <section class="section" id="process">
         <div class="section-head reveal">
           <p class="eyebrow">So funktioniert es</p>
-          <h2>Vom Gedanken zur fertigen Melody Card.</h2>
-          <p>Du lieferst die Geschichte. Wir verwandeln sie in eine Karte, ein Lied und eine private digitale Geschenkseite.</p>
+          <h2>Wenige Schritte. Viel Gefühl.</h2>
+          <p>Keine automatische Bestellung und keine Zahlung auf der Webseite. Du sendest eine Anfrage, wir melden uns persönlich mit Rückfragen und einem klaren Vorschlag.</p>
         </div>
         <div class="steps">
-          <article class="step reveal"><span>01</span><h3>Anlass und Stil wählen</h3><p>Geburtstag, Hochzeit, Liebe, Familie oder Business. Wir stimmen Design und Ton auf den Moment ab.</p></article>
-          <article class="step reveal"><span>02</span><h3>Erinnerungen teilen</h3><p>Du sendest Namen, Text, Foto und Musikwunsch. Schon wenige Details reichen für ein persönliches Ergebnis.</p></article>
-          <article class="step reveal"><span>03</span><h3>Karte und Song entstehen</h3><p>Wir gestalten die Karte, bereiten den QR-Code vor und komponieren das Lied passend zur Botschaft.</p></article>
-          <article class="step reveal"><span>04</span><h3>Verschenken</h3><p>Die Melody Card kommt liebevoll verpackt zu dir und ist sofort bereit für den großen Moment.</p></article>
+          <article class="step reveal"><span>01</span><h3>Anlass beschreiben</h3><p>Du wählst den Moment und beschreibst die Person, die Botschaft und die Stimmung.</p></article>
+          <article class="step reveal"><span>02</span><h3>Material senden</h3><p>Optional lädst du Foto, Text, Audio oder andere Erinnerungen hoch.</p></article>
+          <article class="step reveal"><span>03</span><h3>Entwurf abstimmen</h3><p>Wir klären, ob Karte, Lied oder QR-Code sinnvoll sind und wie schlicht das Ergebnis wirken soll.</p></article>
         </div>
       </section>
 
       <section class="section" id="products">
         <div class="section-head reveal">
-          <p class="eyebrow">Produkte</p>
-          <h2>Karten für die Momente, die zählen.</h2>
-          <p>Wähle einen Anlass als Ausgangspunkt. Jede Karte wird anschließend mit deinem Text, Foto, QR-Code und Lied personalisiert.</p>
+          <p class="eyebrow">Anlässe</p>
+          <h2>Für Momente, die Nähe brauchen.</h2>
+          <p>Die Anlasskarten sind nur ein Startpunkt. Jede Melody Card wird danach individuell und ohne Standardtext gestaltet.</p>
         </div>
         <div class="product-grid" data-products></div>
       </section>
 
-      <section class="section split-section" id="examples">
+      <section class="section examples-section" id="examples">
         <div class="section-head reveal">
           <p class="eyebrow">Beispiele</p>
-          <h2>Eine Karte außen. Eine ganze Geschichte innen.</h2>
-          <p>Jede Melody Card führt auf eine private Songseite mit Cover, Widmung und Player. So bleibt das Geschenk auch nach dem Auspacken lebendig.</p>
+          <h2>Schlicht außen. Persönlich innen.</h2>
+          <p>Keine lauten Effekte. Nur klare Gestaltung, ruhige Materialien und Details, die zur Person passen.</p>
         </div>
-        <div class="example-stage reveal">
-          <div class="lux-card">
-            <span class="foil">Melody</span>
-            <div class="card-qr"></div>
-            <p>Für Amelie</p>
-          </div>
-          <div class="phone-demo">
-            <div class="phone-screen">
-              <div class="cover-pulse"></div>
-              <strong>Dein Lied</strong>
-              <span>Pop Ballad · Deutsch</span>
-              <button class="play-demo" type="button" data-play-demo>Play</button>
-              <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            </div>
-          </div>
+        <div class="example-grid reveal">
+          <article><span>Geburtstag</span><strong>Eine Karte mit Foto und wenigen ehrlichen Zeilen.</strong></article>
+          <article><span>Hochzeit</span><strong>Eine ruhige Erinnerung an Worte, die bleiben sollen.</strong></article>
+          <article><span>Liebe</span><strong>Ein persönlicher Gruß, ohne Kitsch und ohne Überladung.</strong></article>
+          <article><span>Familie</span><strong>Eine Botschaft, die Generationen miteinander verbindet.</strong></article>
         </div>
-      </section>
-
-      <section class="section demo-section" id="demo">
-        <div class="section-head reveal">
-          <p class="eyebrow">Live Demo</p>
-          <h2>Teste den QR-Code-Moment.</h2>
-          <p>Klicke auf eine Beispielkarte. Das Smartphone öffnet die Songseite und startet die Musik-Animation.</p>
-        </div>
-        <div class="demo-grid reveal">
-          <div class="demo-cards" data-demo-cards></div>
-          <div class="demo-phone glass" data-demo-phone>
-            <div class="phone-notch"></div>
-            <div class="demo-cover"></div>
-            <strong data-demo-title>Wähle eine Karte</strong>
-            <span data-demo-subtitle>QR-Code bereit</span>
-            <button class="btn btn-primary" type="button" data-demo-play>Musik starten</button>
-            <div class="sound-wave" data-sound-wave><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section music-section" id="music">
-        <div class="section-head reveal">
-          <p class="eyebrow">Musikbereich</p>
-          <h2>Der Klang richtet sich nach deiner Geschichte.</h2>
-          <p>Von leiser Piano-Ballade bis warmem Pop-Song: Wir wählen den Stil passend zum Anlass und zur Person.</p>
-        </div>
-        <div class="audio-grid" data-audio></div>
-      </section>
-
-      <section class="section configurator-section" id="configurator">
-        <div class="section-head reveal">
-          <p class="eyebrow">Produktkonfigurator</p>
-          <h2>Gestalte die Richtung deiner Karte.</h2>
-          <p>Der Konfigurator dient als Anfragehilfe. Die finale Gestaltung stimmen wir persönlich mit dir ab.</p>
-        </div>
-        <div class="configurator">
-          <form class="config-panel glass" data-config-form></form>
-          <aside class="preview-panel glass">
-            <div class="preview-card" data-preview-card>
-              <span data-preview-occasion>Geburtstag</span>
-              <strong data-preview-design>Royal Noir</strong>
-              <div class="preview-qr" data-preview-qr></div>
-              <small data-preview-music>Pop Ballade · Deutsch</small>
-            </div>
-            <div class="preview-meta">
-              <p><strong>Verpackung:</strong> <span data-preview-package>Geschenkbox</span></p>
-              <p><strong>Stimme:</strong> <span data-preview-voice>Weiblich</span></p>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section class="section" id="reviews">
-        <div class="section-head reveal">
-          <p class="eyebrow">Bewertungen</p>
-          <h2>Was bleibt, sind echte Reaktionen.</h2>
-          <p>Kunden bestellen Melody Cards, wenn ein Geschenk mehr sagen soll als ein Umschlag.</p>
-        </div>
-        <div class="review-grid" data-reviews></div>
       </section>
 
       <section class="section" id="gallery">
         <div class="section-head reveal">
           <p class="eyebrow">Galerie</p>
-          <h2>Warme Details, natürliche Momente.</h2>
-          <p>Karten, QR-Codes, Hände, Geschenkpapier, Blumen, Familienmomente, Smartphones und liebevolle Verpackungen.</p>
+          <h2>Ruhige Bildflächen statt lauter Dekoration.</h2>
+          <p>Die Galerie zeigt die Richtung: helle Flächen, Papier, Foto, Botschaft und zurückhaltende QR-Integration.</p>
         </div>
         <div class="gallery-grid" data-gallery></div>
       </section>
@@ -242,40 +158,21 @@
       <section class="section about-section" id="about">
         <div class="section-head reveal">
           <p class="eyebrow">Über uns</p>
-          <h2>Wir gestalten Geschenke, die nachklingen.</h2>
-          <p>Melody Cards ist ein kleines Studio für Karten, Musik und digitale Geschenkseiten. Unser Anspruch: hochwertig wirken, persönlich fühlen und seriös umgesetzt sein.</p>
+          <h2>Handmade, persönlich und bewusst reduziert.</h2>
+          <p>Melody Cards entsteht aus der Idee, dass ein Geschenk nicht größer, lauter oder teurer wirken muss, um wichtig zu sein. Wir gestalten Karten mit Liebe zum Detail, ruhiger Typografie und einem klaren Blick für die Geschichte dahinter.</p>
         </div>
-        <div class="stats reveal">
-          <div><strong>1</strong><span>persönliche Geschichte pro Karte</span></div>
-          <div><strong>3</strong><span>Bausteine: Karte, Song, QR-Seite</span></div>
-          <div><strong>12+</strong><span>Anlässe für private und geschäftliche Geschenke</span></div>
-          <div><strong>DE</strong><span>seriös für Deutschland aufgebaut</span></div>
+        <div class="about-grid reveal">
+          <article><h3>Persönlich</h3><p>Jede Anfrage wird gelesen, nicht automatisch verarbeitet.</p></article>
+          <article><h3>Handmade</h3><p>Das Ergebnis soll sich nach einem echten, gedachten Geschenk anfühlen.</p></article>
+          <article><h3>Zurückhaltend</h3><p>Design, Foto, Lied und QR-Code werden nur eingesetzt, wenn sie den Moment stärken.</p></article>
         </div>
-        <div class="timeline reveal">
-          <article><span>Idee</span><h3>Ein Lied statt nur ein Text</h3><p>Persönliche Worte sollen nicht nur gelesen, sondern gehört werden.</p></article>
-          <article><span>Studio</span><h3>Design trifft Musik</h3><p>Karte, Foto, Song und QR-Code werden zu einem stimmigen Erlebnis verbunden.</p></article>
-          <article><span>Heute</span><h3>Bereit für echte Anlässe</h3><p>Melody Cards wächst als seriöse Premium-Marke für persönliche Geschenke.</p></article>
-        </div>
-        <div class="team-grid reveal">
-          <article><div class="avatar">01</div><h3>Design</h3><p>Ruhige Typografie, warme Farben und liebevolle Papierdetails.</p></article>
-          <article><div class="avatar">02</div><h3>Musik</h3><p>Persönliche Texte, passende Stimmung und klare Produktion.</p></article>
-          <article><div class="avatar">03</div><h3>Erlebnis</h3><p>Private QR-Seite, einfacher Player und ein sauberer Geschenkfluss.</p></article>
-        </div>
-      </section>
-
-      <section class="section" id="blog">
-        <div class="section-head reveal">
-          <p class="eyebrow">Blog</p>
-          <h2>Ratgeber für persönliche Geschenke.</h2>
-        </div>
-        <div class="blog-grid" data-blog></div>
       </section>
 
       <section class="section order-section" id="order">
         <div class="section-head reveal">
-          <p class="eyebrow">Bestellung</p>
-          <h2>Starte deine persönliche Anfrage.</h2>
-          <p>Keine automatische Zahlung. Sende uns deine Wünsche, wir melden uns mit Ablauf, Preis und Timing zurück.</p>
+          <p class="eyebrow">Karte gestalten</p>
+          <h2>Erzähl uns, was die Karte sagen soll.</h2>
+          <p>Das Formular ist eine Anfrage. Wir prüfen deine Angaben und melden uns persönlich zurück. Es wird keine Zahlung ausgelöst.</p>
         </div>
         <form id="premium-order-form" class="order-form glass reveal" data-order-form>
           <label>Name<input name="name" type="text" required placeholder="Dein Name" /></label>
@@ -297,8 +194,8 @@
       <section class="section contact-section" id="contact">
         <div class="contact-card glass reveal">
           <p class="eyebrow">Kontakt</p>
-          <h2>Bereit für eine Karte, die wirklich ankommt?</h2>
-          <p>Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck.</p>
+          <h2>Offen für Fragen vor der Anfrage.</h2>
+          <p>Wenn du unsicher bist, ob eine Karte, ein Lied oder ein QR-Code passt, schreibe uns kurz. Wir antworten ohne Verkaufsdruck.</p>
           <a class="btn btn-glass" href="mailto:hello@melody-cards.example">hello@melody-cards.example</a>
         </div>
       </section>
@@ -343,29 +240,14 @@
       <div class="footer-brand">
         <span class="brand-mark">MC</span>
         <strong>Melody Cards</strong>
-        <p>Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code.</p>
+        <p>Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.</p>
       </div>
       <div class="footer-links">
         <a href="#products">Produkte</a><a href="#about">Über uns</a><a href="#contact">Kontakt</a>
         <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="agb.html">AGB</a><a href="widerruf.html">Widerruf</a><a href="versand-zahlung.html">Versand & Zahlung</a>
       </div>
-      <form class="newsletter" data-newsletter>
-        <label>Newsletter<input type="email" placeholder="E-Mail-Adresse" /></label>
-        <button class="btn btn-primary" type="submit">Anmelden</button>
-      </form>
-      <div class="socials" aria-label="Social Media">
-        <a href="https://instagram.com/" target="_blank" rel="noopener">Instagram</a>
-        <a href="https://www.tiktok.com/" target="_blank" rel="noopener">TikTok</a>
-        <a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a>
-      </div>
     </footer>
-
-    <div class="cookie-banner glass" data-cookie>
-      <p>Wir nutzen funktionale Cookies für Warenkorb, Sprache und Demo-Animationen.</p>
-      <button class="btn btn-primary" type="button" data-cookie-accept>Akzeptieren</button>
-    </div>
     <button class="back-top" type="button" aria-label="Zurück nach oben" data-back-top>↑</button>
-    <a class="whatsapp-chat" href="https://wa.me/491701234567?text=Hallo%20Melody%20Cards%2C%20ich%20m%C3%B6chte%20eine%20Premium-Karte%20bestellen." target="_blank" rel="noopener">WhatsApp</a>
     <div class="lightbox" data-lightbox aria-hidden="true">
       <button type="button" data-lightbox-close aria-label="Lightbox schließen">×</button>
       <div class="lightbox-art" data-lightbox-art></div>
@@ -374,9 +256,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=20260702-apple-relaunch"></script>
-    <script src="site-data.js?v=20260702-apple-relaunch"></script>
-    <script src="supabase-client.js?v=20260702-apple-relaunch"></script>
-    <script src="script.js?v=20260702-apple-relaunch"></script>
+    <script src="config.js?v=20260702-cleaner-relaunch"></script>
+    <script src="site-data.js?v=20260702-cleaner-relaunch"></script>
+    <script src="supabase-client.js?v=20260702-cleaner-relaunch"></script>
+    <script src="script.js?v=20260702-cleaner-relaunch"></script>
   </body>
 </html>

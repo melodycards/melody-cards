@@ -1,5 +1,5 @@
 .admin-body {
-  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 100%;
   overflow-x: hidden;
   background:
@@ -20,7 +20,7 @@
   grid-template-columns: 1fr 420px;
   gap: 32px;
   align-items: center;
-  min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
   padding: clamp(24px, 5vw, 64px);
 }
 .admin-login h1 {
@@ -42,7 +42,7 @@
   display: grid;
   align-content: start;
   gap: 8px;
-  min-height: calc(100vh - 36px);
+  min-height: calc(100dvh - 36px);
   padding: 14px;
 }
 .admin-brand {

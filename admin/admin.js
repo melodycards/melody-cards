@@ -106,12 +106,6 @@
     return String(id || "").startsWith("demo-");
   }
 
-  function setDashboardUrl() {
-    if (window.location.hash !== "#dashboard") {
-      window.history.replaceState(null, "", `${window.location.pathname}#dashboard`);
-    }
-  }
-
   function ensureDashboardShell() {
     const sidebar = $(".admin-sidebar");
     const main = $(".admin-main");
@@ -189,7 +183,7 @@
     selectSection("dashboard");
   }
 
-  function showDashboard({ updateLocation = false } = {}) {
+  function showDashboard() {
     ensureDashboardShell();
     const login = $("[data-login]");
     const app = $("[data-admin-app]");
@@ -199,7 +193,6 @@
     app.hidden = false;
     app.removeAttribute("aria-hidden");
     app.style.display = "";
-    if (updateLocation) setDashboardUrl();
     $("[data-mode-label]").textContent = demoMode ? "Demo-Modus ohne Speichern" : "Supabase CMS verbunden";
     $("[data-connection-status]").textContent = demoMode ? "Nicht verbunden - Demo-Daten aktiv" : "Verbunden";
     $("[data-bucket-name]").textContent = (window.MELODY_SUPABASE_CONFIG || {}).storageBucket || "melody-assets";
@@ -212,8 +205,8 @@
     }
   }
 
-  function showApp(options) {
-    showDashboard(options);
+  function showApp() {
+    showDashboard();
   }
 
   async function refreshDashboardAfterOpen() {
@@ -226,8 +219,8 @@
     }
   }
 
-  function openDashboard({ updateLocation = false } = {}) {
-    showDashboard({ updateLocation });
+  function openDashboard() {
+    showDashboard();
     refreshDashboardAfterOpen();
   }
 
@@ -235,7 +228,7 @@
     if (demoMode) return;
     const { data } = await client.auth.getSession();
     if (data.session) {
-      openDashboard({ updateLocation: window.location.hash === "#dashboard" });
+      openDashboard();
     }
   }
 
@@ -243,7 +236,7 @@
     client.auth.onAuthStateChange((event, session) => {
       if (!session || !["SIGNED_IN", "INITIAL_SESSION", "TOKEN_REFRESHED"].includes(event)) return;
       window.setTimeout(() => {
-        openDashboard({ updateLocation: event === "SIGNED_IN" || window.location.hash === "#dashboard" });
+        openDashboard();
       }, 0);
     });
   }
@@ -269,7 +262,7 @@
         return;
       }
       $("[data-login-status]").textContent = "Login erfolgreich. Dashboard wird geöffnet...";
-      showDashboard({ updateLocation: true });
+      showDashboard();
       refreshDashboardAfterOpen();
     } catch (error) {
       $("[data-login-status]").textContent = `Login fehlgeschlagen: ${error.message}`;
@@ -279,7 +272,7 @@
   });
 
   $("[data-demo-admin]").addEventListener("click", async () => {
-    openDashboard({ updateLocation: true });
+    openDashboard();
   });
   $("[data-logout]").addEventListener("click", async () => {
     if (client) await client.auth.signOut();

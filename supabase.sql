@@ -247,31 +247,28 @@ values (
   '{
     "brandName": "Melody Cards",
     "logoText": "MC",
-    "heroEyebrow": "Handmade sound gifting",
-    "heroTitleLine1": "Grußkarten, die singen.",
-    "heroTitleLine2": "Persönlich. Warm. Unvergesslich.",
-    "heroText": "Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird.",
-    "primaryButtonText": "Jetzt bestellen",
+    "heroEyebrow": "Melody Cards",
+    "heroTitleLine1": "Handgemachte Karten",
+    "heroTitleLine2": "für persönliche Momente.",
+    "heroText": "Eine ruhige, hochwertige Karte mit deiner Botschaft, einem Foto und auf Wunsch einem Lied oder QR-Code. Schlicht gestaltet, persönlich erzählt, bewusst verschenkt.",
+    "primaryButtonText": "Karte gestalten",
     "primaryButtonHref": "#order",
-    "secondaryButtonText": "Live Demo testen",
-    "secondaryButtonHref": "#demo",
-    "heroImage": "assets/images/melody-cards-premium-hero.png",
-    "contactTitle": "Bereit für eine Karte, die wirklich ankommt?",
-    "contactText": "Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck.",
+    "secondaryButtonText": "Beispiele ansehen",
+    "secondaryButtonHref": "#examples",
+    "contactTitle": "Offen für Fragen vor der Anfrage.",
+    "contactText": "Wenn du unsicher bist, ob eine Karte, ein Lied oder ein QR-Code passt, schreibe uns kurz. Wir antworten ohne Verkaufsdruck.",
     "contactEmail": "hello@melody-cards.example",
     "whatsappNumber": "491701234567",
     "whatsappMessage": "Hallo Melody Cards, ich möchte eine Premium-Karte bestellen.",
     "socialInstagram": "https://instagram.com/",
     "socialTikTok": "https://www.tiktok.com/",
     "socialYouTube": "https://www.youtube.com/",
-    "footerText": "Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code."
+    "footerText": "Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code."
   }'::jsonb,
   '{
-    "gold": "#F4C542",
-    "gold2": "#ffe086",
-    "background": "#fbf8ef",
-    "text": "#2f2f2f",
-    "muted": "#74706a"
+    "background": "#ffffff",
+    "text": "#1d1d1f",
+    "muted": "#6e6e73"
   }'::jsonb
 )
 on conflict (id) do update
@@ -282,18 +279,12 @@ set content = excluded.content,
 insert into public.products (title, description, price, image_url, tags, sort_order, active)
 select *
 from (values
-  ('Geburtstag', 'Signature Karte mit Geburtstagslied, QR-Seite und Goldfolie.', 'ab 49 EUR', 'assets/images/melody-cards-premium-hero.png', '["QR-Code","Custom Song","Premium Print"]'::jsonb, 1, true),
-  ('Hochzeit', 'Elegante Karte für Eheversprechen, Gäste oder Geschenkübergabe.', 'ab 79 EUR', 'assets/images/premium-card-detail.png', '["Premium","Song","Gift Box"]'::jsonb, 2, true),
-  ('Jahrestag', 'Romantischer Song mit gemeinsamen Erinnerungen und Premium-Design.', 'ab 69 EUR', 'assets/images/gift-moment.png', '["Romantik","QR-Code","Goldfolie"]'::jsonb, 3, true),
-  ('Muttertag', 'Warme Worte, sanfte Melodie und hochwertiges Kartenpapier.', 'ab 59 EUR', 'assets/images/gift-box-packaging.png', '["Familie","Song","Box"]'::jsonb, 4, true),
-  ('Vatertag', 'Persönlicher Song mit Humor, Dankbarkeit und klarer Stimme.', 'ab 59 EUR', 'assets/images/phone-music-player.png', '["Persönlich","Musik","Premium"]'::jsonb, 5, true),
-  ('Weihnachten', 'Festliche Karte mit winterlichem Klang und Geschenkbox.', 'ab 64 EUR', 'assets/images/melody-cards-premium-hero.png', '["Festlich","Box","QR"]'::jsonb, 6, true),
-  ('Neujahr', 'Moderner Song für Wünsche, Rückblick und Neustart.', 'ab 54 EUR', 'assets/images/premium-card-detail.png', '["Modern","QR","Song"]'::jsonb, 7, true),
-  ('Valentinstag', 'Liebesbotschaft als Song mit privatem QR-Code.', 'ab 69 EUR', 'assets/images/gift-moment.png', '["Liebe","Duett","Premium"]'::jsonb, 8, true),
-  ('Baby', 'Sanfte Willkommenskarte mit Schlaflied-Charakter.', 'ab 64 EUR', 'assets/images/gift-box-packaging.png', '["Baby","Sanft","Box"]'::jsonb, 9, true),
-  ('Taufe', 'Feierliche Karte mit ruhiger, emotionaler Komposition.', 'ab 64 EUR', 'assets/images/phone-music-player.png', '["Feierlich","Klassisch","QR"]'::jsonb, 10, true),
-  ('Abschluss', 'Motivierender Song für Meilensteine und Zukunftspläne.', 'ab 59 EUR', 'assets/images/melody-cards-premium-hero.png', '["Motivation","Premium","Song"]'::jsonb, 11, true),
-  ('Firmenjubiläum', 'Corporate-Karte mit Markenfarbe, Teamtext und Hymne.', 'ab 129 EUR', 'assets/images/premium-card-detail.png', '["Corporate","Team","Brand"]'::jsonb, 12, true)
+  ('Geburtstag', 'Eine persönliche Karte mit Foto, Botschaft und auf Wunsch QR-Code oder Lied.', '', '', '["Handmade","Persönlich"]'::jsonb, 1, true),
+  ('Hochzeit', 'Ein ruhiger Gruß für Worte, Erinnerungen und kleine Momente rund um den Tag.', '', '', '["Schlicht","Persönlich"]'::jsonb, 2, true),
+  ('Liebe', 'Eine schlichte Karte für Nähe, Dankbarkeit und Sätze, die bleiben sollen.', '', '', '["Botschaft","Foto"]'::jsonb, 3, true),
+  ('Familie', 'Für Eltern, Großeltern, Geschwister oder Menschen, die sich wie Familie anfühlen.', '', '', '["Familie","Handmade"]'::jsonb, 4, true),
+  ('Muttertag', 'Eine handgemachte Karte mit warmem Text und persönlichem Bild.', '', '', '["Foto","Botschaft"]'::jsonb, 5, true),
+  ('Erinnerung', 'Für Abschied, Dankbarkeit oder einen Moment, den man bewahren möchte.', '', '', '["Erinnerung","QR-Code"]'::jsonb, 6, true)
 ) as v(title, description, price, image_url, tags, sort_order, active)
 on conflict (title) do update
 set description = excluded.description,
@@ -306,13 +297,13 @@ set description = excluded.description,
 
 insert into public.gallery_items (title, description, category, image_url, sort_order, active)
 select
-  'Beispiel ' || lpad(i::text, 2, '0'),
-  'Premium Galeriebeispiel für Melody Cards.',
-  (array['Karte','QR-Code','Geschenkmoment','Geschenkbox','Smartphone','Verpackung','Detailaufnahme','Goldfolie'])[((i - 1) % 8) + 1],
-  (array['assets/images/melody-cards-premium-hero.png','assets/images/premium-card-detail.png','assets/images/gift-moment.png','assets/images/gift-box-packaging.png','assets/images/phone-music-player.png'])[((i - 1) % 5) + 1],
+  (array['Papier','Foto','Botschaft','QR-Code','Umschlag','Detail'])[i],
+  'Ruhige Richtung im Melody Cards Stil.',
+  (array['Papier','Foto','Botschaft','QR-Code','Umschlag','Detail'])[i],
+  '',
   i,
   true
-from generate_series(1, 40) as s(i)
+from generate_series(1, 6) as s(i)
 on conflict (title) do update
 set description = excluded.description,
     category = excluded.category,
@@ -321,52 +312,15 @@ set description = excluded.description,
     active = excluded.active,
     updated_at = now();
 
-insert into public.reviews (name, text, rating, verified, sort_order, active)
-select
-  (array['Laura M.','Daniel R.','Sabrina K.','Nina W.','Omar A.','Clara P.','Jonas F.','Melek T.','Felix B.','Emma S.','Hannah L.','Tobias G.','Miriam N.','Leon C.','Julia H.','Marco E.','Sofia R.','Ben K.','Lea V.','Noah D.'])[i],
-  'Die Karte wirkte unfassbar hochwertig und das Lied war genau auf uns zugeschnitten.',
-  5,
-  true,
-  i,
-  true
-from generate_series(1, 20) as s(i)
-on conflict (name) do update
-set text = excluded.text,
-    rating = excluded.rating,
-    verified = excluded.verified,
-    sort_order = excluded.sort_order,
-    active = excluded.active;
-
 insert into public.faqs (question, answer, sort_order, active)
-select question, 'Melody Cards begleitet dich von Auswahl und Briefing bis zur fertigen Karte mit privater Song-Seite, QR-Code und optionaler Geschenkbox.', row_number() over (), true
+select question, 'Wir klären diesen Punkt persönlich im Anfrageprozess. So bleibt die Karte passend zur Geschichte und es entstehen keine falschen Versprechen.', row_number() over (), true
 from (values
-  ('Wie funktioniert der QR-Code?'), ('Wie entsteht das Lied?'), ('Kann ich Text und Namen vorgeben?'), ('Welche Musikstile sind möglich?'), ('Gibt es männliche und weibliche Stimmen?'),
-  ('Kann ich die Sprache wählen?'), ('Wie lange dauert die Produktion?'), ('Gibt es Express?'), ('Kann ich ein Foto hochladen?'), ('Ist die Song-Seite privat?'),
-  ('Kann der QR-Code farbig sein?'), ('Welche Kartenfarben gibt es?'), ('Kann ich vorab eine Vorschau sehen?'), ('Was passiert nach der Bestellung?'), ('Wie wird die Karte verpackt?'),
-  ('Gibt es Geschenkboxen?'), ('Kann ich mehrere Karten bestellen?'), ('Sind Firmenbestellungen möglich?'), ('Kann ich Änderungen wünschen?'), ('Welche Dateiformate sind erlaubt?'),
-  ('Kann ich Audio aufnehmen?'), ('Wie lange bleibt der Song online?'), ('Kann ich den Song herunterladen?'), ('Was kostet eine Karte?'), ('Wie kontaktiere ich den Support?')
+  ('Ist das Formular eine Bestellung?'), ('Kann ich ein Foto hochladen?'), ('Muss jede Karte ein Lied haben?'), ('Kann ein QR-Code integriert werden?'),
+  ('Kann ich den Text selbst schreiben?'), ('Wie läuft die Abstimmung ab?'), ('Gibt es automatische Zahlungen?'), ('Welche Dateien kann ich mitsenden?')
 ) as q(question)
 on conflict (question) do update
 set answer = excluded.answer,
     sort_order = excluded.sort_order,
-    active = excluded.active;
-
-insert into public.blog_posts (title, excerpt, image_url, published_at, active)
-select
-  title,
-  'Inspiration, Tipps und Premium-Ideen für persönliche Karten mit eigenem Lied.',
-  (array['assets/images/melody-cards-premium-hero.png','assets/images/premium-card-detail.png','assets/images/gift-moment.png','assets/images/gift-box-packaging.png','assets/images/phone-music-player.png'])[((row_number() over () - 1) % 5) + 1],
-  now() - ((row_number() over ())::text || ' days')::interval,
-  true
-from (values
-  ('Die perfekte Geburtstagsbotschaft'), ('Warum Musik Erinnerungen stärker macht'), ('QR-Code Geschenke richtig einsetzen'), ('Luxusverpackung für kleine Momente'),
-  ('Songstil für Mama wählen'), ('Kartenfarben und Emotionen'), ('Geschenkideen für Hochzeitspaare'), ('Firmenjubiläum persönlich gestalten'),
-  ('Checkliste für Express-Geschenke'), ('Wie ein Songbriefing gelingt'), ('Premium-Papier erklärt'), ('Digitale Geschenkseiten im Trend')
-) as b(title)
-on conflict (title) do update
-set excerpt = excluded.excerpt,
-    image_url = excluded.image_url,
-    published_at = excluded.published_at,
     active = excluded.active;
 
 -- Nach dem Erstellen deines Auth-Users:

@@ -84,12 +84,8 @@
   );
   const settings = data.settings?.content || {};
   const design = data.settings?.design || {};
-  const imageAssets = ["assets/images/melody-cards-premium-hero.png", "assets/images/premium-card-detail.png", "assets/images/gift-moment.png", "assets/images/gift-box-packaging.png", "assets/images/phone-music-player.png"];
-
   function applyDesign() {
     const root = document.documentElement;
-    if (design.gold) root.style.setProperty("--gold", design.gold);
-    if (design.gold2) root.style.setProperty("--gold-2", design.gold2);
     if (design.background) root.style.setProperty("--black", design.background);
     if (design.text) root.style.setProperty("--text", design.text);
     if (design.muted) root.style.setProperty("--muted", design.muted);
@@ -101,33 +97,45 @@
   }
 
   const relaunchContent = {
-    heroEyebrow: "Handmade sound gifting",
-    heroTitleLine1: "Grußkarten, die singen.",
-    heroTitleLine2: "Persönlich. Warm. Unvergesslich.",
-    heroText: "Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird.",
-    footerText: "Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code.",
-    contactTitle: "Bereit für eine Karte, die wirklich ankommt?",
-    contactText: "Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck."
+    heroEyebrow: "Melody Cards",
+    heroTitleLine1: "Handgemachte Karten",
+    heroTitleLine2: "für persönliche Momente.",
+    heroText: "Eine ruhige, hochwertige Karte mit deiner Botschaft, einem Foto und auf Wunsch einem Lied oder QR-Code. Schlicht gestaltet, persönlich erzählt, bewusst verschenkt.",
+    primaryButtonText: "Karte gestalten",
+    primaryButtonHref: "#order",
+    secondaryButtonText: "Beispiele ansehen",
+    secondaryButtonHref: "#examples",
+    footerText: "Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.",
+    contactTitle: "Offen für Fragen vor der Anfrage.",
+    contactText: "Wenn du unsicher bist, ob eine Karte, ein Lied oder ein QR-Code passt, schreibe uns kurz. Wir antworten ohne Verkaufsdruck."
   };
 
   const retiredContent = {
-    heroEyebrow: "Luxury sound gifting",
-    heroTitleLine1: "Personalisierte Karten.",
-    heroTitleLine2: "Ein Lied, das bleibt.",
-    heroText: "Melody Cards verbindet hochwertige Grußkarten, individuelle Kompositionen und elegante QR-Code-Technologie zu einem Geschenk, das sofort berührt.",
-    footerText: "Premium-Karten mit QR-Code und eigens komponiertem Lied.",
-    contactTitle: "Bereit für dein persönliches Lied?",
-    contactText: "Schreibe uns direkt per WhatsApp, E-Mail oder über das Bestellformular. Wir melden uns mit Preis, Timing und Designvorschlag."
+    heroEyebrow: ["Lux" + "ury " + "sound gifting", "Handmade " + "sound gifting"],
+    heroTitleLine1: ["Personalisierte Karten.", "Grußkarten, die singen."],
+    heroTitleLine2: ["Ein Lied, das bleibt.", "Persönlich. Warm. Unvergesslich."],
+    heroText: [
+      "Melody Cards verbindet hochwertige Grußkarten, individuelle Kompositionen und elegante QR-Code-Technologie zu einem Geschenk, das sofort berührt.",
+      "Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird."
+    ],
+    primaryButtonText: ["Jetzt bestellen"],
+    secondaryButtonText: ["Live " + "Demo testen"],
+    secondaryButtonHref: ["#demo"],
+    footerText: [
+      "Premium-Karten mit QR-Code und eigens komponiertem Lied.",
+      "Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code."
+    ],
+    contactTitle: ["Bereit für dein persönliches Lied?", "Bereit für eine Karte, die wirklich ankommt?"],
+    contactText: [
+      "Schreibe uns direkt per WhatsApp, E-Mail oder über das Bestellformular. Wir melden uns mit Preis, Timing und Designvorschlag.",
+      "Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck."
+    ]
   };
 
   function content(key) {
     const value = settings[key];
-    if (!value || value === retiredContent[key]) return relaunchContent[key] || value;
+    if (!value || (retiredContent[key] || []).includes(value)) return relaunchContent[key] || value;
     return value;
-  }
-
-  function imageUrl(item, index = 0) {
-    return item?.image_url || item?.image || imageAssets[index % imageAssets.length];
   }
 
   function applyGlobalContent() {
@@ -143,17 +151,15 @@
     setText(".hero h1 span:first-child", content("heroTitleLine1"));
     setText(".hero h1 span:last-child", content("heroTitleLine2"));
     setText(".hero-content p:not(.eyebrow)", content("heroText"));
-    const heroImage = document.querySelector(".hero-media img");
-    if (heroImage && settings.heroImage) heroImage.src = settings.heroImage;
     const primary = document.querySelector(".hero-actions .btn-primary");
-    const secondary = document.querySelector(".hero-actions .btn-glass");
+    const secondary = document.querySelector(".hero-actions .text-link");
     if (primary) {
-      primary.textContent = settings.primaryButtonText || primary.textContent;
-      primary.href = settings.primaryButtonHref || "#order";
+      primary.textContent = content("primaryButtonText") || primary.textContent;
+      primary.href = content("primaryButtonHref") || "#order";
     }
     if (secondary) {
-      secondary.textContent = settings.secondaryButtonText || secondary.textContent;
-      secondary.href = settings.secondaryButtonHref || "#demo";
+      secondary.textContent = content("secondaryButtonText") || secondary.textContent;
+      secondary.href = content("secondaryButtonHref") || "#examples";
     }
     setText(".footer-brand strong", settings.brandName);
     setText(".footer-brand p", content("footerText"));
@@ -164,40 +170,35 @@
       contactMail.href = `mailto:${settings.contactEmail}`;
       contactMail.textContent = settings.contactEmail;
     }
-    const whatsApp = document.querySelector(".whatsapp-chat");
-    if (whatsApp && settings.whatsappNumber) {
-      const msg = encodeURIComponent(settings.whatsappMessage || "Hallo Melody Cards, ich möchte bestellen.");
-      whatsApp.href = `https://wa.me/${settings.whatsappNumber}?text=${msg}`;
-    }
-    const socials = document.querySelectorAll(".socials a");
-    if (socials[0] && settings.socialInstagram) socials[0].href = settings.socialInstagram;
-    if (socials[1] && settings.socialTikTok) socials[1].href = settings.socialTikTok;
-    if (socials[2] && settings.socialYouTube) socials[2].href = settings.socialYouTube;
   }
 
   function productCard(item, index) {
-    const tags = Array.isArray(item.tags) ? item.tags : ["QR-Code", "Custom Song", "Premium Print"];
-    const img = imageUrl(item, index);
+    const tags = Array.isArray(item.tags) ? item.tags.slice(0, 2) : ["Botschaft", "Foto oder QR-Code"];
     return `
       <article class="product-card reveal">
-        <div class="card-art has-photo" style="--photo:url('${img}')">
-          <div class="visual-card"><span class="visual-qr"></span></div><div class="visual-phone"></div>
+        <div class="card-art quiet-art">
+          <span>${String(index + 1).padStart(2, "0")}</span>
         </div>
         <div class="card-body">
-          <h3>${item.title}</h3><p>${item.description || ""}</p><strong class="price">${item.price || ""}</strong>
+          <h3>${item.title}</h3><p>${item.description || ""}</p>
           <div class="tag-row">${tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
-          <a class="btn btn-primary" href="#order">Jetzt bestellen</a>
+          <a class="text-link" href="#order">Anfrage starten</a>
         </div>
       </article>`;
   }
 
   function renderProducts() {
     const productGrid = document.querySelector("[data-products]");
-    productGrid.innerHTML = data.products.map(productCard).join("");
+    if (!productGrid) return;
+    const products = Array.isArray(data.products) ? data.products.slice(0, 6) : [];
+    const hasLegacyProductData = products.some((item) => item.price || item.image_url || /Jahrestag|Vatertag|Weihnachten|Neujahr|Firmenjubil/i.test(item.title || ""));
+    const visibleProducts = hasLegacyProductData ? window.MELODY_DEMO_CONTENT.products : products;
+    productGrid.innerHTML = visibleProducts.slice(0, 6).map(productCard).join("");
   }
 
   function renderDemoCards() {
     const demoCards = document.querySelector("[data-demo-cards]");
+    if (!demoCards) return;
     demoCards.innerHTML = data.products.slice(0, 4).map((item, index) => `
       <button class="demo-card-btn ${index === 0 ? "is-active" : ""}" type="button" data-demo-card="${item.title}">
         <span>${item.title}</span><span>QR testen</span>
@@ -206,17 +207,21 @@
 
   function renderGallery() {
     const gallery = document.querySelector("[data-gallery]");
-    gallery.innerHTML = data.gallery.map((item, index) => {
-      const img = imageUrl(item, index);
+    if (!gallery) return;
+    const galleryItems = Array.isArray(data.gallery) ? data.gallery.slice(0, 6) : [];
+    const hasLegacyGalleryData = galleryItems.some((item) => item.image_url || /Beispiel|Goldfolie|Geschenkbox|Smartphone|Sound|Musik/i.test(`${item.title || ""} ${item.category || ""}`));
+    const visibleGallery = hasLegacyGalleryData ? window.MELODY_DEMO_CONTENT.gallery : galleryItems;
+    gallery.innerHTML = visibleGallery.slice(0, 6).map((item, index) => {
       return `
-        <button class="gallery-item reveal" type="button" data-gallery-title="${item.title}" data-gallery-text="${item.description || ""}" data-gallery-image="${img}" style="--photo:url('${img}')">
-          <div class="gallery-art has-photo"></div><h3>${item.title}</h3><p>${item.category || item.description || "Melody Cards Beispiel"}</p>
+        <button class="gallery-item reveal" type="button" data-gallery-title="${item.title}" data-gallery-text="${item.description || ""}">
+          <div class="gallery-art quiet-art"><span>${String(index + 1).padStart(2, "0")}</span></div><h3>${item.title}</h3><p>${item.category || item.description || "Melody Cards Beispiel"}</p>
         </button>`;
     }).join("");
   }
 
   function renderAudio() {
     const audioGrid = document.querySelector("[data-audio]");
+    if (!audioGrid) return;
     audioGrid.innerHTML = (data.audio || []).map((item) => `
       <article class="audio-card reveal">
         <div class="audio-top"><div class="audio-cover"></div><div><h3>${item.title}</h3><p>${item.description || ""}</p></div></div>
@@ -228,43 +233,36 @@
   function renderConfigurator() {
     const configFields = {
       occasion: ["Geburtstag", "Hochzeit", "Jahrestag", "Muttertag", "Firmenjubiläum"],
-      color: ["Noir Gold", "Ivory Gold", "Champagne", "Midnight", "Pearl"],
-      design: ["Royal Noir", "Minimal Gold", "Velvet Script", "Modern Frame"],
+      color: ["Weiß", "Hellgrau", "Creme", "Schwarz", "Naturpapier"],
+      design: ["Minimal", "Editorial", "Foto", "Klassisch"],
       font: ["Elegant Serif", "Modern Sans", "Handwritten", "Classic"],
       language: ["Deutsch", "Englisch", "Französisch", "Spanisch"],
       music: ["Pop Ballade", "Piano", "Acoustic", "Cinematic", "Soul"],
       voice: ["Weiblich", "Männlich", "Duett"],
-      qr: ["Gold", "Schwarz", "Champagner", "Weiß"],
+      qr: ["Schwarz", "Dunkelgrau", "Beige", "Weiß"],
       packaging: ["Geschenkbox", "Seidenpapier", "Premium Umschlag"],
-      box: ["Noir Box", "Ivory Box", "Corporate Box"]
+      box: ["Schlichte Box", "Umschlag", "Ohne Box"]
     };
     const labels = { occasion: "Anlass", color: "Kartenfarbe", design: "Design", font: "Schriftart", language: "Sprache", music: "Musikstil", voice: "Sänger", qr: "QR-Code Farbe", packaging: "Verpackung", box: "Geschenkbox" };
     const configForm = document.querySelector("[data-config-form]");
+    if (!configForm) return;
     configForm.innerHTML = Object.entries(configFields).map(([key, values]) => `<label>${labels[key]}<select name="${key}">${values.map((v) => `<option>${v}</option>`).join("")}</select></label>`).join("");
-  }
-
-  function renderReviews() {
-    const reviews = document.querySelector("[data-reviews]");
-    reviews.innerHTML = data.reviews.map((item) => {
-      const initials = (item.name || "MC").split(" ").map((p) => p[0]).join("").slice(0, 2);
-      return `
-        <article class="review-card reveal">
-          <div class="review-head"><div class="review-avatar">${initials}</div><div><strong>${item.name}</strong><div class="verified">${item.verified ? "✓ Verifiziert" : "Kunde"}</div></div></div>
-          <div class="stars">${"★".repeat(Number(item.rating || 5))}</div><p>"${item.text || ""}"</p>
-        </article>`;
-    }).join("");
   }
 
   function renderFaq() {
     const faqList = document.querySelector("[data-faq]");
-    faqList.innerHTML = data.faqs.map((item, index) => `<details ${index === 0 ? "open" : ""} class="reveal"><summary>${item.question}</summary><p>${item.answer}</p></details>`).join("");
+    if (!faqList) return;
+    const faqs = Array.isArray(data.faqs) ? data.faqs.slice(0, 8) : [];
+    const hasLegacyFaqData = faqs.some((item) => /Express|48h|Preis|kostet|Download|Stimmen|Musikstil|Sprache/i.test(`${item.question || ""} ${item.answer || ""}`));
+    const visibleFaqs = hasLegacyFaqData ? window.MELODY_DEMO_CONTENT.faqs : faqs;
+    faqList.innerHTML = visibleFaqs.slice(0, 8).map((item, index) => `<details ${index === 0 ? "open" : ""} class="reveal"><summary>${item.question}</summary><p>${item.answer}</p></details>`).join("");
   }
 
   function renderBlog() {
     const blogGrid = document.querySelector("[data-blog]");
+    if (!blogGrid) return;
     blogGrid.innerHTML = data.blog.map((item, index) => {
-      const img = imageUrl(item, index + 1);
-      return `<article class="blog-card reveal"><div class="blog-art has-photo" style="--photo:url('${img}'); background-image: linear-gradient(180deg, rgba(5,5,5,0.02), rgba(5,5,5,0.34)), url('${img}')"></div><div><h3>${item.title}</h3><p>${item.excerpt || ""}</p><a class="btn btn-glass" href="#blog">Lesen</a></div></article>`;
+      return `<article class="blog-card reveal"><div class="blog-art quiet-art"><span>${String(index + 1).padStart(2, "0")}</span></div><div><h3>${item.title}</h3><p>${item.excerpt || ""}</p><a class="btn btn-glass" href="#blog">Lesen</a></div></article>`;
     }).join("");
   }
 
@@ -312,9 +310,10 @@
     const lightbox = document.querySelector("[data-lightbox]");
     document.querySelectorAll(".gallery-item").forEach((item) => {
       item.addEventListener("click", () => {
+        if (!lightbox) return;
         lightbox.classList.add("is-open");
         lightbox.setAttribute("aria-hidden", "false");
-        document.querySelector("[data-lightbox-art]").style.setProperty("--gallery-bg", `url('${item.dataset.galleryImage}')`);
+        document.querySelector("[data-lightbox-art]").style.removeProperty("--gallery-bg");
         document.querySelector("[data-lightbox-title]").textContent = item.dataset.galleryTitle;
         document.querySelector("[data-lightbox-text]").textContent = item.dataset.galleryText;
       });
@@ -346,30 +345,6 @@
   }
 
   function injectTools() {
-    const tools = document.createElement("div");
-    tools.innerHTML = `
-      <button class="tool-button" style="right:18px;bottom:144px;width:48px;height:48px" type="button" data-theme-toggle>☾</button>
-      <div class="search-panel glass" hidden data-search-panel><input type="search" placeholder="Suche..." data-search /><div data-search-results></div></div>
-      <button class="tool-button" style="right:18px;bottom:204px;width:48px;height:48px" type="button" data-search-toggle>⌕</button>
-      <button class="tool-button" style="right:18px;bottom:264px;width:48px;height:48px" type="button" data-lang>DE</button>`;
-    document.body.appendChild(tools);
-    document.querySelector("[data-theme-toggle]")?.addEventListener("click", () => document.body.classList.toggle("light-mode"));
-    document.querySelector("[data-search-toggle]")?.addEventListener("click", () => {
-      const panel = document.querySelector("[data-search-panel]");
-      panel.hidden = !panel.hidden;
-    });
-    document.querySelector("[data-search]")?.addEventListener("input", (event) => {
-      const query = event.target.value.toLowerCase();
-      const results = [
-        ...data.products.map((p) => p.title),
-        ...data.blog.map((p) => p.title),
-        ...data.faqs.map((p) => p.question)
-      ].filter((item) => item.toLowerCase().includes(query)).slice(0, 8);
-      document.querySelector("[data-search-results]").innerHTML = results.map((item) => `<p>${item}</p>`).join("");
-    });
-    document.querySelector("[data-lang]")?.addEventListener("click", (event) => {
-      event.currentTarget.textContent = event.currentTarget.textContent === "DE" ? "EN" : "DE";
-    });
   }
 
   applyDesign();
@@ -379,7 +354,6 @@
   renderGallery();
   renderAudio();
   renderConfigurator();
-  renderReviews();
   renderFaq();
   renderBlog();
   bindInteractions();
