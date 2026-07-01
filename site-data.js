@@ -8,21 +8,21 @@
   ];
 
   const productNames = [
-    ["Geburtstag", "Signature Karte mit Geburtstagslied, QR-Seite und Goldfolie.", "ab 49 EUR"],
-    ["Hochzeit", "Elegante Karte für Eheversprechen, Gäste oder Geschenkübergabe.", "ab 79 EUR"],
-    ["Jahrestag", "Romantischer Song mit gemeinsamen Erinnerungen und Premium-Design.", "ab 69 EUR"],
-    ["Muttertag", "Warme Worte, sanfte Melodie und hochwertiges Kartenpapier.", "ab 59 EUR"],
-    ["Vatertag", "Persönlicher Song mit Humor, Dankbarkeit und klarer Stimme.", "ab 59 EUR"],
-    ["Weihnachten", "Festliche Karte mit winterlichem Klang und Geschenkbox.", "ab 64 EUR"],
-    ["Neujahr", "Moderner Song für Wünsche, Rückblick und Neustart.", "ab 54 EUR"],
-    ["Valentinstag", "Liebesbotschaft als Song mit privatem QR-Code.", "ab 69 EUR"],
-    ["Baby", "Sanfte Willkommenskarte mit Schlaflied-Charakter.", "ab 64 EUR"],
-    ["Taufe", "Feierliche Karte mit ruhiger, emotionaler Komposition.", "ab 64 EUR"],
-    ["Abschluss", "Motivierender Song für Meilensteine und Zukunftspläne.", "ab 59 EUR"],
-    ["Firmenjubiläum", "Corporate-Karte mit Markenfarbe, Teamtext und Hymne.", "ab 129 EUR"]
+    ["Geburtstag", "Eine warme Geburtstagskarte mit Foto, Widmung und einem Lied, das Namen und Erinnerungen aufgreift.", "ab 49 EUR"],
+    ["Hochzeit", "Elegante Karte für Brautpaar, Trauzeugen oder Gäste mit privater Songseite und QR-Code.", "ab 79 EUR"],
+    ["Jahrestag", "Romantische Karte für gemeinsame Jahre, besondere Orte und kleine Sätze, die nur ihr versteht.", "ab 69 EUR"],
+    ["Muttertag", "Liebevoll gestaltete Karte mit sanfter Musik, persönlichem Foto und Worten, die Danke sagen.", "ab 59 EUR"],
+    ["Vatertag", "Persönliches Geschenk mit Humor, Dankbarkeit und einem Song, der Familie hörbar macht.", "ab 59 EUR"],
+    ["Weihnachten", "Festliche Karte mit Geschenkpapier-Atmosphäre, Familienfoto und warmem Winterklang.", "ab 64 EUR"],
+    ["Neujahr", "Moderner Gruß für Rückblick, Neubeginn und Wünsche, die per Lied länger bleiben.", "ab 54 EUR"],
+    ["Valentinstag", "Eine ruhige Liebesbotschaft mit Foto, Text und Song, die direkt auf dem Smartphone startet.", "ab 69 EUR"],
+    ["Baby", "Sanfte Willkommenskarte für Geburt, Babyshower oder erste Familienmomente.", "ab 64 EUR"],
+    ["Taufe", "Feierliche Karte mit klarer Gestaltung, ruhiger Melodie und persönlicher Widmung.", "ab 64 EUR"],
+    ["Abschluss", "Motivierender Song für Meilensteine, Stolz und den nächsten Schritt.", "ab 59 EUR"],
+    ["Firmenjubiläum", "Seriöse Teamkarte mit Markenfarbe, gemeinsamem Text und optionalem Corporate-Song.", "ab 129 EUR"]
   ];
 
-  const galleryTypes = ["Karte", "QR-Code", "Geschenkmoment", "Geschenkbox", "Smartphone", "Verpackung", "Detailaufnahme", "Goldfolie"];
+  const galleryTypes = ["Handgemachte Karte", "QR-Code Detail", "Hände beim Verschenken", "Geschenkpapier", "Smartphone mit Musik", "Blumen und Karte", "Familienmoment", "Premium-Verpackung"];
   const reviewNames = ["Laura M.", "Daniel R.", "Sabrina K.", "Nina W.", "Omar A.", "Clara P.", "Jonas F.", "Melek T.", "Felix B.", "Emma S.", "Hannah L.", "Tobias G.", "Miriam N.", "Leon C.", "Julia H.", "Marco E.", "Sofia R.", "Ben K.", "Lea V.", "Noah D."];
   const faqQuestions = [
     "Wie funktioniert der QR-Code?", "Wie entsteht das Lied?", "Kann ich Text und Namen vorgeben?", "Welche Musikstile sind möglich?", "Gibt es männliche und weibliche Stimmen?",
@@ -39,18 +39,18 @@
       content: {
         brandName: "Melody Cards",
         logoText: "MC",
-        heroEyebrow: "Luxury sound gifting",
-        heroTitleLine1: "Personalisierte Karten.",
-        heroTitleLine2: "Ein Lied, das bleibt.",
-        heroText: "Melody Cards verbindet hochwertige Grußkarten, individuelle Kompositionen und elegante QR-Code-Technologie zu einem Geschenk, das sofort berührt.",
+        heroEyebrow: "Handmade sound gifting",
+        heroTitleLine1: "Grußkarten, die singen.",
+        heroTitleLine2: "Persönlich. Warm. Unvergesslich.",
+        heroText: "Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird.",
         primaryButtonText: "Jetzt bestellen",
         primaryButtonHref: "#order",
         secondaryButtonText: "Live Demo testen",
         secondaryButtonHref: "#demo",
         heroImage: imageAssets[0],
-        footerText: "Premium-Karten mit QR-Code und eigens komponiertem Lied.",
-        contactTitle: "Bereit für dein persönliches Lied?",
-        contactText: "Schreibe uns direkt per WhatsApp, E-Mail oder über das Bestellformular. Wir melden uns mit Preis, Timing und Designvorschlag.",
+        footerText: "Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code.",
+        contactTitle: "Bereit für eine Karte, die wirklich ankommt?",
+        contactText: "Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck.",
         contactEmail: "hello@melody-cards.example",
         whatsappNumber: "491701234567",
         whatsappMessage: "Hallo Melody Cards, ich möchte eine Premium-Karte bestellen.",
@@ -81,7 +81,7 @@
       return {
         id: `demo-gallery-${index + 1}`,
         title: `${type} ${String(index + 1).padStart(2, "0")}`,
-        description: `Premium-Beispiel: ${type.toLowerCase()} mit heller Gold-Ästhetik.`,
+        description: `Warmer Eindruck: ${type.toLowerCase()} im Melody Cards Stil.`,
         category: type,
         image_url: imageAssets[index % imageAssets.length],
         sort_order: index + 1,
@@ -92,7 +92,7 @@
       id: `demo-review-${index + 1}`,
       name,
       rating: 5,
-      text: "Die Karte wirkte unfassbar hochwertig und das Lied war genau auf uns zugeschnitten.",
+      text: "Die Karte fühlte sich sehr hochwertig an und das Lied war so persönlich, dass beim Auspacken alle still wurden.",
       verified: true,
       image_url: "",
       sort_order: index + 1,
@@ -101,14 +101,14 @@
     faqs: faqQuestions.map((question, index) => ({
       id: `demo-faq-${index + 1}`,
       question,
-      answer: "Ja. Melody Cards begleitet dich von Auswahl und Briefing bis zur fertigen Karte mit privater Song-Seite, QR-Code und optionaler Geschenkbox.",
+      answer: "Ja. Melody Cards begleitet dich von Auswahl und Briefing bis zur fertigen Karte mit privater Song-Seite, QR-Code und optionaler Verpackung.",
       sort_order: index + 1,
       active: true
     })),
     blog: blogTitles.map((title, index) => ({
       id: `demo-blog-${index + 1}`,
       title,
-      excerpt: "Inspiration, Tipps und Premium-Ideen für persönliche Karten mit eigenem Lied.",
+      excerpt: "Ruhige Inspiration und praktische Tipps für persönliche Geschenke mit Foto, Text, QR-Code und eigenem Lied.",
       image_url: imageAssets[(index + 1) % imageAssets.length],
       published_at: new Date(Date.now() - index * 86400000).toISOString(),
       active: true

@@ -70,7 +70,18 @@
 })();
 
 (async function () {
-  const data = await window.MelodySupabase.fetchContent();
+  function withContentTimeout(promise, ms, fallback) {
+    return Promise.race([
+      promise,
+      new Promise((resolve) => window.setTimeout(() => resolve(fallback), ms))
+    ]);
+  }
+
+  const data = await withContentTimeout(
+    window.MelodySupabase.fetchContent(),
+    5500,
+    { ...window.MELODY_DEMO_CONTENT, source: "demo-timeout" }
+  );
   const settings = data.settings?.content || {};
   const design = data.settings?.design || {};
   const imageAssets = ["assets/images/melody-cards-premium-hero.png", "assets/images/premium-card-detail.png", "assets/images/gift-moment.png", "assets/images/gift-box-packaging.png", "assets/images/phone-music-player.png"];
@@ -89,6 +100,32 @@
     if (el && value) el.textContent = value;
   }
 
+  const relaunchContent = {
+    heroEyebrow: "Handmade sound gifting",
+    heroTitleLine1: "Grußkarten, die singen.",
+    heroTitleLine2: "Persönlich. Warm. Unvergesslich.",
+    heroText: "Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird.",
+    footerText: "Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code.",
+    contactTitle: "Bereit für eine Karte, die wirklich ankommt?",
+    contactText: "Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck."
+  };
+
+  const retiredContent = {
+    heroEyebrow: "Luxury sound gifting",
+    heroTitleLine1: "Personalisierte Karten.",
+    heroTitleLine2: "Ein Lied, das bleibt.",
+    heroText: "Melody Cards verbindet hochwertige Grußkarten, individuelle Kompositionen und elegante QR-Code-Technologie zu einem Geschenk, das sofort berührt.",
+    footerText: "Premium-Karten mit QR-Code und eigens komponiertem Lied.",
+    contactTitle: "Bereit für dein persönliches Lied?",
+    contactText: "Schreibe uns direkt per WhatsApp, E-Mail oder über das Bestellformular. Wir melden uns mit Preis, Timing und Designvorschlag."
+  };
+
+  function content(key) {
+    const value = settings[key];
+    if (!value || value === retiredContent[key]) return relaunchContent[key] || value;
+    return value;
+  }
+
   function imageUrl(item, index = 0) {
     return item?.image_url || item?.image || imageAssets[index % imageAssets.length];
   }
@@ -102,10 +139,10 @@
       });
     }
     setText(".loader span", settings.brandName);
-    setText(".hero .eyebrow", settings.heroEyebrow);
-    setText(".hero h1 span:first-child", settings.heroTitleLine1);
-    setText(".hero h1 span:last-child", settings.heroTitleLine2);
-    setText(".hero-content p:not(.eyebrow)", settings.heroText);
+    setText(".hero .eyebrow", content("heroEyebrow"));
+    setText(".hero h1 span:first-child", content("heroTitleLine1"));
+    setText(".hero h1 span:last-child", content("heroTitleLine2"));
+    setText(".hero-content p:not(.eyebrow)", content("heroText"));
     const heroImage = document.querySelector(".hero-media img");
     if (heroImage && settings.heroImage) heroImage.src = settings.heroImage;
     const primary = document.querySelector(".hero-actions .btn-primary");
@@ -119,9 +156,9 @@
       secondary.href = settings.secondaryButtonHref || "#demo";
     }
     setText(".footer-brand strong", settings.brandName);
-    setText(".footer-brand p", settings.footerText);
-    setText(".contact-card h2", settings.contactTitle);
-    setText(".contact-card p:not(.eyebrow)", settings.contactText);
+    setText(".footer-brand p", content("footerText"));
+    setText(".contact-card h2", content("contactTitle"));
+    setText(".contact-card p:not(.eyebrow)", content("contactText"));
     const contactMail = document.querySelector(".contact-card a");
     if (contactMail && settings.contactEmail) {
       contactMail.href = `mailto:${settings.contactEmail}`;
