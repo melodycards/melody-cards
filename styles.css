@@ -1824,6 +1824,54 @@ select:focus {
   box-shadow: 0 22px 70px rgba(42, 36, 30, 0.1);
 }
 
+.legal-content h2 {
+  font-size: clamp(1.45rem, 2.4vw, 2.2rem);
+  line-height: 1.12;
+}
+
+.legal-content p + p {
+  margin-top: -4px;
+}
+
+.legal-teaser-section {
+  padding-top: clamp(70px, 8vw, 118px);
+}
+
+.legal-teaser-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.legal-teaser-card {
+  min-height: 230px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 244, 203, 0.54)),
+    rgba(255, 255, 255, 0.78);
+  box-shadow: 0 22px 70px rgba(42, 36, 30, 0.1);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.legal-teaser-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(244, 197, 66, 0.42);
+  box-shadow: 0 30px 88px rgba(42, 36, 30, 0.15);
+}
+
+.legal-teaser-card span {
+  display: inline-flex;
+  margin-bottom: 28px;
+  color: #9c6c00;
+  font-weight: 800;
+}
+
+.legal-teaser-card p {
+  font-size: 0.95rem;
+}
+
 @media (max-width: 1120px) {
   .main-nav {
     top: calc(100% + 10px);
@@ -1855,7 +1903,8 @@ select:focus {
   .split-section,
   .example-stage,
   .demo-grid,
-  .configurator {
+  .configurator,
+  .legal-teaser-grid {
     grid-template-columns: 1fr;
   }
 
