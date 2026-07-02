@@ -1,5 +1,32 @@
 (function () {
   const config = window.MELODY_SUPABASE_CONFIG || {};
+  const SUPABASE_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  let supabaseLoadPromise = null;
+
+  function ensureSupabaseLoaded() {
+    if (window.supabase) return Promise.resolve(true);
+    if (!config.url || !config.anonKey || !document?.head) return Promise.resolve(false);
+    if (supabaseLoadPromise) return supabaseLoadPromise;
+    supabaseLoadPromise = new Promise((resolve) => {
+      const existing = Array.from(document.scripts).find((script) => script.src === SUPABASE_CDN);
+      const script = existing || document.createElement("script");
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve(Boolean(window.supabase));
+      };
+      script.addEventListener("load", finish, { once: true });
+      script.addEventListener("error", finish, { once: true });
+      window.setTimeout(finish, 8000);
+      if (!existing) {
+        script.src = SUPABASE_CDN;
+        script.async = true;
+        document.head.appendChild(script);
+      }
+    });
+    return supabaseLoadPromise;
+  }
 
   function isConfigured() {
     return Boolean(config.url && config.anonKey && window.supabase);
@@ -13,6 +40,11 @@
     return window.melodySupabaseClient;
   }
 
+  async function getReadyClient() {
+    await ensureSupabaseLoaded();
+    return getClient();
+  }
+
   async function selectTable(client, table, options = {}) {
     let query = client.from(table).select("*");
     if (options.activeOnly) query = query.eq("active", true);
@@ -24,7 +56,7 @@
 
   async function fetchContent() {
     const fallback = window.MELODY_DEMO_CONTENT;
-    const client = getClient();
+    const client = await getReadyClient();
     if (!client) return { ...fallback, source: "demo" };
 
     try {
@@ -54,7 +86,7 @@
   }
 
   async function uploadFile(file, folder = "uploads") {
-    const client = getClient();
+    const client = await getReadyClient();
     if (!client || !file) return null;
     const bucket = config.storageBucket || "melody-assets";
     const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
@@ -79,7 +111,7 @@
 
   async function uploadOrderFile(file, kind) {
     if (!file) return null;
-    if (!getClient()) {
+    if (!(await getReadyClient())) {
       throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
     }
     try {
@@ -90,7 +122,7 @@
   }
 
   async function createPremiumOrder(order) {
-    const client = getClient();
+    const client = await getReadyClient();
     if (!client) {
       throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
     }
@@ -101,6 +133,7 @@
 
   window.MelodySupabase = {
     isConfigured,
+    ensureSupabaseLoaded,
     getClient,
     fetchContent,
     uploadFile,

@@ -409,6 +409,7 @@
   }
 
   async function requireSession() {
+    await api.ensureSupabaseLoaded?.();
     refreshClient();
     if (demoMode) return;
     const { data } = await client.auth.getSession();
@@ -437,6 +438,7 @@
     const submitButton = event.currentTarget.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     loginStatus("Login wird geprüft...");
+    await api.ensureSupabaseLoaded?.();
     refreshClient();
     if (demoMode) {
       const cfg = window.MELODY_SUPABASE_CONFIG || {};
@@ -473,6 +475,7 @@
   });
 
   $("[data-reset-password]")?.addEventListener("click", async () => {
+    await api.ensureSupabaseLoaded?.();
     refreshClient();
     if (demoMode) {
       loginStatus("Passwort-Reset nicht möglich: Supabase ist nicht verbunden oder die Supabase JS-Bibliothek wurde nicht geladen.");

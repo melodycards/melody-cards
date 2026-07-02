@@ -231,10 +231,14 @@
       updateStep();
       if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
     } catch (error) {
-      console.warn("Premium order saved as local demo:", error.message);
-      const order = buildOrderPayload();
-      saveLocalDemo(order);
-      if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
+      console.error("Premium order submit failed:", error);
+      if (window.MelodySupabase?.isConfigured()) {
+        if (status) status.textContent = error.message || "Die Anfrage konnte nicht gespeichert werden. Bitte versuche es erneut oder kontaktiere uns direkt.";
+      } else {
+        const order = buildOrderPayload();
+        saveLocalDemo(order);
+        if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
+      }
     } finally {
       if (submitButton) submitButton.disabled = !stepIsValid(totalSteps);
       form.removeAttribute("aria-busy");
