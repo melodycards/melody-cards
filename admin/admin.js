@@ -11,6 +11,7 @@
   let state = clone(window.MELODY_DEMO_CONTENT);
   let settings = clone(window.MELODY_DEMO_CONTENT.settings);
   let editing = {};
+  let loginInProgress = false;
   let contentReady = loadContent();
 
   function refreshClient() {
@@ -53,6 +54,30 @@
       };
     }
     return { ok: true, message: "Admin-Profil bestätigt." };
+  }
+
+  async function openDashboardForSession(session) {
+    if (!session?.user?.id) {
+      loginStatus("Login fehlgeschlagen: Supabase hat keine gültige Session zurückgegeben.");
+      return false;
+    }
+    const email = String(session.user.email || "").toLowerCase();
+    if (email !== ADMIN_EMAIL) {
+      loginStatus(`Login verweigert: Bitte melde dich mit ${ADMIN_EMAIL} an.`);
+      await client?.auth?.signOut?.();
+      return false;
+    }
+    const profile = await checkAdminProfile(session.user.id);
+    if (!profile.ok) {
+      loginStatus(profile.message);
+      console.warn("Supabase admin profile check failed:", profile.message);
+      await client?.auth?.signOut?.();
+      return false;
+    }
+    loginStatus("Login erfolgreich. Dashboard wird geöffnet...");
+    showDashboard();
+    refreshDashboardAfterOpen();
+    return true;
   }
 
   function withTimeout(promise, ms, fallback) {
@@ -303,20 +328,26 @@
     if (demoMode) return;
     const { data } = await client.auth.getSession();
     if (data.session) {
-      openDashboard();
+      await openDashboardForSession(data.session);
     }
   }
 
   if (client?.auth) {
     client.auth.onAuthStateChange((event, session) => {
-      if (!session || !["SIGNED_IN", "INITIAL_SESSION", "TOKEN_REFRESHED"].includes(event)) return;
+      if (!session || loginInProgress || !["SIGNED_IN", "INITIAL_SESSION", "TOKEN_REFRESHED"].includes(event)) return;
       window.setTimeout(() => {
-        openDashboard();
+        openDashboardForSession(session);
       }, 0);
     });
   }
 
-  $("[data-login-form]").addEventListener("submit", async (event) => {
+  const loginForm = $("#admin-login-form") || $("[data-login-form]");
+  if (!loginForm) {
+    loginStatus("Admin-Login konnte nicht initialisiert werden: Formular nicht gefunden.");
+    console.warn("Admin login form not found.");
+  }
+
+  loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const submitButton = event.currentTarget.querySelector('button[type="submit"]');
     submitButton.disabled = true;
@@ -330,6 +361,7 @@
     }
     const form = new FormData(event.currentTarget);
     try {
+      loginInProgress = true;
       const email = String(form.get("email") || "").trim().toLowerCase();
       const password = String(form.get("password") || "");
       if (email !== ADMIN_EMAIL) {
@@ -345,19 +377,12 @@
         console.warn("Supabase admin login failed:", error);
         return;
       }
-      const profile = await checkAdminProfile(data?.user?.id);
-      if (!profile.ok) {
-        loginStatus(profile.message);
-        console.warn("Supabase admin profile check failed:", profile.message);
-        return;
-      }
-      loginStatus("Login erfolgreich. Dashboard wird geöffnet...");
-      showDashboard();
-      refreshDashboardAfterOpen();
+      await openDashboardForSession(data?.session || { user: data?.user });
     } catch (error) {
       loginStatus(readableAuthError(error));
       console.warn("Supabase admin login exception:", error);
     } finally {
+      loginInProgress = false;
       submitButton.disabled = false;
     }
   });
@@ -375,13 +400,13 @@
       });
       if (error) {
         loginStatus(`Passwort-Reset fehlgeschlagen: ${error.message}`);
-        console.error("Supabase password reset failed:", error);
+        console.warn("Supabase password reset failed:", error);
         return;
       }
       loginStatus(`Passwort-Reset wurde an ${ADMIN_EMAIL} gesendet. Prüfe dein Postfach.`);
     } catch (error) {
       loginStatus(`Passwort-Reset fehlgeschlagen: ${error.message}`);
-      console.error("Supabase password reset exception:", error);
+      console.warn("Supabase password reset exception:", error);
     }
   });
 
@@ -633,6 +658,14 @@
     setStatus("Bestellungen neu geladen.");
   });
 
-  window.addEventListener("error", (event) => setStatus(event.message));
+  window.addEventListener("error", (event) => {
+    setStatus(event.message);
+    loginStatus(event.message);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    const message = event.reason?.message || String(event.reason || "Unbekannter JavaScript-Fehler.");
+    setStatus(message);
+    loginStatus(message);
+  });
   await requireSession();
 })();
