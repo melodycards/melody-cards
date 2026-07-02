@@ -75,3 +75,10 @@ drop policy if exists "Public can upload premium order files" on storage.objects
 create policy "Public can upload premium order files"
 on storage.objects for insert
 with check (bucket_id = 'melody-assets' and (storage.foldername(name))[1] = 'orders');
+
+-- Für den Admin-Login mit koglu@hotmail.de, wenn der Auth-User bereits existiert:
+-- insert into public.admin_profiles (user_id, role)
+-- select id, 'admin'
+-- from auth.users
+-- where email = 'koglu@hotmail.de'
+-- on conflict (user_id) do update set role = 'admin';

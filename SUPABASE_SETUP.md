@@ -41,13 +41,23 @@ Wenn deine bestehenden Tabellen schon existieren, kannst du alternativ nur `outp
 
 1. Gehe zu `Authentication` -> `Users`.
 2. Klicke `Add user`.
-3. Lege E-Mail und Passwort fest.
+3. Lege die E-Mail `koglu@hotmail.de` und dein Passwort fest.
 4. Kopiere danach die `User UID`.
 5. Öffne erneut den SQL Editor und führe aus:
 
 ```sql
 insert into public.admin_profiles (user_id, role)
 values ('DEINE_USER_UID_HIER', 'admin')
+on conflict (user_id) do update set role = 'admin';
+```
+
+Wenn der Benutzer `koglu@hotmail.de` bereits in Supabase Auth existiert, kannst du alternativ direkt ausführen:
+
+```sql
+insert into public.admin_profiles (user_id, role)
+select id, 'admin'
+from auth.users
+where email = 'koglu@hotmail.de'
 on conflict (user_id) do update set role = 'admin';
 ```
 

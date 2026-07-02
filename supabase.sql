@@ -326,3 +326,10 @@ set answer = excluded.answer,
 -- Nach dem Erstellen deines Auth-Users:
 -- insert into public.admin_profiles (user_id, role)
 -- values ('AUTH_USER_ID_HIER_EINFUEGEN', 'admin');
+--
+-- Für den Admin-Login mit koglu@hotmail.de, wenn der Auth-User bereits existiert:
+-- insert into public.admin_profiles (user_id, role)
+-- select id, 'admin'
+-- from auth.users
+-- where email = 'koglu@hotmail.de'
+-- on conflict (user_id) do update set role = 'admin';
