@@ -235,22 +235,30 @@
     if (lower.includes("site_settings")) {
       return `Startseite konnte nicht gespeichert werden: Tabelle site_settings fehlt oder ist nicht freigegeben. Originalmeldung: ${message}`;
     }
+    if (lower.includes("storage") || lower.includes("upload")) {
+      return `Upload/Speichern fehlgeschlagen: ${message}`;
+    }
+    if (lower.includes("failed to fetch") || lower.includes("network")) {
+      return `Netzwerkfehler: Supabase konnte nicht erreicht werden. Originalmeldung: ${message}`;
+    }
     return message;
   }
 
-  async function runAdminAction(form, pendingMessage, successMessage, action) {
-    const submitButton = form?.querySelector('button[type="submit"]');
+  async function runAdminAction(source, pendingMessage, successMessage, action, options = {}) {
+    const button = source?.matches?.("button") ? source : source?.querySelector?.('button[type="submit"]');
     try {
-      if (submitButton) submitButton.disabled = true;
+      if (button) button.disabled = true;
       setStatus(pendingMessage, { persist: true });
-      await action();
-      setStatus(successMessage, { success: true });
+      const result = await action();
+      setStatus(successMessage, { success: true, persist: options.persistSuccess });
+      return result ?? true;
     } catch (error) {
       const message = readableAdminError(error);
       setStatus(message, { error: true, persist: true });
-      console.error("Admin action failed:", error);
+      console.warn("Admin action failed:", error);
+      return false;
     } finally {
-      if (submitButton) submitButton.disabled = false;
+      if (button) button.disabled = false;
     }
   }
 
@@ -330,7 +338,7 @@
     $("[data-admin-title]").textContent = section === "dashboard" ? "Dashboard" : targetButton?.textContent || "Dashboard";
   }
 
-  function renderDashboard() {
+  function renderDashboard(activate = true) {
     ensureDashboardShell();
     const overview = $("[data-dashboard-overview]");
     if (overview) {
@@ -347,7 +355,7 @@
           <span>${label}</span>
         </article>`).join("");
     }
-    selectSection("dashboard");
+    if (activate) selectSection("dashboard");
   }
 
   function showDashboard() {
@@ -480,22 +488,29 @@
   });
 
   $("[data-demo-admin]").addEventListener("click", async () => {
+    loginStatus("Demo-Dashboard wird geöffnet...");
     openDashboard();
   });
-  $("[data-logout]").addEventListener("click", async () => {
-    if (client) await client.auth.signOut();
-    location.reload();
+  $("[data-logout]").addEventListener("click", async (event) => {
+    const ok = await runAdminAction(event.currentTarget, "Logout läuft...", "Logout erfolgreich.", async () => {
+      if (client) {
+        const { error } = await client.auth.signOut();
+        if (error) throw error;
+      }
+    });
+    if (ok) location.reload();
   });
-  $("[data-refresh]").addEventListener("click", async () => {
-    contentReady = loadContent();
-    state = await contentReady;
-    state.orders = await fetchOrders();
-    settings = clone(state.settings);
-    fillSettingsForms();
-    Object.keys(tables).forEach(renderCrud);
-    renderOrders();
-    renderDashboard();
-    setStatus("Inhalte neu geladen.");
+  $("[data-refresh]").addEventListener("click", async (event) => {
+    await runAdminAction(event.currentTarget, "Inhalte werden neu geladen...", "Inhalte wurden neu geladen.", async () => {
+      contentReady = loadContent();
+      state = await contentReady;
+      state.orders = await fetchOrders();
+      settings = clone(state.settings);
+      fillSettingsForms();
+      Object.keys(tables).forEach(renderCrud);
+      renderOrders();
+      renderDashboard(false);
+    });
   });
 
   ensureDashboardShell();
@@ -510,6 +525,7 @@
       const input = form.elements[key];
       if (!input) return;
       if (input.type === "checkbox") input.checked = Boolean(value);
+      else if (input.type === "file") input.value = "";
       else input.value = value ?? "";
     });
   }
@@ -631,17 +647,23 @@
       const active = form.elements.active;
       if (active) active.checked = true;
       host.querySelector(`[data-editor-title="${kind}"]`).textContent = "Neuer Eintrag";
+      setStatus(`${cfg.title}: Neuer Eintrag bereit.`);
     });
     host.querySelectorAll("[data-edit]").forEach((button) => {
       button.addEventListener("click", () => {
         const item = items.find((entry) => String(entry.id) === button.dataset.edit);
+        if (!item) {
+          setStatus(`${cfg.title}: Eintrag nicht gefunden. Bitte Inhalte neu laden.`, { error: true, persist: true });
+          return;
+        }
         editing[kind] = item;
         fillForm(form, { ...item, tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags });
         host.querySelector(`[data-editor-title="${kind}"]`).textContent = "Eintrag bearbeiten";
+        setStatus(`${cfg.title}: Eintrag geladen. Änderungen bearbeiten und speichern.`);
       });
     });
     host.querySelectorAll("[data-delete]").forEach((button) => {
-      button.addEventListener("click", () => deleteCrud(kind, button.dataset.delete));
+      button.addEventListener("click", () => deleteCrud(kind, button.dataset.delete, button));
     });
   }
 
@@ -663,42 +685,44 @@
 
   async function saveCrud(event, kind) {
     event.preventDefault();
-    const cfg = tables[kind];
     const form = event.currentTarget;
-    const row = readForm(form, cfg.fields);
-    const uploaded = await uploadMaybe(form.elements.upload, cfg.folder);
-    if (uploaded) row.image_url = uploaded;
-    const current = editing[kind];
-    row.id = current?.id && !isDemoId(current.id) ? current.id : undefined;
-    if (demoMode) {
-      if (current) Object.assign(current, row);
-      else state[cfg.collection].push({ ...row, id: `demo-${kind}-${Date.now()}` });
+    const cfg = tables[kind];
+    await runAdminAction(form, `${cfg.title} wird gespeichert...`, `${cfg.title} wurde erfolgreich gespeichert.`, async () => {
+      refreshClient();
+      const row = readForm(form, cfg.fields);
+      const uploaded = await uploadMaybe(form.elements.upload, cfg.folder);
+      if (uploaded) row.image_url = uploaded;
+      const current = editing[kind];
+      row.id = current?.id && !isDemoId(current.id) ? current.id : undefined;
+      if (demoMode) {
+        if (current) Object.assign(current, row);
+        else state[cfg.collection].push({ ...row, id: `demo-${kind}-${Date.now()}` });
+        renderCrud(kind);
+        return;
+      }
+      const { error } = await client.from(cfg.table).upsert(row);
+      if (error) throw error;
+      contentReady = loadContent();
+      state = await contentReady;
       renderCrud(kind);
-      setStatus("Demo-Eintrag aktualisiert. Für echtes Speichern Supabase verbinden.");
-      return;
-    }
-    const { error } = await client.from(cfg.table).upsert(row);
-    if (error) throw error;
-    contentReady = loadContent();
-    state = await contentReady;
-    renderCrud(kind);
-    setStatus("Eintrag gespeichert.");
+    });
   }
 
-  async function deleteCrud(kind, id) {
+  async function deleteCrud(kind, id, button) {
     const cfg = tables[kind];
-    if (demoMode || isDemoId(id)) {
-      state[cfg.collection] = state[cfg.collection].filter((item) => String(item.id) !== String(id));
+    await runAdminAction(button, `${cfg.title}: Eintrag wird gelöscht...`, `${cfg.title}: Eintrag wurde gelöscht.`, async () => {
+      refreshClient();
+      if (demoMode || isDemoId(id)) {
+        state[cfg.collection] = state[cfg.collection].filter((item) => String(item.id) !== String(id));
+        renderCrud(kind);
+        return;
+      }
+      const { error } = await client.from(cfg.table).delete().eq("id", id);
+      if (error) throw error;
+      contentReady = loadContent();
+      state = await contentReady;
       renderCrud(kind);
-      setStatus("Demo-Eintrag gelöscht.");
-      return;
-    }
-    const { error } = await client.from(cfg.table).delete().eq("id", id);
-    if (error) throw error;
-    contentReady = loadContent();
-    state = await contentReady;
-    renderCrud(kind);
-    setStatus("Eintrag gelöscht.");
+    });
   }
 
   function renderOrders() {
@@ -733,20 +757,21 @@
     }).join("");
   }
 
-  $("[data-refresh-orders]")?.addEventListener("click", async () => {
-    state.orders = await fetchOrders();
-    renderOrders();
-    renderDashboard();
-    setStatus("Bestellungen neu geladen.");
+  $("[data-refresh-orders]")?.addEventListener("click", async (event) => {
+    await runAdminAction(event.currentTarget, "Bestellungen werden neu geladen...", "Bestellungen wurden neu geladen.", async () => {
+      state.orders = await fetchOrders();
+      renderOrders();
+      renderDashboard(false);
+    });
   });
 
   window.addEventListener("error", (event) => {
-    setStatus(event.message);
+    setStatus(event.message, { error: true, persist: true });
     loginStatus(event.message);
   });
   window.addEventListener("unhandledrejection", (event) => {
     const message = event.reason?.message || String(event.reason || "Unbekannter JavaScript-Fehler.");
-    setStatus(message);
+    setStatus(message, { error: true, persist: true });
     loginStatus(message);
   });
   await requireSession();
