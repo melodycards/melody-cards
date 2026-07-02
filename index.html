@@ -15,12 +15,12 @@
     />
     <meta property="og:type" content="website" />
     <title>Melody Cards | Handgemachte Karten für besondere Menschen</title>
-    <script src="scroll-guard.js?v=20260702-warm-premium"></script>
+    <script src="scroll-guard.js?v=20260702-editor"></script>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23050505'/%3E%3Cpath d='M18 45V18h7l7 14 7-14h7v27h-6V28L34 41h-4l-6-13v17z' fill='%23d6b35a'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="styles.css?v=20260702-warm-premium" />
+    <link rel="stylesheet" href="styles.css?v=20260702-editor" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -298,7 +298,11 @@
           <p class="eyebrow">Kontakt</p>
           <h2>Offen für Fragen vor der Anfrage.</h2>
           <p>Wenn du unsicher bist, ob eine Karte, ein Lied oder ein QR-Code passt, schreibe uns kurz. Wir antworten ohne Verkaufsdruck.</p>
-          <a class="btn btn-glass" href="mailto:hello@melody-cards.example">hello@melody-cards.example</a>
+          <div class="contact-details">
+            <a class="btn btn-glass" href="mailto:hello@melody-cards.example" data-contact-email>hello@melody-cards.example</a>
+            <a class="btn btn-glass" href="tel:+491701234567" data-contact-phone>+49 170 1234567</a>
+          </div>
+          <p class="contact-address" data-contact-address>Musterstraße 1, 12345 Musterstadt</p>
         </div>
       </section>
 
@@ -348,8 +352,14 @@
         <a href="#products">Produkte</a><a href="#about">Über uns</a><a href="#contact">Kontakt</a>
         <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="agb.html">AGB</a><a href="widerruf.html">Widerruf</a><a href="versand-zahlung.html">Versand & Zahlung</a>
       </div>
+      <div class="socials">
+        <a href="https://instagram.com/" target="_blank" rel="noreferrer" data-social-instagram>Instagram</a>
+        <a href="https://www.tiktok.com/" target="_blank" rel="noreferrer" data-social-tiktok>TikTok</a>
+        <a href="https://www.youtube.com/" target="_blank" rel="noreferrer" data-social-youtube>YouTube</a>
+      </div>
     </footer>
     <button class="back-top" type="button" aria-label="Zurück nach oben" data-back-top>↑</button>
+    <a class="whatsapp-chat" href="https://wa.me/491701234567" target="_blank" rel="noreferrer" data-whatsapp-chat>WhatsApp</a>
     <div class="lightbox" data-lightbox aria-hidden="true">
       <button type="button" data-lightbox-close aria-label="Lightbox schließen">×</button>
       <div class="lightbox-art" data-lightbox-art></div>
@@ -358,9 +368,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=20260702-warm-premium"></script>
-    <script src="site-data.js?v=20260702-warm-premium"></script>
-    <script src="supabase-client.js?v=20260702-warm-premium"></script>
-    <script src="script.js?v=20260702-warm-premium"></script>
+    <script src="config.js?v=20260702-editor"></script>
+    <script src="site-data.js?v=20260702-editor"></script>
+    <script src="supabase-client.js?v=20260702-editor"></script>
+    <script src="script.js?v=20260702-editor"></script>
   </body>
 </html>

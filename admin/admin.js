@@ -12,12 +12,13 @@
   let settings = clone(window.MELODY_DEMO_CONTENT.settings);
   let editing = {};
   let loginInProgress = false;
+  let forcedDemoMode = false;
   let contentReady = loadContent();
 
   function refreshClient() {
     if (window.MelodySupabase) api = window.MelodySupabase;
     client = api.getClient?.() || null;
-    demoMode = !client;
+    demoMode = forcedDemoMode || !client;
     return client;
   }
 
@@ -114,7 +115,7 @@
   }
 
   async function fetchOrders() {
-    if (!client) {
+    if (demoMode || !client) {
       return JSON.parse(localStorage.getItem("melodyDemoOrders") || "[]");
     }
     try {
@@ -130,6 +131,12 @@
   async function loadContent() {
     try {
       refreshClient();
+      if (demoMode) {
+        state = clone(window.MELODY_DEMO_CONTENT);
+        state.orders = await fetchOrders();
+        settings = clone(state.settings || window.MELODY_DEMO_CONTENT.settings);
+        return state;
+      }
       state = await withTimeout(api.fetchContent(), 7000, { ...window.MELODY_DEMO_CONTENT, source: "demo-timeout" });
       state.orders = await withTimeout(fetchOrders(), 7000, []);
       settings = clone(state.settings || window.MELODY_DEMO_CONTENT.settings);
@@ -152,6 +159,7 @@
       fields: [
         ["title", "Titel", "text"],
         ["description", "Beschreibung", "textarea"],
+        ["category", "Kategorie", "text"],
         ["price", "Preis", "text"],
         ["tags", "Tags, durch Komma getrennt", "text"],
         ["image_url", "Bild URL", "text"],
@@ -489,6 +497,10 @@
 
   $("[data-demo-admin]").addEventListener("click", async () => {
     loginStatus("Demo-Dashboard wird geöffnet...");
+    forcedDemoMode = true;
+    demoMode = true;
+    state = clone(window.MELODY_DEMO_CONTENT);
+    settings = clone(window.MELODY_DEMO_CONTENT.settings);
     openDashboard();
   });
   $("[data-logout]").addEventListener("click", async (event) => {
@@ -521,6 +533,7 @@
   });
 
   function fillForm(form, values) {
+    if (!form) return;
     Object.entries(values || {}).forEach(([key, value]) => {
       const input = form.elements[key];
       if (!input) return;
@@ -543,10 +556,106 @@
     return data;
   }
 
+  function parseLines(value, mapper) {
+    return String(value || "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map(mapper)
+      .filter(Boolean);
+  }
+
+  function boolFromText(value) {
+    return !["false", "0", "nein", "no", "inaktiv", "aus"].includes(String(value || "").trim().toLowerCase());
+  }
+
+  function formatNavItems(items) {
+    return (items || []).map((item) => `${item.label || ""} | ${item.href || ""} | ${item.active === false ? "false" : "true"}`).join("\n");
+  }
+
+  function parseNavItems(value) {
+    return parseLines(value, (line) => {
+      const [label, href, active] = line.split("|").map((part) => part.trim());
+      if (!label || !href) return null;
+      return { label, href, active: boolFromText(active), className: /karte gestalten|bestellung|anfrage/i.test(label) ? "nav-order" : "" };
+    });
+  }
+
+  function formatAboutCards(cards) {
+    return (cards || []).map((item) => `${item.title || ""} | ${item.text || ""} | ${item.active === false ? "false" : "true"}`).join("\n");
+  }
+
+  function parseAboutCards(value) {
+    return parseLines(value, (line) => {
+      const [title, text, active] = line.split("|").map((part) => part.trim());
+      if (!title || !text) return null;
+      return { title, text, active: boolFromText(active) };
+    });
+  }
+
+  function formatNumberedItems(items) {
+    return (items || []).map((item) => `${item.number || ""} | ${item.title || ""} | ${item.text || ""} | ${item.active === false ? "false" : "true"}`).join("\n");
+  }
+
+  function parseNumberedItems(value) {
+    return parseLines(value, (line) => {
+      const [number, title, text, active] = line.split("|").map((part) => part.trim());
+      if (!title || !text) return null;
+      return { number, title, text, active: boolFromText(active) };
+    });
+  }
+
+  function formatExampleItems(items) {
+    return (items || []).map((item) => `${item.category || ""} | ${item.text || ""} | ${item.active === false ? "false" : "true"}`).join("\n");
+  }
+
+  function parseExampleItems(value) {
+    return parseLines(value, (line) => {
+      const [category, text, active] = line.split("|").map((part) => part.trim());
+      if (!category || !text) return null;
+      return { category, text, active: boolFromText(active) };
+    });
+  }
+
+  function lineList(value) {
+    return String(value || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  }
+
   function fillSettingsForms() {
     fillForm($("[data-settings-form]"), settings.content);
     fillForm($("[data-contact-form]"), settings.content);
     fillForm($("[data-design-form]"), settings.design);
+    fillForm($("[data-about-form]"), settings.content);
+    fillForm($("[data-legal-form]"), settings.content);
+    const navForm = $("[data-navigation-form]");
+    if (navForm) navForm.elements.navItemsText.value = formatNavItems(settings.content.navItems || window.MELODY_DEMO_CONTENT.settings.content.navItems);
+    const aboutForm = $("[data-about-form]");
+    if (aboutForm) aboutForm.elements.aboutCardsText.value = formatAboutCards(settings.content.aboutCards || []);
+    const legalForm = $("[data-legal-form]");
+    if (legalForm) {
+      const legal = settings.content.legalPages || {};
+      ["impressum", "datenschutz", "agb", "widerruf", "versand"].forEach((key) => {
+        if (legalForm.elements[key]) legalForm.elements[key].value = legal[key] || "";
+      });
+    }
+    const configForm = $("[data-configurator-form]");
+    if (configForm) {
+      const cfg = settings.content.configurator || window.MELODY_DEMO_CONTENT.settings.content.configurator;
+      configForm.elements.backText.value = cfg.backText || "Zurück";
+      configForm.elements.nextText.value = cfg.nextText || "Weiter";
+      configForm.elements.submitText.value = cfg.submitText || "Anfrage senden";
+      configForm.elements.recipientForOptions.value = (cfg.steps?.recipientFor?.options || []).join("\n");
+      configForm.elements.occasionOptions.value = (cfg.steps?.occasion?.options || []).join("\n");
+      configForm.elements.includedOptions.value = (cfg.steps?.included?.options || []).join("\n");
+      configForm.elements.configuratorJson.value = JSON.stringify(cfg, null, 2);
+    }
+    renderMediaList();
+    const settingsForm = $("[data-settings-form]");
+    if (settingsForm) {
+      settingsForm.elements.promiseItemsText.value = formatNumberedItems(settings.content.promiseItems || []);
+      settingsForm.elements.processStepsText.value = formatNumberedItems(settings.content.processSteps || []);
+      settingsForm.elements.exampleItemsText.value = formatExampleItems(settings.content.exampleItems || []);
+    }
   }
 
   async function uploadMaybe(fileInput, folder) {
@@ -567,9 +676,13 @@
   async function saveSettings(patch, folder, form, label = "Startseite") {
     refreshClient();
     const logoUrl = await uploadMaybe(form?.elements.logoImageFile, "logos");
+    const faviconUrl = await uploadMaybe(form?.elements.faviconImageFile, "favicons");
     const heroUrl = await uploadMaybe(form?.elements.heroImageFile, "hero");
+    const aboutUrl = await uploadMaybe(form?.elements.aboutImageFile, "about");
     if (logoUrl) patch.logoImage = logoUrl;
+    if (faviconUrl) patch.faviconImage = faviconUrl;
     if (heroUrl) patch.heroImage = heroUrl;
+    if (aboutUrl) patch.aboutImage = aboutUrl;
     settings.content = { ...settings.content, ...patch };
     if (demoMode) {
       fillSettingsForms();
@@ -586,8 +699,15 @@
     event.preventDefault();
     const form = event.currentTarget;
     await runAdminAction(form, "Startseite wird gespeichert...", "Startseite wurde erfolgreich gespeichert.", async () => {
-      const fields = ["logoText", "heroEyebrow", "heroTitleLine1", "heroTitleLine2", "heroText", "primaryButtonText", "primaryButtonHref", "secondaryButtonText", "secondaryButtonHref"];
+      const fields = [
+        "logoText", "heroEyebrow", "heroTitleLine1", "heroTitleLine2", "heroText", "primaryButtonText", "primaryButtonHref", "secondaryButtonText", "secondaryButtonHref",
+        "introEyebrow", "introTitle", "introText", "processEyebrow", "processTitle", "processText", "productsEyebrow", "productsTitle", "productsText",
+        "examplesEyebrow", "examplesTitle", "examplesText", "galleryEyebrow", "galleryTitle", "galleryText", "faqEyebrow", "faqTitle", "orderEyebrow", "orderTitle", "orderText"
+      ];
       const patch = Object.fromEntries(fields.map((key) => [key, form.elements[key].value]));
+      patch.promiseItems = parseNumberedItems(form.elements.promiseItemsText.value);
+      patch.processSteps = parseNumberedItems(form.elements.processStepsText.value);
+      patch.exampleItems = parseExampleItems(form.elements.exampleItemsText.value);
       await saveSettings(patch, "hero", form, "Startseite");
     });
   });
@@ -596,8 +716,79 @@
     event.preventDefault();
     const form = event.currentTarget;
     await runAdminAction(form, "Kontaktdaten werden gespeichert...", "Kontaktdaten wurden erfolgreich gespeichert.", async () => {
-      const fields = ["contactTitle", "contactText", "contactEmail", "whatsappNumber", "whatsappMessage", "socialInstagram", "socialTikTok", "socialYouTube", "footerText"];
+      const fields = ["contactTitle", "contactText", "contactEmail", "contactPhone", "contactAddress", "whatsappNumber", "whatsappMessage", "socialInstagram", "socialTikTok", "socialYouTube", "footerText"];
       await saveSettings(Object.fromEntries(fields.map((key) => [key, form.elements[key].value])), "contact", form, "Kontaktdaten");
+    });
+  });
+
+  $("[data-about-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await runAdminAction(form, "Über uns wird gespeichert...", "Über uns wurde erfolgreich gespeichert.", async () => {
+      const fields = ["aboutEyebrow", "aboutTitle", "aboutText"];
+      const patch = Object.fromEntries(fields.map((key) => [key, form.elements[key].value]));
+      patch.aboutCards = parseAboutCards(form.elements.aboutCardsText.value);
+      await saveSettings(patch, "about", form, "Über uns");
+    });
+  });
+
+  $("[data-navigation-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await runAdminAction(form, "Navigation wird gespeichert...", "Navigation wurde erfolgreich gespeichert.", async () => {
+      await saveSettings({ navItems: parseNavItems(form.elements.navItemsText.value) }, "navigation", form, "Navigation");
+    });
+  });
+
+  $("[data-configurator-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await runAdminAction(form, "Konfigurator wird gespeichert...", "Konfigurator wurde erfolgreich gespeichert.", async () => {
+      const current = settings.content.configurator || window.MELODY_DEMO_CONTENT.settings.content.configurator;
+      let jsonConfig = {};
+      const rawJson = form.elements.configuratorJson.value.trim();
+      if (rawJson) {
+        try {
+          jsonConfig = JSON.parse(rawJson);
+        } catch (error) {
+          throw new Error(`Konfigurator JSON ist ungültig: ${error.message}`);
+        }
+      }
+      const base = { ...current, ...jsonConfig };
+      const baseSteps = { ...(current.steps || {}), ...(jsonConfig.steps || {}) };
+      const configurator = {
+        ...base,
+        backText: form.elements.backText.value,
+        nextText: form.elements.nextText.value,
+        submitText: form.elements.submitText.value,
+        steps: {
+          ...baseSteps,
+          recipientFor: { ...(baseSteps.recipientFor || {}), options: lineList(form.elements.recipientForOptions.value) },
+          occasion: { ...(baseSteps.occasion || {}), options: lineList(form.elements.occasionOptions.value) },
+          included: { ...(baseSteps.included || {}), options: lineList(form.elements.includedOptions.value) }
+        }
+      };
+      await saveSettings({ configurator }, "configurator", form, "Konfigurator");
+    });
+  });
+
+  $("[data-legal-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await runAdminAction(form, "Rechtliches wird gespeichert...", "Rechtliches wurde erfolgreich gespeichert.", async () => {
+      const legalPages = {
+        impressum: form.elements.impressum.value,
+        datenschutz: form.elements.datenschutz.value,
+        agb: form.elements.agb.value,
+        widerruf: form.elements.widerruf.value,
+        versand: form.elements.versand.value
+      };
+      await saveSettings({
+        legalEyebrow: form.elements.legalEyebrow.value,
+        legalTitle: form.elements.legalTitle.value,
+        legalText: form.elements.legalText.value,
+        legalPages
+      }, "legal", form, "Rechtliches");
     });
   });
 
@@ -640,6 +831,8 @@
       <div class="crud-list">${items.map((item) => crudRow(kind, item)).join("")}</div>
     `;
     const form = host.querySelector(`[data-editor="${kind}"]`);
+    const active = form.elements.active;
+    if (active) active.checked = true;
     form.addEventListener("submit", (event) => saveCrud(event, kind));
     host.querySelector(`[data-new="${kind}"]`).addEventListener("click", () => {
       editing[kind] = null;
@@ -683,6 +876,62 @@
       </article>`;
   }
 
+  function renderMediaList() {
+    const host = $("[data-media-list]");
+    if (!host) return;
+    const media = settings.content.mediaLibrary || [];
+    host.innerHTML = `
+      <div class="crud-header"><div><p class="eyebrow">Bilder</p><h3>Gespeicherte Bilder</h3></div></div>
+      <div class="crud-list">
+        ${media.length ? media.map((item) => `
+          <article class="crud-row">
+            <div class="crud-thumb" style="--photo:url('${escapeHtml(item.url || "")}')"></div>
+            <div><strong>${escapeHtml(item.title || "Bild")}</strong><p>${escapeHtml(item.alt || "")}<br>${escapeHtml(item.category || "")}</p></div>
+            <div class="crud-row-actions">
+              <a class="mini-btn" href="${escapeHtml(item.url || "#")}" target="_blank" rel="noreferrer">Öffnen</a>
+              <button class="mini-btn danger" type="button" data-media-delete="${escapeHtml(item.id)}">Entfernen</button>
+            </div>
+          </article>
+        `).join("") : `<p class="form-status">Noch keine Bilder gespeichert.</p>`}
+      </div>
+    `;
+    host.querySelectorAll("[data-media-delete]").forEach((button) => {
+      button.addEventListener("click", () => deleteMedia(button.dataset.mediaDelete, button));
+    });
+  }
+
+  async function saveMedia(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await runAdminAction(form, "Bild wird gespeichert...", "Bild wurde erfolgreich gespeichert.", async () => {
+      refreshClient();
+      const file = form.elements.file.files?.[0];
+      if (!file) throw new Error("Bitte wähle zuerst ein Bild aus.");
+      const url = await uploadMaybe(form.elements.file, "media");
+      if (!url) throw new Error("Bild konnte nicht hochgeladen werden. Prüfe Supabase Storage oder den Bucket melody-assets.");
+      const media = settings.content.mediaLibrary || [];
+      media.unshift({
+        id: `media-${Date.now()}`,
+        title: form.elements.title.value || file.name,
+        alt: form.elements.alt.value || form.elements.title.value || file.name,
+        category: form.elements.category.value || "Allgemein",
+        url,
+        created_at: new Date().toISOString()
+      });
+      await saveSettings({ mediaLibrary: media }, "media", form, "Bilder");
+      form.reset();
+      renderMediaList();
+    });
+  }
+
+  async function deleteMedia(id, button) {
+    await runAdminAction(button, "Bild wird entfernt...", "Bild wurde entfernt.", async () => {
+      const media = (settings.content.mediaLibrary || []).filter((item) => String(item.id) !== String(id));
+      await saveSettings({ mediaLibrary: media }, "media", null, "Bilder");
+      renderMediaList();
+    });
+  }
+
   async function saveCrud(event, kind) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -707,6 +956,8 @@
       renderCrud(kind);
     });
   }
+
+  $("[data-media-form]")?.addEventListener("submit", saveMedia);
 
   async function deleteCrud(kind, id, button) {
     const cfg = tables[kind];

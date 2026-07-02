@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
     <title>Melody Cards Admin</title>
-    <script src="../scroll-guard.js?v=20260702-admin-actions-fix"></script>
-    <link rel="stylesheet" href="../styles.css?v=20260702-admin-actions-fix" />
-    <link rel="stylesheet" href="admin.css?v=20260702-admin-actions-fix" />
+    <script src="../scroll-guard.js?v=20260702-full-editor"></script>
+    <link rel="stylesheet" href="../styles.css?v=20260702-full-editor" />
+    <link rel="stylesheet" href="admin.css?v=20260702-full-editor" />
   </head>
   <body class="admin-body">
     <main class="admin-shell">
@@ -37,7 +37,12 @@
           <button data-section="gallery">Galerie</button>
           <button data-section="reviews">Bewertungen</button>
           <button data-section="faq">FAQ</button>
+          <button data-section="media">Bilder</button>
+          <button data-section="about">Über uns</button>
           <button data-section="contact">Kontakt</button>
+          <button data-section="navigation">Navigation</button>
+          <button data-section="configurator">Konfigurator</button>
+          <button data-section="legal">Rechtliches</button>
           <button data-section="design">Farben & Design</button>
           <button data-section="settings">Einstellungen</button>
           <a class="btn btn-glass" href="../index.html" target="_blank">Webseite öffnen</a>
@@ -58,6 +63,7 @@
               <h3>Startseite bearbeiten</h3>
               <label>Logo Text<input name="logoText" /></label>
               <label>Logo Bild<input name="logoImageFile" type="file" accept="image/*" /></label>
+              <label>Favicon<input name="faviconImageFile" type="file" accept="image/*" /></label>
               <label>Hero Bild<input name="heroImageFile" type="file" accept="image/*" /></label>
               <label>Hero Eyebrow<input name="heroEyebrow" /></label>
               <label>Hero Überschrift Zeile 1<input name="heroTitleLine1" /></label>
@@ -67,6 +73,29 @@
               <label>Button 1 Link<input name="primaryButtonHref" /></label>
               <label>Button 2 Text<input name="secondaryButtonText" /></label>
               <label>Button 2 Link<input name="secondaryButtonHref" /></label>
+              <label>Intro Eyebrow<input name="introEyebrow" /></label>
+              <label>Intro Titel<input name="introTitle" /></label>
+              <label>Intro Text<textarea name="introText" rows="4"></textarea></label>
+              <label class="span-all">Intro-Karten, je Zeile: Nummer | Titel | Text | aktiv<textarea name="promiseItemsText" rows="5"></textarea></label>
+              <label>Prozess Eyebrow<input name="processEyebrow" /></label>
+              <label>Prozess Titel<input name="processTitle" /></label>
+              <label>Prozess Text<textarea name="processText" rows="4"></textarea></label>
+              <label class="span-all">Prozess-Schritte, je Zeile: Nummer | Titel | Text | aktiv<textarea name="processStepsText" rows="5"></textarea></label>
+              <label>Produkte Eyebrow<input name="productsEyebrow" /></label>
+              <label>Produkte Titel<input name="productsTitle" /></label>
+              <label>Produkte Text<textarea name="productsText" rows="4"></textarea></label>
+              <label>Beispiele Eyebrow<input name="examplesEyebrow" /></label>
+              <label>Beispiele Titel<input name="examplesTitle" /></label>
+              <label>Beispiele Text<textarea name="examplesText" rows="4"></textarea></label>
+              <label class="span-all">Beispielkarten, je Zeile: Kategorie | Text | aktiv<textarea name="exampleItemsText" rows="6"></textarea></label>
+              <label>Galerie Eyebrow<input name="galleryEyebrow" /></label>
+              <label>Galerie Titel<input name="galleryTitle" /></label>
+              <label>Galerie Text<textarea name="galleryText" rows="4"></textarea></label>
+              <label>FAQ Eyebrow<input name="faqEyebrow" /></label>
+              <label>FAQ Titel<input name="faqTitle" /></label>
+              <label>Anfrage Eyebrow<input name="orderEyebrow" /></label>
+              <label>Anfrage Titel<input name="orderTitle" /></label>
+              <label>Anfrage Text<textarea name="orderText" rows="4"></textarea></label>
               <button class="btn btn-primary" type="submit">Startseite speichern</button>
             </form>
           </section>
@@ -100,12 +129,38 @@
             <div class="admin-crud glass" data-crud="faqs"></div>
           </section>
 
+          <section class="admin-panel" data-panel="media">
+            <form class="admin-form glass" data-media-form>
+              <h3>Bilder verwalten</h3>
+              <label>Bildtitel<input name="title" /></label>
+              <label>Alt-Text<input name="alt" /></label>
+              <label>Kategorie<input name="category" placeholder="Startseite, Galerie, Produkt..." /></label>
+              <label>Bild hochladen<input name="file" type="file" accept="image/*" /></label>
+              <button class="btn btn-primary" type="submit">Bild speichern</button>
+            </form>
+            <div class="admin-crud glass" data-media-list></div>
+          </section>
+
+          <section class="admin-panel" data-panel="about">
+            <form class="admin-form glass" data-about-form>
+              <h3>Über uns bearbeiten</h3>
+              <label>Eyebrow<input name="aboutEyebrow" /></label>
+              <label>Titel<input name="aboutTitle" /></label>
+              <label>Text<textarea name="aboutText" rows="5"></textarea></label>
+              <label>Bild<input name="aboutImageFile" type="file" accept="image/*" /></label>
+              <label class="span-all">Abschnitte, je Zeile: Titel | Text | aktiv<textarea name="aboutCardsText" rows="7"></textarea></label>
+              <button class="btn btn-primary" type="submit">Über uns speichern</button>
+            </form>
+          </section>
+
           <section class="admin-panel" data-panel="contact">
             <form class="admin-form glass" data-contact-form>
               <h3>Kontakt & Social Media</h3>
               <label>Kontakt Titel<input name="contactTitle" /></label>
               <label>Kontakt Text<textarea name="contactText" rows="4"></textarea></label>
               <label>E-Mail<input name="contactEmail" /></label>
+              <label>Telefon<input name="contactPhone" /></label>
+              <label>Adresse<textarea name="contactAddress" rows="3"></textarea></label>
               <label>WhatsApp Nummer<input name="whatsappNumber" /></label>
               <label>WhatsApp Nachricht<textarea name="whatsappMessage" rows="3"></textarea></label>
               <label>Instagram<input name="socialInstagram" /></label>
@@ -113,6 +168,43 @@
               <label>YouTube<input name="socialYouTube" /></label>
               <label>Footer Text<textarea name="footerText" rows="3"></textarea></label>
               <button class="btn btn-primary" type="submit">Kontakt speichern</button>
+            </form>
+          </section>
+
+          <section class="admin-panel" data-panel="navigation">
+            <form class="admin-form glass" data-navigation-form>
+              <h3>Navigation bearbeiten</h3>
+              <label class="span-all">Menüpunkte, je Zeile: Label | Link | aktiv<textarea name="navItemsText" rows="10"></textarea></label>
+              <button class="btn btn-primary" type="submit">Navigation speichern</button>
+            </form>
+          </section>
+
+          <section class="admin-panel" data-panel="configurator">
+            <form class="admin-form glass" data-configurator-form>
+              <h3>Konfigurator bearbeiten</h3>
+              <label>Zurück Button<input name="backText" /></label>
+              <label>Weiter Button<input name="nextText" /></label>
+              <label>Senden Button<input name="submitText" /></label>
+              <label class="span-all">Für wen Optionen, je Zeile eine Option<textarea name="recipientForOptions" rows="7"></textarea></label>
+              <label class="span-all">Anlass Optionen, je Zeile eine Option<textarea name="occasionOptions" rows="7"></textarea></label>
+              <label class="span-all">Inhalt Optionen, je Zeile eine Option<textarea name="includedOptions" rows="7"></textarea></label>
+              <label class="span-all">Alle Konfigurator-Daten JSON<textarea name="configuratorJson" rows="12"></textarea></label>
+              <button class="btn btn-primary" type="submit">Konfigurator speichern</button>
+            </form>
+          </section>
+
+          <section class="admin-panel" data-panel="legal">
+            <form class="admin-form glass" data-legal-form>
+              <h3>Rechtliches bearbeiten</h3>
+              <label>Rechtliches Eyebrow<input name="legalEyebrow" /></label>
+              <label>Rechtliches Titel<input name="legalTitle" /></label>
+              <label class="span-all">Rechtliches Text<textarea name="legalText" rows="3"></textarea></label>
+              <label class="span-all">Impressum HTML/Text<textarea name="impressum" rows="8"></textarea></label>
+              <label class="span-all">Datenschutz HTML/Text<textarea name="datenschutz" rows="8"></textarea></label>
+              <label class="span-all">AGB HTML/Text<textarea name="agb" rows="8"></textarea></label>
+              <label class="span-all">Widerruf HTML/Text<textarea name="widerruf" rows="8"></textarea></label>
+              <label class="span-all">Versand & Zahlung HTML/Text<textarea name="versand" rows="8"></textarea></label>
+              <button class="btn btn-primary" type="submit">Rechtliches speichern</button>
             </form>
           </section>
 
@@ -142,9 +234,9 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../config.js?v=20260702-admin-actions-fix"></script>
-    <script src="../site-data.js?v=20260702-admin-actions-fix"></script>
-    <script src="../supabase-client.js?v=20260702-admin-actions-fix"></script>
-    <script src="admin.js?v=20260702-admin-actions-fix"></script>
+    <script src="../config.js?v=20260702-full-editor"></script>
+    <script src="../site-data.js?v=20260702-full-editor"></script>
+    <script src="../supabase-client.js?v=20260702-full-editor"></script>
+    <script src="admin.js?v=20260702-full-editor"></script>
   </body>
 </html>

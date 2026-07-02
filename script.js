@@ -40,7 +40,27 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
+  function stepKey(step) {
+    return {
+      1: "recipientFor",
+      2: "recipientName",
+      3: "occasion",
+      4: "included",
+      5: "specialPerson",
+      6: "memoryMessage",
+      7: "heartWords",
+      8: "contact"
+    }[step];
+  }
+
+  function stepRequired(step, fallback = true) {
+    const key = stepKey(step);
+    const value = window.MELODY_CONFIGURATOR_SETTINGS?.steps?.[key]?.required;
+    return value === undefined ? fallback : Boolean(value);
+  }
+
   function stepIsValid(step = currentStep) {
+    if (!stepRequired(step)) return true;
     if (step === 1) return Boolean(checkedValue("recipientFor"));
     if (step === 2) return fieldValue("recipientName").length > 0;
     if (step === 3) return Boolean(checkedValue("occasion"));
@@ -251,6 +271,41 @@
     if (el && value) el.textContent = value;
   }
 
+  function setHref(selector, value) {
+    const el = document.querySelector(selector);
+    if (el && value) el.href = value;
+  }
+
+  function setOptionalLink(selector, value, label, prefix = "") {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    if (!value) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    el.href = `${prefix}${value}`;
+    if (label) el.textContent = label;
+  }
+
+  function renderOptionGrid(panelStep, name, options, type = "radio") {
+    const panel = document.querySelector(`[data-step-panel="${panelStep}"]`);
+    const grid = panel?.querySelector(".option-grid");
+    if (!grid || !Array.isArray(options) || !options.length) return;
+    grid.innerHTML = options.map((value, index) => `
+      <label><input type="${type}" name="${name}" value="${value}" ${index === 0 && type === "radio" ? "required" : ""} /><span>${value}</span></label>
+    `).join("");
+  }
+
+  function renderNavigation() {
+    const nav = document.querySelector("[data-nav]");
+    if (!nav || !Array.isArray(settings.navItems) || !settings.navItems.length) return;
+    nav.innerHTML = settings.navItems
+      .filter((item) => item.active !== false)
+      .map((item) => `<a ${item.className ? `class="${item.className}"` : ""} href="${item.href || "#"}">${item.label || "Menüpunkt"}</a>`)
+      .join("");
+  }
+
   const relaunchContent = {
     heroEyebrow: "Melody Cards",
     heroTitleLine1: "Handgemachte Karten",
@@ -294,12 +349,19 @@
   }
 
   function applyGlobalContent() {
+    renderNavigation();
     setText(".brand-text", settings.brandName);
     document.querySelectorAll(".brand-mark").forEach((el) => { if (settings.logoText) el.textContent = settings.logoText; });
     if (settings.logoImage) {
       document.querySelectorAll(".brand-mark").forEach((el) => {
         el.innerHTML = `<img class="logo-image" src="${settings.logoImage}" alt="">`;
       });
+    }
+    if (settings.faviconImage) {
+      document.querySelector('link[rel="icon"]')?.setAttribute("href", settings.faviconImage);
+    }
+    if (settings.heroImage) {
+      document.querySelector(".hero-visual")?.style.setProperty("background-image", `url("${settings.heroImage}")`);
     }
     setText(".loader span", settings.brandName);
     setText(".hero .eyebrow", content("heroEyebrow"));
@@ -320,18 +382,50 @@
     setText(".footer-brand p", content("footerText"));
     setText(".contact-card h2", content("contactTitle"));
     setText(".contact-card p:not(.eyebrow)", content("contactText"));
-    const contactMail = document.querySelector(".contact-card a");
-    if (contactMail && settings.contactEmail) {
-      contactMail.href = `mailto:${settings.contactEmail}`;
-      contactMail.textContent = settings.contactEmail;
-    }
+    setOptionalLink("[data-contact-email]", settings.contactEmail, settings.contactEmail, "mailto:");
+    setOptionalLink("[data-contact-phone]", settings.contactPhone, settings.contactPhone, "tel:");
+    setText("[data-contact-address]", settings.contactAddress);
+    const whatsappNumber = String(settings.whatsappNumber || "").replace(/\D/g, "");
+    const whatsappText = encodeURIComponent(settings.whatsappMessage || "Hallo Melody Cards, ich habe eine Frage.");
+    setOptionalLink("[data-whatsapp-chat]", whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${whatsappText}` : "", "WhatsApp");
+    setOptionalLink("[data-social-instagram]", settings.socialInstagram, "Instagram");
+    setOptionalLink("[data-social-tiktok]", settings.socialTikTok, "TikTok");
+    setOptionalLink("[data-social-youtube]", settings.socialYouTube, "YouTube");
+    setText(".intro-section .eyebrow", settings.introEyebrow);
+    setText(".intro-copy h2", settings.introTitle);
+    setText(".intro-copy p:not(.eyebrow)", settings.introText);
+    setText("#process .section-head .eyebrow", settings.processEyebrow);
+    setText("#process .section-head h2", settings.processTitle);
+    setText("#process .section-head p:not(.eyebrow)", settings.processText);
+    setText("#products .section-head .eyebrow", settings.productsEyebrow);
+    setText("#products .section-head h2", settings.productsTitle);
+    setText("#products .section-head p:not(.eyebrow)", settings.productsText);
+    setText("#examples .section-head .eyebrow", settings.examplesEyebrow);
+    setText("#examples .section-head h2", settings.examplesTitle);
+    setText("#examples .section-head p:not(.eyebrow)", settings.examplesText);
+    setText("#gallery .section-head .eyebrow", settings.galleryEyebrow);
+    setText("#gallery .section-head h2", settings.galleryTitle);
+    setText("#gallery .section-head p:not(.eyebrow)", settings.galleryText);
+    setText("#faq .section-head .eyebrow", settings.faqEyebrow);
+    setText("#faq .section-head h2", settings.faqTitle);
+    setText("#about .section-head .eyebrow", settings.aboutEyebrow);
+    setText("#about .section-head h2", settings.aboutTitle);
+    setText("#about .section-head p:not(.eyebrow)", settings.aboutText);
+    setText("#order .section-head .eyebrow", settings.orderEyebrow);
+    setText("#order .section-head h2", settings.orderTitle);
+    setText("#order .section-head p:not(.eyebrow)", settings.orderText);
+    setText("#rechtliches .section-head .eyebrow", settings.legalEyebrow);
+    setText("#rechtliches .section-head h2", settings.legalTitle);
+    setText("#rechtliches .section-head p:not(.eyebrow)", settings.legalText);
+    setHref(".footer-links a[href='impressum.html']", "impressum.html");
   }
 
   function productCard(item, index) {
     const tags = Array.isArray(item.tags) ? item.tags.slice(0, 2) : ["Botschaft", "Foto oder QR-Code"];
+    const imageStyle = item.image_url ? `style="background-image:url('${item.image_url}')"` : "";
     return `
       <article class="product-card reveal">
-        <div class="card-art warm-card-art card-art-${(index % 6) + 1}">
+        <div class="card-art warm-card-art card-art-${(index % 6) + 1}" ${imageStyle}>
           <div class="mini-open-card">
             <i></i><strong>${item.title}</strong><span></span>
           </div>
@@ -349,9 +443,8 @@
     const productGrid = document.querySelector("[data-products]");
     if (!productGrid) return;
     const products = Array.isArray(data.products) ? data.products.slice(0, 6) : [];
-    const hasLegacyProductData = products.some((item) => item.price || item.image_url || /Jahrestag|Vatertag|Weihnachten|Neujahr|Firmenjubil/i.test(item.title || ""));
-    const visibleProducts = hasLegacyProductData ? window.MELODY_DEMO_CONTENT.products : products;
-    productGrid.innerHTML = visibleProducts.slice(0, 6).map(productCard).join("");
+    const visibleProducts = products.length ? products : window.MELODY_DEMO_CONTENT.products;
+    productGrid.innerHTML = visibleProducts.filter((item) => item.active !== false).slice(0, 6).map(productCard).join("");
   }
 
   function renderDemoCards() {
@@ -367,16 +460,44 @@
     const gallery = document.querySelector("[data-gallery]");
     if (!gallery) return;
     const galleryItems = Array.isArray(data.gallery) ? data.gallery.slice(0, 6) : [];
-    const hasLegacyGalleryData = galleryItems.some((item) => item.image_url || /Beispiel|Goldfolie|Geschenkbox|Smartphone|Sound|Musik/i.test(`${item.title || ""} ${item.category || ""}`));
-    const visibleGallery = hasLegacyGalleryData ? window.MELODY_DEMO_CONTENT.gallery : galleryItems;
-    gallery.innerHTML = visibleGallery.slice(0, 6).map((item, index) => {
+    const visibleGallery = galleryItems.length ? galleryItems : window.MELODY_DEMO_CONTENT.gallery;
+    gallery.innerHTML = visibleGallery.filter((item) => item.active !== false).slice(0, 6).map((item, index) => {
+      const imageStyle = item.image_url ? `style="background-image:url('${item.image_url}')"` : "";
       return `
         <button class="gallery-item reveal" type="button" data-gallery-title="${item.title}" data-gallery-text="${item.description || ""}">
-          <div class="gallery-art warm-gallery-art gallery-art-${(index % 6) + 1}">
+          <div class="gallery-art warm-gallery-art gallery-art-${(index % 6) + 1}" ${imageStyle}>
             <div class="gallery-card-scene"><i></i><span></span><b></b></div>
           </div><h3>${item.title}</h3><p>${item.category || item.description || "Melody Cards Beispiel"}</p>
         </button>`;
     }).join("");
+  }
+
+  function renderPromiseItems() {
+    const grid = document.querySelector(".promise-grid");
+    if (!grid || !Array.isArray(settings.promiseItems)) return;
+    grid.innerHTML = settings.promiseItems
+      .filter((item) => item.active !== false)
+      .map((item) => `<article><span>${item.number || ""}</span><strong>${item.title || ""}</strong><p>${item.text || ""}</p></article>`)
+      .join("");
+  }
+
+  function renderProcessSteps() {
+    const grid = document.querySelector(".steps");
+    if (!grid || !Array.isArray(settings.processSteps)) return;
+    grid.innerHTML = settings.processSteps
+      .filter((item) => item.active !== false)
+      .map((item) => `<article class="step reveal"><span>${item.number || ""}</span><h3>${item.title || ""}</h3><p>${item.text || ""}</p></article>`)
+      .join("");
+  }
+
+  function renderExampleItems() {
+    const grid = document.querySelector(".example-grid");
+    if (!grid || !Array.isArray(settings.exampleItems)) return;
+    const classes = ["birthday", "wedding", "love", "family"];
+    grid.innerHTML = settings.exampleItems
+      .filter((item) => item.active !== false)
+      .map((item, index) => `<article class="example-card ${classes[index % classes.length]}"><span>${item.category || ""}</span><strong>${item.text || ""}</strong></article>`)
+      .join("");
   }
 
   function renderAudio() {
@@ -391,31 +512,37 @@
   }
 
   function renderConfigurator() {
-    const configFields = {
-      occasion: ["Geburtstag", "Hochzeit", "Jahrestag", "Muttertag", "Firmenjubiläum"],
-      color: ["Weiß", "Hellgrau", "Creme", "Schwarz", "Naturpapier"],
-      design: ["Minimal", "Editorial", "Foto", "Klassisch"],
-      font: ["Elegant Serif", "Modern Sans", "Handwritten", "Classic"],
-      language: ["Deutsch", "Englisch", "Französisch", "Spanisch"],
-      music: ["Pop Ballade", "Piano", "Acoustic", "Cinematic", "Soul"],
-      voice: ["Weiblich", "Männlich", "Duett"],
-      qr: ["Schwarz", "Dunkelgrau", "Beige", "Weiß"],
-      packaging: ["Geschenkbox", "Seidenpapier", "Premium Umschlag"],
-      box: ["Schlichte Box", "Umschlag", "Ohne Box"]
-    };
-    const labels = { occasion: "Anlass", color: "Kartenfarbe", design: "Design", font: "Schriftart", language: "Sprache", music: "Musikstil", voice: "Sänger", qr: "QR-Code Farbe", packaging: "Verpackung", box: "Geschenkbox" };
-    const configForm = document.querySelector("[data-config-form]");
-    if (!configForm) return;
-    configForm.innerHTML = Object.entries(configFields).map(([key, values]) => `<label>${labels[key]}<select name="${key}">${values.map((v) => `<option>${v}</option>`).join("")}</select></label>`).join("");
+    const cfg = settings.configurator || {};
+    window.MELODY_CONFIGURATOR_SETTINGS = cfg;
+    if (cfg.steps?.recipientFor) {
+      setText('[data-step-panel="1"] h3', cfg.steps.recipientFor.title);
+      renderOptionGrid(1, "recipientFor", cfg.steps.recipientFor.options, "radio");
+    }
+    if (cfg.steps?.recipientName) setText('[data-step-panel="2"] h3', cfg.steps.recipientName.title);
+    if (cfg.steps?.occasion) {
+      setText('[data-step-panel="3"] h3', cfg.steps.occasion.title);
+      renderOptionGrid(3, "occasion", cfg.steps.occasion.options, "radio");
+    }
+    if (cfg.steps?.included) {
+      setText('[data-step-panel="4"] h3', cfg.steps.included.title);
+      renderOptionGrid(4, "included", cfg.steps.included.options, "checkbox");
+    }
+    if (cfg.steps?.specialPerson) setText('[data-step-panel="5"] h3', cfg.steps.specialPerson.title);
+    if (cfg.steps?.memoryMessage) setText('[data-step-panel="6"] h3', cfg.steps.memoryMessage.title);
+    if (cfg.steps?.heartWords) setText('[data-step-panel="7"] h3', cfg.steps.heartWords.title);
+    if (cfg.steps?.contact) setText('[data-step-panel="8"] h3', cfg.steps.contact.title);
+    setText("[data-config-back]", cfg.backText);
+    setText("[data-config-next]", cfg.nextText);
+    setText("[data-config-submit]", cfg.submitText);
+    document.getElementById("premium-order-form")?.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function renderFaq() {
     const faqList = document.querySelector("[data-faq]");
     if (!faqList) return;
     const faqs = Array.isArray(data.faqs) ? data.faqs.slice(0, 8) : [];
-    const hasLegacyFaqData = faqs.some((item) => /Express|48h|Preis|kostet|Download|Stimmen|Musikstil|Sprache/i.test(`${item.question || ""} ${item.answer || ""}`));
-    const visibleFaqs = hasLegacyFaqData ? window.MELODY_DEMO_CONTENT.faqs : faqs;
-    faqList.innerHTML = visibleFaqs.slice(0, 8).map((item, index) => `<details ${index === 0 ? "open" : ""} class="reveal"><summary>${item.question}</summary><p>${item.answer}</p></details>`).join("");
+    const visibleFaqs = faqs.length ? faqs : window.MELODY_DEMO_CONTENT.faqs;
+    faqList.innerHTML = visibleFaqs.filter((item) => item.active !== false).slice(0, 8).map((item, index) => `<details ${index === 0 ? "open" : ""} class="reveal"><summary>${item.question}</summary><p>${item.answer}</p></details>`).join("");
   }
 
   function renderBlog() {
@@ -424,6 +551,15 @@
     blogGrid.innerHTML = data.blog.map((item, index) => {
       return `<article class="blog-card reveal"><div class="blog-art quiet-art"><span>${String(index + 1).padStart(2, "0")}</span></div><div><h3>${item.title}</h3><p>${item.excerpt || ""}</p><a class="btn btn-glass" href="#blog">Lesen</a></div></article>`;
     }).join("");
+  }
+
+  function renderAbout() {
+    const grid = document.querySelector(".about-grid");
+    if (!grid || !Array.isArray(settings.aboutCards)) return;
+    grid.innerHTML = settings.aboutCards
+      .filter((item) => item.active !== false)
+      .map((item) => `<article><h3>${item.title}</h3><p>${item.text}</p></article>`)
+      .join("");
   }
 
   function bindInteractions() {
@@ -510,12 +646,16 @@
   applyDesign();
   applyGlobalContent();
   renderProducts();
+  renderPromiseItems();
+  renderProcessSteps();
+  renderExampleItems();
   renderDemoCards();
   renderGallery();
   renderAudio();
   renderConfigurator();
   renderFaq();
   renderBlog();
+  renderAbout();
   bindInteractions();
   bindScrollAnimations();
   injectTools();
