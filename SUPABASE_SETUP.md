@@ -61,7 +61,7 @@ where email = 'koglu@hotmail.de'
 on conflict (user_id) do update set role = 'admin';
 ```
 
-Die gleiche Anweisung liegt auch als `admin_koglu_profile.sql` im Projekt.
+Die gleiche Anweisung liegt auch als `admin_koglu_profile.sql` im Projekt. Diese Datei setzt zusaetzlich eine sichere Bootstrap-Policy, damit sich `koglu@hotmail.de` beim ersten erfolgreichen Login selbst in `admin_profiles` eintragen kann, falls der Eintrag noch fehlt.
 
 Erst dadurch darf dieser eingeloggte Benutzer Inhalte bearbeiten und Bilder hochladen.
 

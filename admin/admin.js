@@ -38,22 +38,44 @@
     return `Login fehlgeschlagen: ${message}`;
   }
 
-  async function checkAdminProfile(userId) {
-    if (!client || !userId) return { ok: false, message: "Keine Supabase-Session gefunden." };
-    const { data, error } = await client.from("admin_profiles").select("role").eq("user_id", userId).maybeSingle();
+  async function ensureAdminProfile(user) {
+    if (!client || !user?.id) return { ok: false, message: "Keine Supabase-Session gefunden." };
+    const email = String(user.email || "").toLowerCase();
+    const { data, error } = await client.from("admin_profiles").select("role").eq("user_id", user.id).maybeSingle();
     if (error) {
       return {
         ok: false,
         message: `Login erfolgreich, aber Admin-Profil konnte nicht geprüft werden: ${error.message}`
       };
     }
-    if (!data || data.role !== "admin") {
+    if (data?.role === "admin") return { ok: true, message: "Admin-Profil bestätigt." };
+
+    if (email !== ADMIN_EMAIL) {
       return {
         ok: false,
-        message: `Login erfolgreich, aber ${ADMIN_EMAIL} fehlt in admin_profiles. Führe den SQL-Block aus SUPABASE_SETUP.md aus.`
+        message: `Login erfolgreich, aber ${email || "dieser Benutzer"} ist kein freigegebener Admin.`
       };
     }
-    return { ok: true, message: "Admin-Profil bestätigt." };
+
+    const { error: insertError } = await client
+      .from("admin_profiles")
+      .upsert({ user_id: user.id, role: "admin" }, { onConflict: "user_id" });
+
+    if (!insertError) return { ok: true, message: "Admin-Profil automatisch erstellt." };
+
+    const blockedByPolicy = insertError.code === "42501" || /row-level security|permission|policy/i.test(insertError.message || "");
+    if (blockedByPolicy) {
+      return {
+        ok: true,
+        warning: true,
+        message: `Dashboard geöffnet. ${ADMIN_EMAIL} ist authentifiziert, aber Supabase blockiert das automatische Anlegen in admin_profiles. Führe die aktualisierten Policies aus supabase.sql aus oder die Datei admin_koglu_profile.sql. Originalmeldung: ${insertError.message}`
+      };
+    }
+
+    return {
+      ok: false,
+      message: `Login erfolgreich, aber Admin-Profil konnte nicht erstellt werden: ${insertError.message}`
+    };
   }
 
   async function openDashboardForSession(session) {
@@ -67,15 +89,19 @@
       await client?.auth?.signOut?.();
       return false;
     }
-    const profile = await checkAdminProfile(session.user.id);
+    const profile = await ensureAdminProfile(session.user);
     if (!profile.ok) {
       loginStatus(profile.message);
       console.warn("Supabase admin profile check failed:", profile.message);
       await client?.auth?.signOut?.();
       return false;
     }
-    loginStatus("Login erfolgreich. Dashboard wird geöffnet...");
+    loginStatus(profile.warning ? profile.message : "Login erfolgreich. Dashboard wird geöffnet...");
     showDashboard();
+    if (profile.warning) {
+      setStatus(profile.message);
+      console.warn("Supabase admin profile bootstrap warning:", profile.message);
+    }
     refreshDashboardAfterOpen();
     return true;
   }
