@@ -206,9 +206,52 @@
     return document.querySelector(selector);
   }
 
-  function setStatus(message) {
-    $("[data-admin-status]").textContent = message || "";
-    if (message) setTimeout(() => ($("[data-admin-status]").textContent = ""), 3500);
+  let statusTimer = null;
+
+  function setStatus(message, options = {}) {
+    const target = $("[data-admin-status]");
+    if (!target) return;
+    if (statusTimer) window.clearTimeout(statusTimer);
+    target.textContent = message || "";
+    target.dataset.state = options.error ? "error" : options.success ? "success" : "";
+    if (message && !options.persist) {
+      statusTimer = window.setTimeout(() => {
+        target.textContent = "";
+        target.dataset.state = "";
+      }, options.duration || 6500);
+    }
+  }
+
+  function readableAdminError(error) {
+    const message = error?.message || String(error || "Unbekannter Fehler.");
+    const code = error?.code || "";
+    const lower = message.toLowerCase();
+    if (code === "42501" || lower.includes("row-level security") || lower.includes("permission denied")) {
+      return `Supabase verweigert das Speichern. Prüfe, ob koglu@hotmail.de in admin_profiles als admin eingetragen ist und ob die Storage-/RLS-Policies aus supabase.sql ausgeführt wurden. Originalmeldung: ${message}`;
+    }
+    if (lower.includes("bucket not found") || lower.includes("storage bucket")) {
+      return `Storage-Upload fehlgeschlagen: Der Bucket melody-assets fehlt oder ist nicht erreichbar. Originalmeldung: ${message}`;
+    }
+    if (lower.includes("site_settings")) {
+      return `Startseite konnte nicht gespeichert werden: Tabelle site_settings fehlt oder ist nicht freigegeben. Originalmeldung: ${message}`;
+    }
+    return message;
+  }
+
+  async function runAdminAction(form, pendingMessage, successMessage, action) {
+    const submitButton = form?.querySelector('button[type="submit"]');
+    try {
+      if (submitButton) submitButton.disabled = true;
+      setStatus(pendingMessage, { persist: true });
+      await action();
+      setStatus(successMessage, { success: true });
+    } catch (error) {
+      const message = readableAdminError(error);
+      setStatus(message, { error: true, persist: true });
+      console.error("Admin action failed:", error);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
   }
 
   function isDemoId(id) {
@@ -496,10 +539,17 @@
       setStatus("Upload benötigt Supabase. Im Demo-Modus bleibt die lokale Vorschau unverändert.");
       return "";
     }
-    return await api.uploadFile(fileInput.files[0], folder);
+    const file = fileInput.files[0];
+    setStatus(`Bild wird hochgeladen: ${file.name}`, { persist: true });
+    try {
+      return await api.uploadFile(file, folder);
+    } catch (error) {
+      throw new Error(`Upload fehlgeschlagen (${file.name}): ${readableAdminError(error)}`);
+    }
   }
 
-  async function saveSettings(patch, folder, form) {
+  async function saveSettings(patch, folder, form, label = "Startseite") {
+    refreshClient();
     const logoUrl = await uploadMaybe(form?.elements.logoImageFile, "logos");
     const heroUrl = await uploadMaybe(form?.elements.heroImageFile, "hero");
     if (logoUrl) patch.logoImage = logoUrl;
@@ -510,41 +560,47 @@
       setStatus("Demo gespeichert. Für echtes Speichern Supabase verbinden.");
       return;
     }
+    setStatus(`${label} wird in Supabase gespeichert...`, { persist: true });
     const { error } = await client.from("site_settings").upsert({ id: 1, content: settings.content, design: settings.design, updated_at: new Date().toISOString() });
     if (error) throw error;
-    setStatus("Gespeichert.");
+    fillSettingsForms();
   }
 
   $("[data-settings-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    const fields = ["logoText", "heroEyebrow", "heroTitleLine1", "heroTitleLine2", "heroText", "primaryButtonText", "primaryButtonHref", "secondaryButtonText", "secondaryButtonHref"];
-    const patch = Object.fromEntries(fields.map((key) => [key, form.elements[key].value]));
-    await saveSettings(patch, "hero", form);
+    await runAdminAction(form, "Startseite wird gespeichert...", "Startseite wurde erfolgreich gespeichert.", async () => {
+      const fields = ["logoText", "heroEyebrow", "heroTitleLine1", "heroTitleLine2", "heroText", "primaryButtonText", "primaryButtonHref", "secondaryButtonText", "secondaryButtonHref"];
+      const patch = Object.fromEntries(fields.map((key) => [key, form.elements[key].value]));
+      await saveSettings(patch, "hero", form, "Startseite");
+    });
   });
 
   $("[data-contact-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    const fields = ["contactTitle", "contactText", "contactEmail", "whatsappNumber", "whatsappMessage", "socialInstagram", "socialTikTok", "socialYouTube", "footerText"];
-    await saveSettings(Object.fromEntries(fields.map((key) => [key, form.elements[key].value])), "contact", form);
+    await runAdminAction(form, "Kontaktdaten werden gespeichert...", "Kontaktdaten wurden erfolgreich gespeichert.", async () => {
+      const fields = ["contactTitle", "contactText", "contactEmail", "whatsappNumber", "whatsappMessage", "socialInstagram", "socialTikTok", "socialYouTube", "footerText"];
+      await saveSettings(Object.fromEntries(fields.map((key) => [key, form.elements[key].value])), "contact", form, "Kontaktdaten");
+    });
   });
 
   $("[data-design-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    settings.design = {
-      gold: form.elements.gold.value,
-      gold2: form.elements.gold2.value,
-      background: form.elements.background.value,
-      text: form.elements.text.value,
-      muted: form.elements.muted.value
-    };
-    if (!demoMode) {
-      const { error } = await client.from("site_settings").upsert({ id: 1, content: settings.content, design: settings.design, updated_at: new Date().toISOString() });
-      if (error) throw error;
-    }
-    setStatus(demoMode ? "Demo-Design aktualisiert." : "Design gespeichert.");
+    await runAdminAction(form, "Design wird gespeichert...", demoMode ? "Demo-Design aktualisiert." : "Design wurde erfolgreich gespeichert.", async () => {
+      settings.design = {
+        gold: form.elements.gold.value,
+        gold2: form.elements.gold2.value,
+        background: form.elements.background.value,
+        text: form.elements.text.value,
+        muted: form.elements.muted.value
+      };
+      if (!demoMode) {
+        const { error } = await client.from("site_settings").upsert({ id: 1, content: settings.content, design: settings.design, updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+    });
   });
 
   function fieldInput([key, label, type]) {

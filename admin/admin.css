@@ -78,9 +78,21 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px;
+  gap: 18px;
 }
 .admin-top h2 {
   font-size: clamp(1.8rem, 4vw, 3rem);
+}
+[data-admin-status] {
+  max-width: min(560px, 48vw);
+  color: #5a4a18;
+  text-align: right;
+}
+[data-admin-status][data-state="success"] {
+  color: #267446;
+}
+[data-admin-status][data-state="error"] {
+  color: #b3261e;
 }
 .dashboard-overview {
   display: grid;
@@ -194,6 +206,14 @@ code {
     position: relative;
     top: auto;
     min-height: auto;
+  }
+  .admin-top {
+    align-items: flex-start;
+    gap: 8px;
+  }
+  [data-admin-status] {
+    max-width: 100%;
+    text-align: left;
   }
 }
 @media (max-width: 620px) {
