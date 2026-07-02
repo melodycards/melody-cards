@@ -15,12 +15,12 @@
     />
     <meta property="og:type" content="website" />
     <title>Melody Cards | Handgemachte Karten für persönliche Momente</title>
-    <script src="scroll-guard.js?v=20260702-cleaner-relaunch"></script>
+    <script src="scroll-guard.js?v=20260702-8-step-configurator"></script>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23050505'/%3E%3Cpath d='M18 45V18h7l7 14 7-14h7v27h-6V28L34 41h-4l-6-13v17z' fill='%23d6b35a'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="styles.css?v=20260702-cleaner-relaunch" />
+    <link rel="stylesheet" href="styles.css?v=20260702-8-step-configurator" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -174,19 +174,113 @@
           <h2>Erzähl uns, was die Karte sagen soll.</h2>
           <p>Das Formular ist eine Anfrage. Wir prüfen deine Angaben und melden uns persönlich zurück. Es wird keine Zahlung ausgelöst.</p>
         </div>
-        <form id="premium-order-form" class="order-form glass reveal" data-order-form>
-          <label>Name<input name="name" type="text" required placeholder="Dein Name" /></label>
-          <label>E-Mail<input name="email" type="email" required placeholder="name@example.com" /></label>
-          <label>Telefon<input name="phone" type="tel" placeholder="+49 ..." /></label>
-          <label>Adresse<textarea name="address" rows="3" placeholder="Straße, PLZ, Ort"></textarea></label>
-          <label>Text für Karte<textarea name="cardText" rows="4" placeholder="Deine persönliche Botschaft"></textarea></label>
-          <label>Musikwunsch<textarea name="musicWish" rows="4" placeholder="Stil, Stimmung, Namen, Erinnerungen"></textarea></label>
-          <label>Nachricht<textarea name="message" rows="4" placeholder="Weitere Hinweise"></textarea></label>
-          <label>Dateiupload<input type="file" name="files" /></label>
-          <label>Bildupload<input type="file" name="image" accept="image/*" /></label>
-          <label>Videoupload<input type="file" name="video" accept="video/*" /></label>
-          <label>Audioaufnahme<input type="file" name="audio" accept="audio/*" /></label>
-          <button class="btn btn-primary" type="submit">Premium-Anfrage senden</button>
+        <form id="premium-order-form" class="melody-configurator glass reveal" data-order-form data-configurator novalidate>
+          <div class="config-progress" aria-label="Fortschritt">
+            <div><span data-current-step>1</span><span>/8</span></div>
+            <div class="progress-track"><span data-progress-fill></span></div>
+          </div>
+
+          <section class="config-step is-active" data-step-panel="1">
+            <p class="eyebrow">Schritt 1</p>
+            <h3>Für wen ist die Karte?</h3>
+            <div class="option-grid">
+              <label><input type="radio" name="recipientFor" value="Ehemann" required /><span>Ehemann</span></label>
+              <label><input type="radio" name="recipientFor" value="Ehefrau" /><span>Ehefrau</span></label>
+              <label><input type="radio" name="recipientFor" value="Partner/in" /><span>Partner/in</span></label>
+              <label><input type="radio" name="recipientFor" value="Freundin" /><span>Freundin</span></label>
+              <label><input type="radio" name="recipientFor" value="Freund" /><span>Freund</span></label>
+              <label><input type="radio" name="recipientFor" value="Kind" /><span>Kind</span></label>
+              <label><input type="radio" name="recipientFor" value="Vater" /><span>Vater</span></label>
+              <label><input type="radio" name="recipientFor" value="Mutter" /><span>Mutter</span></label>
+              <label><input type="radio" name="recipientFor" value="Großeltern" /><span>Großeltern</span></label>
+              <label><input type="radio" name="recipientFor" value="Enkelkind" /><span>Enkelkind</span></label>
+              <label><input type="radio" name="recipientFor" value="Schwester/Bruder" /><span>Schwester/Bruder</span></label>
+              <label><input type="radio" name="recipientFor" value="Lehrer/in" /><span>Lehrer/in</span></label>
+              <label><input type="radio" name="recipientFor" value="Haustier" /><span>Haustier</span></label>
+              <label><input type="radio" name="recipientFor" value="Ich selbst" /><span>Ich selbst</span></label>
+              <label><input type="radio" name="recipientFor" value="Sonstiges" /><span>Sonstiges</span></label>
+            </div>
+          </section>
+
+          <section class="config-step" data-step-panel="2">
+            <p class="eyebrow">Schritt 2</p>
+            <h3>Wie heißt die Person?</h3>
+            <label class="field-card">Name oder Anrede<input name="recipientName" type="text" required placeholder="z. B. Mama, Papa, Elif, Sarah, mein Schatz" /></label>
+          </section>
+
+          <section class="config-step" data-step-panel="3">
+            <p class="eyebrow">Schritt 3</p>
+            <h3>Was ist der Anlass?</h3>
+            <div class="option-grid">
+              <label><input type="radio" name="occasion" value="Geburtstag" required /><span>Geburtstag</span></label>
+              <label><input type="radio" name="occasion" value="Hochzeit" /><span>Hochzeit</span></label>
+              <label><input type="radio" name="occasion" value="Jahrestag" /><span>Jahrestag</span></label>
+              <label><input type="radio" name="occasion" value="Valentinstag" /><span>Valentinstag</span></label>
+              <label><input type="radio" name="occasion" value="Muttertag" /><span>Muttertag</span></label>
+              <label><input type="radio" name="occasion" value="Vatertag" /><span>Vatertag</span></label>
+              <label><input type="radio" name="occasion" value="Geburt" /><span>Geburt</span></label>
+              <label><input type="radio" name="occasion" value="Freundschaft" /><span>Freundschaft</span></label>
+              <label><input type="radio" name="occasion" value="Gute Besserung" /><span>Gute Besserung</span></label>
+              <label><input type="radio" name="occasion" value="Abschied" /><span>Abschied</span></label>
+              <label><input type="radio" name="occasion" value="Danke" /><span>Danke</span></label>
+              <label><input type="radio" name="occasion" value="Erinnerung" /><span>Erinnerung</span></label>
+              <label><input type="radio" name="occasion" value="Einfach so" /><span>Einfach so</span></label>
+              <label><input type="radio" name="occasion" value="Sonstiges" /><span>Sonstiges</span></label>
+            </div>
+          </section>
+
+          <section class="config-step" data-step-panel="4">
+            <p class="eyebrow">Schritt 4</p>
+            <h3>Was soll in der Karte enthalten sein?</h3>
+            <div class="option-grid">
+              <label><input type="checkbox" name="included" value="Persönliche Nachricht" /><span>Persönliche Nachricht</span></label>
+              <label><input type="checkbox" name="included" value="Foto" /><span>Foto</span></label>
+              <label><input type="checkbox" name="included" value="Video" /><span>Video</span></label>
+              <label><input type="checkbox" name="included" value="Audioaufnahme" /><span>Audioaufnahme</span></label>
+              <label><input type="checkbox" name="included" value="QR-Code" /><span>QR-Code</span></label>
+              <label><input type="checkbox" name="included" value="Persönliches Lied" /><span>Persönliches Lied</span></label>
+            </div>
+          </section>
+
+          <section class="config-step" data-step-panel="5">
+            <p class="eyebrow">Schritt 5</p>
+            <h3>Was macht die Person besonders?</h3>
+            <label class="field-card">Besondere Eigenschaften<textarea name="specialPerson" rows="7" maxlength="800" required placeholder="Was liebst, bewunderst oder schätzt du an dieser Person?"></textarea><small><span data-count-for="specialPerson">0</span>/800 Zeichen</small></label>
+          </section>
+
+          <section class="config-step" data-step-panel="6">
+            <p class="eyebrow">Schritt 6</p>
+            <h3>Welche Erinnerung oder Botschaft soll rein?</h3>
+            <label class="field-card">Erinnerung oder Botschaft<textarea name="memoryMessage" rows="7" maxlength="1000" required placeholder="Erzähl von einem Moment, einem Satz oder einer Geschichte, die in die Karte gehört."></textarea><small><span data-count-for="memoryMessage">0</span>/1000 Zeichen</small></label>
+          </section>
+
+          <section class="config-step" data-step-panel="7">
+            <p class="eyebrow">Schritt 7</p>
+            <h3>Worte aus dem Herzen</h3>
+            <label class="field-card">Deine Worte<textarea name="heartWords" rows="7" maxlength="1200" required placeholder="Was möchtest du dieser Person sagen?"></textarea><small><span data-count-for="heartWords">0</span>/1200 Zeichen</small></label>
+          </section>
+
+          <section class="config-step" data-step-panel="8">
+            <p class="eyebrow">Schritt 8</p>
+            <h3>Zusammenfassung + Kontaktdaten</h3>
+            <div class="config-summary" data-config-summary></div>
+            <div class="contact-grid">
+              <label>Name des Kunden<input name="name" type="text" required placeholder="Dein Name" /></label>
+              <label>E-Mail<input name="email" type="email" required placeholder="name@example.com" /></label>
+              <label>Telefon optional<input name="phone" type="tel" placeholder="+49 ..." /></label>
+              <label>Hinweise<textarea name="message" rows="4" placeholder="Weitere Hinweise, Wünsche oder Fragen"></textarea></label>
+              <label>Foto hochladen<input type="file" name="image" accept="image/*" /></label>
+              <label>Video hochladen<input type="file" name="video" accept="video/*" /></label>
+              <label>Audio hochladen<input type="file" name="audio" accept="audio/*" /></label>
+              <label>Weitere Datei<input type="file" name="files" /></label>
+            </div>
+          </section>
+
+          <div class="config-actions">
+            <button class="btn btn-glass" type="button" data-config-back>Zurück</button>
+            <button class="btn btn-primary" type="button" data-config-next disabled>Weiter</button>
+            <button class="btn btn-primary" type="submit" data-config-submit hidden>Anfrage senden</button>
+          </div>
           <p id="premium-order-status" class="form-status" data-form-status role="status" aria-live="polite"></p>
         </form>
       </section>
@@ -256,9 +350,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=20260702-cleaner-relaunch"></script>
-    <script src="site-data.js?v=20260702-cleaner-relaunch"></script>
-    <script src="supabase-client.js?v=20260702-cleaner-relaunch"></script>
-    <script src="script.js?v=20260702-cleaner-relaunch"></script>
+    <script src="config.js?v=20260702-8-step-configurator"></script>
+    <script src="site-data.js?v=20260702-8-step-configurator"></script>
+    <script src="supabase-client.js?v=20260702-8-step-configurator"></script>
+    <script src="script.js?v=20260702-8-step-configurator"></script>
   </body>
 </html>

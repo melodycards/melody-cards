@@ -2521,6 +2521,206 @@ select:focus {
   background: #f8f8f6;
 }
 
+.melody-configurator {
+  display: grid;
+  gap: clamp(24px, 4vw, 42px);
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 54px);
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 34px;
+  background: linear-gradient(180deg, #ffffff, #f8f8f6);
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.08);
+}
+
+.config-progress {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+  color: #1d1d1f;
+  font-weight: 780;
+}
+
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(29, 29, 31, 0.08);
+}
+
+.progress-track span {
+  display: block;
+  width: 12.5%;
+  height: 100%;
+  border-radius: inherit;
+  background: #1d1d1f;
+  transition: width 260ms ease;
+}
+
+.config-step {
+  display: none;
+  min-height: 390px;
+  animation: configFade 260ms ease both;
+}
+
+.config-step.is-active {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+
+.config-step h3 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(2rem, 4.8vw, 3.8rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.option-grid label {
+  display: grid;
+}
+
+.option-grid input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option-grid span {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  padding: 14px 16px;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 999px;
+  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 760;
+  text-align: center;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.option-grid input:checked + span {
+  color: #ffffff;
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.12);
+}
+
+.option-grid span:hover {
+  transform: translateY(-1px);
+  border-color: rgba(29, 29, 31, 0.28);
+}
+
+.field-card,
+.contact-grid label {
+  display: grid;
+  gap: 10px;
+  color: #1d1d1f;
+  font-weight: 760;
+}
+
+.field-card input,
+.field-card textarea,
+.contact-grid input,
+.contact-grid textarea {
+  min-height: 58px;
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.field-card textarea,
+.contact-grid textarea {
+  resize: vertical;
+}
+
+.field-card small {
+  justify-self: end;
+  color: #8b8b90;
+  font-weight: 700;
+}
+
+.config-summary {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 24px;
+  background: #ffffff;
+}
+
+.config-summary article {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.32fr) 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(29, 29, 31, 0.06);
+}
+
+.config-summary article:last-child {
+  border-bottom: 0;
+}
+
+.config-summary span {
+  color: #8b8b90;
+  font-size: 0.88rem;
+  font-weight: 760;
+}
+
+.config-summary p {
+  margin: 0;
+  color: #1d1d1f;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.contact-grid label:nth-child(4) {
+  grid-column: 1 / -1;
+}
+
+.config-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.config-actions .btn {
+  min-width: 144px;
+}
+
+.config-actions .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes configFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .legal-teaser-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -2652,8 +2852,53 @@ select:focus {
   .steps,
   .legal-teaser-grid,
   .site-footer,
-  .order-form {
+  .order-form,
+  .contact-grid {
     grid-template-columns: 1fr;
+  }
+
+  .melody-configurator {
+    padding: 22px;
+    border-radius: 26px;
+  }
+
+  .config-progress {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .config-step {
+    min-height: 0;
+  }
+
+  .option-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .option-grid span {
+    min-height: 54px;
+    justify-content: start;
+    text-align: left;
+    padding-inline: 18px;
+  }
+
+  .config-summary article {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .contact-grid label:nth-child(4) {
+    grid-column: auto;
+  }
+
+  .config-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .config-actions .btn {
+    width: 100%;
   }
 
   .card-art,

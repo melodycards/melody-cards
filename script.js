@@ -1,28 +1,189 @@
-(function bindPremiumOrderForm() {
+(function bindMelodyConfigurator() {
   const form = document.getElementById("premium-order-form");
   if (!form || form.dataset.submitBound === "true") return;
   form.dataset.submitBound = "true";
   const requestTimeoutMs = 15000;
+  const totalSteps = 8;
+  let currentStep = 1;
 
   function withTimeout(promise, label) {
     return Promise.race([
       promise,
       new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error(`${label} dauert zu lange. Bitte pruefe Supabase-Verbindung, Tabelle premium_orders und RLS-Policies.`)), requestTimeoutMs);
+        window.setTimeout(() => reject(new Error(`${label} dauert zu lange.`)), requestTimeoutMs);
       })
     ]);
   }
 
-  form.querySelector('button[type="submit"]')?.addEventListener("click", () => {
-    const status = document.getElementById("premium-order-status") || form.querySelector("[data-form-status]");
-    if (form.checkValidity() && status) status.textContent = "Sende Anfrage…";
+  const $ = (selector) => form.querySelector(selector);
+  const $$ = (selector) => Array.from(form.querySelectorAll(selector));
+  const status = document.getElementById("premium-order-status") || form.querySelector("[data-form-status]");
+  const backButton = $("[data-config-back]");
+  const nextButton = $("[data-config-next]");
+  const submitButton = $("[data-config-submit]");
+  const currentStepLabel = $("[data-current-step]");
+  const progressFill = $("[data-progress-fill]");
+
+  function checkedValue(name) {
+    return form.querySelector(`[name="${name}"]:checked`)?.value || "";
+  }
+
+  function checkedValues(name) {
+    return $$(`[name="${name}"]:checked`).map((input) => input.value);
+  }
+
+  function fieldValue(name) {
+    return form.querySelector(`[name="${name}"]`)?.value.trim() || "";
+  }
+
+  function isEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function stepIsValid(step = currentStep) {
+    if (step === 1) return Boolean(checkedValue("recipientFor"));
+    if (step === 2) return fieldValue("recipientName").length > 0;
+    if (step === 3) return Boolean(checkedValue("occasion"));
+    if (step === 4) return checkedValues("included").length > 0;
+    if (step === 5) return fieldValue("specialPerson").length > 0;
+    if (step === 6) return fieldValue("memoryMessage").length > 0;
+    if (step === 7) return fieldValue("heartWords").length > 0;
+    if (step === 8) return fieldValue("name").length > 0 && isEmail(fieldValue("email"));
+    return true;
+  }
+
+  function collectConfig() {
+    return {
+      recipientFor: checkedValue("recipientFor"),
+      recipientName: fieldValue("recipientName"),
+      occasion: checkedValue("occasion"),
+      included: checkedValues("included"),
+      specialPerson: fieldValue("specialPerson"),
+      memoryMessage: fieldValue("memoryMessage"),
+      heartWords: fieldValue("heartWords"),
+      name: fieldValue("name"),
+      email: fieldValue("email"),
+      phone: fieldValue("phone"),
+      notes: fieldValue("message")
+    };
+  }
+
+  function renderSummary() {
+    const summary = $("[data-config-summary]");
+    if (!summary) return;
+    const config = collectConfig();
+    const rows = [
+      ["Für wen", config.recipientFor],
+      ["Name/Anrede", config.recipientName],
+      ["Anlass", config.occasion],
+      ["Enthalten", config.included.join(", ")],
+      ["Besonders", config.specialPerson],
+      ["Erinnerung", config.memoryMessage],
+      ["Worte aus dem Herzen", config.heartWords]
+    ];
+    summary.innerHTML = rows.map(([label, value]) => `
+      <article>
+        <span>${label}</span>
+        <p>${value || "Noch nicht ausgefüllt"}</p>
+      </article>
+    `).join("");
+  }
+
+  function updateCharCounts() {
+    ["specialPerson", "memoryMessage", "heartWords"].forEach((name) => {
+      const field = form.querySelector(`[name="${name}"]`);
+      const count = form.querySelector(`[data-count-for="${name}"]`);
+      if (field && count) count.textContent = String(field.value.length);
+    });
+  }
+
+  function updateStep() {
+    $$("[data-step-panel]").forEach((panel) => {
+      panel.classList.toggle("is-active", Number(panel.dataset.stepPanel) === currentStep);
+    });
+    if (currentStepLabel) currentStepLabel.textContent = String(currentStep);
+    if (progressFill) progressFill.style.width = `${(currentStep / totalSteps) * 100}%`;
+    if (backButton) backButton.disabled = currentStep === 1;
+    if (nextButton) {
+      nextButton.hidden = currentStep === totalSteps;
+      nextButton.disabled = !stepIsValid();
+    }
+    if (submitButton) {
+      submitButton.hidden = currentStep !== totalSteps;
+      submitButton.disabled = !stepIsValid();
+    }
+    if (status) status.textContent = "";
+    if (currentStep === totalSteps) renderSummary();
+    updateCharCounts();
+  }
+
+  function saveLocalDemo(order) {
+    const existing = JSON.parse(localStorage.getItem("melodyDemoOrders") || "[]");
+    existing.unshift({ ...order, id: `demo-${Date.now()}`, created_at: new Date().toISOString() });
+    localStorage.setItem("melodyDemoOrders", JSON.stringify(existing.slice(0, 20)));
+  }
+
+  function buildOrderPayload(fileUrl = null, imageUrl = null, videoUrl = null, audioUrl = null) {
+    const config = collectConfig();
+    const story = [
+      `Für wen: ${config.recipientFor}`,
+      `Name/Anrede: ${config.recipientName}`,
+      `Anlass: ${config.occasion}`,
+      `Gewünschte Inhalte: ${config.included.join(", ")}`,
+      "",
+      "Was die Person besonders macht:",
+      config.specialPerson,
+      "",
+      "Erinnerung oder Botschaft:",
+      config.memoryMessage,
+      "",
+      "Worte aus dem Herzen:",
+      config.heartWords
+    ].join("\n");
+    const wantsSong = config.included.includes("Persönliches Lied");
+    return {
+      name: config.name,
+      email: config.email,
+      phone: config.phone,
+      address: "",
+      card_text: story,
+      music_wish: wantsSong ? `Persönliches Lied gewünscht. Grundlage:\n${config.specialPerson}\n\n${config.memoryMessage}\n\n${config.heartWords}` : "",
+      message: [`Konfigurator-Anfrage Melody Cards`, config.notes ? `Hinweise:\n${config.notes}` : ""].filter(Boolean).join("\n\n"),
+      file_url: fileUrl,
+      image_url: imageUrl,
+      video_url: videoUrl,
+      audio_url: audioUrl,
+      status: "new"
+    };
+  }
+
+  form.addEventListener("input", updateStep);
+  form.addEventListener("change", updateStep);
+
+  backButton?.addEventListener("click", () => {
+    if (currentStep > 1) {
+      currentStep -= 1;
+      updateStep();
+    }
+  });
+
+  nextButton?.addEventListener("click", () => {
+    if (!stepIsValid()) {
+      if (status) status.textContent = "Bitte fülle diesen Schritt aus, bevor du weitergehst.";
+      return;
+    }
+    currentStep = Math.min(totalSteps, currentStep + 1);
+    updateStep();
   });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const submitButton = form.querySelector('button[type="submit"]');
-    const status = document.getElementById("premium-order-status") || form.querySelector("[data-form-status]");
-    const formData = new FormData(form);
+    if (currentStep !== totalSteps) return;
+    if (!stepIsValid(totalSteps)) {
+      if (status) status.textContent = "Bitte gib deinen Namen und eine gültige E-Mail-Adresse ein.";
+      updateStep();
+      return;
+    }
 
     if (status) status.textContent = "Sende Anfrage…";
     if (submitButton) submitButton.disabled = true;
@@ -30,43 +191,37 @@
 
     try {
       if (!window.MelodySupabase?.isConfigured()) {
-        throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
+        const order = buildOrderPayload();
+        saveLocalDemo(order);
+        if (status) status.textContent = "Danke. Deine Anfrage wurde lokal als Demo vorbereitet. Supabase ist aktuell nicht verbunden.";
+        return;
       }
 
       const [fileUrl, imageUrl, videoUrl, audioUrl] = await withTimeout(Promise.all([
-        window.MelodySupabase.uploadOrderFile(form.elements.files?.files?.[0], "files"),
-        window.MelodySupabase.uploadOrderFile(form.elements.image?.files?.[0], "images"),
-        window.MelodySupabase.uploadOrderFile(form.elements.video?.files?.[0], "videos"),
-        window.MelodySupabase.uploadOrderFile(form.elements.audio?.files?.[0], "audio")
+        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="files"]')?.files?.[0], "files"),
+        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="image"]')?.files?.[0], "images"),
+        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="video"]')?.files?.[0], "videos"),
+        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="audio"]')?.files?.[0], "audio")
       ]), "Dateiupload");
 
-      await withTimeout(window.MelodySupabase.createPremiumOrder({
-        name: formData.get("name")?.trim() || "",
-        email: formData.get("email")?.trim() || "",
-        phone: formData.get("phone")?.trim() || "",
-        address: formData.get("address")?.trim() || "",
-        card_text: formData.get("cardText")?.trim() || "",
-        music_wish: formData.get("musicWish")?.trim() || "",
-        message: formData.get("message")?.trim() || "",
-        file_url: fileUrl,
-        image_url: imageUrl,
-        video_url: videoUrl,
-        audio_url: audioUrl,
-        status: "new"
-      }), "Speichern der Premium-Anfrage");
+      await withTimeout(window.MelodySupabase.createPremiumOrder(buildOrderPayload(fileUrl, imageUrl, videoUrl, audioUrl)), "Speichern der Anfrage");
 
-      if (status) status.textContent = "Danke. Deine Premium-Anfrage wurde erfolgreich gesendet.";
       form.reset();
+      currentStep = 1;
+      updateStep();
+      if (status) status.textContent = "Danke. Deine Anfrage wurde erfolgreich gesendet.";
     } catch (error) {
-      console.error("Premium order submit failed:", error);
-      if (status) {
-        status.textContent = error.message || "Die Premium-Anfrage konnte nicht gespeichert werden. Bitte pruefe Supabase.";
-      }
+      console.warn("Premium order saved as local demo:", error.message);
+      const order = buildOrderPayload();
+      saveLocalDemo(order);
+      if (status) status.textContent = "Danke. Deine Anfrage wurde lokal als Demo vorbereitet. Supabase ist gerade nicht erreichbar.";
     } finally {
-      if (submitButton) submitButton.disabled = false;
+      if (submitButton) submitButton.disabled = !stepIsValid(totalSteps);
       form.removeAttribute("aria-busy");
     }
   });
+
+  updateStep();
 })();
 
 (async function () {

@@ -19,15 +19,31 @@
     ]);
   }
 
+  async function fetchOrders() {
+    if (!client) {
+      return JSON.parse(localStorage.getItem("melodyDemoOrders") || "[]");
+    }
+    try {
+      const { data, error } = await client.from("premium_orders").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn("Orders fallback active:", error.message);
+      return JSON.parse(localStorage.getItem("melodyDemoOrders") || "[]");
+    }
+  }
+
   async function loadContent() {
     try {
       client = api.getClient();
       demoMode = !client;
       state = await withTimeout(api.fetchContent(), 7000, { ...window.MELODY_DEMO_CONTENT, source: "demo-timeout" });
+      state.orders = await withTimeout(fetchOrders(), 7000, []);
       settings = clone(state.settings || window.MELODY_DEMO_CONTENT.settings);
     } catch (error) {
       console.warn("Admin content fallback active:", error.message);
       state = clone(window.MELODY_DEMO_CONTENT);
+      state.orders = await fetchOrders();
       settings = clone(window.MELODY_DEMO_CONTENT.settings);
       demoMode = true;
     }
@@ -106,6 +122,20 @@
     return String(id || "").startsWith("demo-");
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function shortText(value, length = 260) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    return text.length > length ? `${text.slice(0, length)}...` : text;
+  }
+
   function ensureDashboardShell() {
     const sidebar = $(".admin-sidebar");
     const main = $(".admin-main");
@@ -169,6 +199,7 @@
     const overview = $("[data-dashboard-overview]");
     if (overview) {
       const stats = [
+        ["Bestellungen", state.orders?.length || 0],
         ["Produkte", state.products?.length || 0],
         ["Galerie", state.gallery?.length || 0],
         ["Bewertungen", state.reviews?.length || 0],
@@ -199,6 +230,7 @@
     try {
       fillSettingsForms();
       Object.keys(tables).forEach(renderCrud);
+      renderOrders();
       renderDashboard();
     } catch (error) {
       setStatus(`Dashboard geöffnet, Inhalte konnten nicht vollständig geladen werden: ${error.message}`);
@@ -281,9 +313,12 @@
   $("[data-refresh]").addEventListener("click", async () => {
     contentReady = loadContent();
     state = await contentReady;
+    state.orders = await fetchOrders();
     settings = clone(state.settings);
     fillSettingsForms();
     Object.keys(tables).forEach(renderCrud);
+    renderOrders();
+    renderDashboard();
     setStatus("Inhalte neu geladen.");
   });
 
@@ -476,6 +511,45 @@
     renderCrud(kind);
     setStatus("Eintrag gelöscht.");
   }
+
+  function renderOrders() {
+    const host = $("[data-orders-list]");
+    if (!host) return;
+    const orders = state.orders || [];
+    if (!orders.length) {
+      host.innerHTML = `<p class="form-status">Noch keine Bestellungen gefunden.</p>`;
+      return;
+    }
+    host.innerHTML = orders.map((order) => {
+      const date = order.created_at ? new Date(order.created_at).toLocaleString("de-DE") : "Ohne Datum";
+      const links = [
+        ["Datei", order.file_url],
+        ["Foto", order.image_url],
+        ["Video", order.video_url],
+        ["Audio", order.audio_url]
+      ].filter(([, url]) => url).map(([label, url]) => `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${label}</a>`).join("");
+      return `
+        <article class="order-row">
+          <div class="order-row-head">
+            <div>
+              <strong>${escapeHtml(order.name || "Unbekannt")}</strong>
+              <p>${escapeHtml(order.email || "")}${order.phone ? ` · ${escapeHtml(order.phone)}` : ""}</p>
+            </div>
+            <span>${escapeHtml(order.status || "new")}</span>
+          </div>
+          <p class="order-date">${escapeHtml(date)}</p>
+          <p>${escapeHtml(shortText(order.card_text || order.message || ""))}</p>
+          ${links ? `<div class="order-links">${links}</div>` : ""}
+        </article>`;
+    }).join("");
+  }
+
+  $("[data-refresh-orders]")?.addEventListener("click", async () => {
+    state.orders = await fetchOrders();
+    renderOrders();
+    renderDashboard();
+    setStatus("Bestellungen neu geladen.");
+  });
 
   window.addEventListener("error", (event) => setStatus(event.message));
   await requireSession();

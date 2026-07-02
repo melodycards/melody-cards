@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
     <title>Melody Cards Admin</title>
-    <script src="../scroll-guard.js?v=20260702-cleaner-relaunch"></script>
-    <link rel="stylesheet" href="../styles.css?v=20260702-cleaner-relaunch" />
-    <link rel="stylesheet" href="admin.css?v=20260702-cleaner-relaunch" />
+    <script src="../scroll-guard.js?v=20260702-8-step-configurator"></script>
+    <link rel="stylesheet" href="../styles.css?v=20260702-8-step-configurator" />
+    <link rel="stylesheet" href="admin.css?v=20260702-8-step-configurator" />
   </head>
   <body class="admin-body">
     <main class="admin-shell">
@@ -31,6 +31,7 @@
         <aside class="admin-sidebar glass">
           <div class="admin-brand"><span class="brand-mark">MC</span><strong>Admin</strong></div>
           <button class="is-active" data-section="home">Startseite</button>
+          <button data-section="orders">Bestellungen</button>
           <button data-section="products">Produkte</button>
           <button data-section="gallery">Galerie</button>
           <button data-section="reviews">Bewertungen</button>
@@ -67,6 +68,19 @@
               <label>Button 2 Link<input name="secondaryButtonHref" /></label>
               <button class="btn btn-primary" type="submit">Startseite speichern</button>
             </form>
+          </section>
+
+          <section class="admin-panel" data-panel="orders">
+            <div class="admin-form glass">
+              <div class="crud-header">
+                <div>
+                  <p class="eyebrow">Anfragen</p>
+                  <h3>Bestellungen anzeigen</h3>
+                </div>
+                <button class="btn btn-glass" type="button" data-refresh-orders>Aktualisieren</button>
+              </div>
+              <div class="orders-list" data-orders-list></div>
+            </div>
           </section>
 
           <section class="admin-panel" data-panel="products">
@@ -127,9 +141,9 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../config.js?v=20260702-cleaner-relaunch"></script>
-    <script src="../site-data.js?v=20260702-cleaner-relaunch"></script>
-    <script src="../supabase-client.js?v=20260702-cleaner-relaunch"></script>
-    <script src="admin.js?v=20260702-cleaner-relaunch"></script>
+    <script src="../config.js?v=20260702-8-step-configurator"></script>
+    <script src="../site-data.js?v=20260702-8-step-configurator"></script>
+    <script src="../supabase-client.js?v=20260702-8-step-configurator"></script>
+    <script src="admin.js?v=20260702-8-step-configurator"></script>
   </body>
 </html>
