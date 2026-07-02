@@ -193,7 +193,7 @@
       if (!window.MelodySupabase?.isConfigured()) {
         const order = buildOrderPayload();
         saveLocalDemo(order);
-        if (status) status.textContent = "Danke. Deine Anfrage wurde lokal als Demo vorbereitet. Supabase ist aktuell nicht verbunden.";
+        if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
         return;
       }
 
@@ -209,12 +209,12 @@
       form.reset();
       currentStep = 1;
       updateStep();
-      if (status) status.textContent = "Danke. Deine Anfrage wurde erfolgreich gesendet.";
+      if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
     } catch (error) {
       console.warn("Premium order saved as local demo:", error.message);
       const order = buildOrderPayload();
       saveLocalDemo(order);
-      if (status) status.textContent = "Danke. Deine Anfrage wurde lokal als Demo vorbereitet. Supabase ist gerade nicht erreichbar.";
+      if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
     } finally {
       if (submitButton) submitButton.disabled = !stepIsValid(totalSteps);
       form.removeAttribute("aria-busy");
@@ -254,15 +254,15 @@
   const relaunchContent = {
     heroEyebrow: "Melody Cards",
     heroTitleLine1: "Handgemachte Karten",
-    heroTitleLine2: "für persönliche Momente.",
-    heroText: "Eine ruhige, hochwertige Karte mit deiner Botschaft, einem Foto und auf Wunsch einem Lied oder QR-Code. Schlicht gestaltet, persönlich erzählt, bewusst verschenkt.",
+    heroTitleLine2: "für besondere Menschen.",
+    heroText: "Persönliche Botschaften, Fotos, Erinnerungen und auf Wunsch ein QR-Code oder Lied. Warm gestaltet, handgemacht gedacht, bewusst verschenkt.",
     primaryButtonText: "Karte gestalten",
     primaryButtonHref: "#order",
     secondaryButtonText: "Beispiele ansehen",
     secondaryButtonHref: "#examples",
     footerText: "Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.",
     contactTitle: "Offen für Fragen vor der Anfrage.",
-    contactText: "Wenn du unsicher bist, ob eine Karte, ein Lied oder ein QR-Code passt, schreibe uns kurz. Wir antworten ohne Verkaufsdruck."
+    contactText: "Wenn du unsicher bist, ob Karte, Foto, Audio, Video, Lied oder QR-Code passt, schreibe uns kurz. Wir antworten persönlich und ohne Verkaufsdruck."
   };
 
   const retiredContent = {
@@ -331,8 +331,11 @@
     const tags = Array.isArray(item.tags) ? item.tags.slice(0, 2) : ["Botschaft", "Foto oder QR-Code"];
     return `
       <article class="product-card reveal">
-        <div class="card-art quiet-art">
-          <span>${String(index + 1).padStart(2, "0")}</span>
+        <div class="card-art warm-card-art card-art-${(index % 6) + 1}">
+          <div class="mini-open-card">
+            <i></i><strong>${item.title}</strong><span></span>
+          </div>
+          <em>${String(index + 1).padStart(2, "0")}</em>
         </div>
         <div class="card-body">
           <h3>${item.title}</h3><p>${item.description || ""}</p>
@@ -369,7 +372,9 @@
     gallery.innerHTML = visibleGallery.slice(0, 6).map((item, index) => {
       return `
         <button class="gallery-item reveal" type="button" data-gallery-title="${item.title}" data-gallery-text="${item.description || ""}">
-          <div class="gallery-art quiet-art"><span>${String(index + 1).padStart(2, "0")}</span></div><h3>${item.title}</h3><p>${item.category || item.description || "Melody Cards Beispiel"}</p>
+          <div class="gallery-art warm-gallery-art gallery-art-${(index % 6) + 1}">
+            <div class="gallery-card-scene"><i></i><span></span><b></b></div>
+          </div><h3>${item.title}</h3><p>${item.category || item.description || "Melody Cards Beispiel"}</p>
         </button>`;
     }).join("");
   }

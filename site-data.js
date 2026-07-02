@@ -22,15 +22,15 @@
         logoText: "MC",
         heroEyebrow: "Melody Cards",
         heroTitleLine1: "Handgemachte Karten",
-        heroTitleLine2: "für persönliche Momente.",
-        heroText: "Eine ruhige, hochwertige Karte mit deiner Botschaft, einem Foto und auf Wunsch einem Lied oder QR-Code. Schlicht gestaltet, persönlich erzählt, bewusst verschenkt.",
+        heroTitleLine2: "für besondere Menschen.",
+        heroText: "Persönliche Botschaften, Fotos, Erinnerungen und auf Wunsch ein QR-Code oder Lied. Warm gestaltet, handgemacht gedacht, bewusst verschenkt.",
         primaryButtonText: "Karte gestalten",
         primaryButtonHref: "#order",
         secondaryButtonText: "Beispiele ansehen",
         secondaryButtonHref: "#examples",
         footerText: "Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.",
         contactTitle: "Offen für Fragen vor der Anfrage.",
-        contactText: "Wenn du unsicher bist, ob eine Karte, ein Lied oder ein QR-Code passt, schreibe uns kurz. Wir antworten ohne Verkaufsdruck.",
+        contactText: "Wenn du unsicher bist, ob Karte, Foto, Audio, Video, Lied oder QR-Code passt, schreibe uns kurz. Wir antworten persönlich und ohne Verkaufsdruck.",
         contactEmail: "hello@melody-cards.example",
         whatsappNumber: "491701234567",
         whatsappMessage: "Hallo Melody Cards, ich möchte eine Premium-Karte bestellen.",
@@ -39,9 +39,9 @@
         socialYouTube: "https://www.youtube.com/"
       },
       design: {
-        background: "#ffffff",
+        background: "#fffaf4",
         text: "#1d1d1f",
-        muted: "#6e6e73"
+        muted: "#746b62"
       }
     },
     products: productNames.map(([title, description], index) => ({
