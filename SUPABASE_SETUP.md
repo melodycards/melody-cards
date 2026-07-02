@@ -61,6 +61,8 @@ where email = 'koglu@hotmail.de'
 on conflict (user_id) do update set role = 'admin';
 ```
 
+Die gleiche Anweisung liegt auch als `admin_koglu_profile.sql` im Projekt.
+
 Erst dadurch darf dieser eingeloggte Benutzer Inhalte bearbeiten und Bilder hochladen.
 
 ## 5. Storage Bucket prüfen

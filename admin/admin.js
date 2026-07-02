@@ -1,5 +1,6 @@
 (async function () {
-  const api = window.MelodySupabase || {
+  const ADMIN_EMAIL = "koglu@hotmail.de";
+  let api = window.MelodySupabase || {
     getClient: () => null,
     fetchContent: async () => ({ ...window.MELODY_DEMO_CONTENT, source: "demo" }),
     uploadFile: async () => null
@@ -11,6 +12,48 @@
   let settings = clone(window.MELODY_DEMO_CONTENT.settings);
   let editing = {};
   let contentReady = loadContent();
+
+  function refreshClient() {
+    if (window.MelodySupabase) api = window.MelodySupabase;
+    client = api.getClient?.() || null;
+    demoMode = !client;
+    return client;
+  }
+
+  function loginStatus(message) {
+    const target = $("[data-login-status]");
+    if (target) target.textContent = message || "";
+  }
+
+  function readableAuthError(error) {
+    const message = error?.message || "Unbekannter Login-Fehler.";
+    const lower = message.toLowerCase();
+    if (lower.includes("invalid login credentials")) {
+      return "Login fehlgeschlagen: E-Mail oder Passwort ist falsch. Prüfe das Passwort oder nutze „Passwort zurücksetzen“. Originalmeldung: Invalid login credentials.";
+    }
+    if (lower.includes("email not confirmed")) {
+      return "Login fehlgeschlagen: Die E-Mail ist in Supabase noch nicht bestätigt. Bitte bestätige die Mail in Supabase Auth oder deaktiviere Confirm email.";
+    }
+    return `Login fehlgeschlagen: ${message}`;
+  }
+
+  async function checkAdminProfile(userId) {
+    if (!client || !userId) return { ok: false, message: "Keine Supabase-Session gefunden." };
+    const { data, error } = await client.from("admin_profiles").select("role").eq("user_id", userId).maybeSingle();
+    if (error) {
+      return {
+        ok: false,
+        message: `Login erfolgreich, aber Admin-Profil konnte nicht geprüft werden: ${error.message}`
+      };
+    }
+    if (!data || data.role !== "admin") {
+      return {
+        ok: false,
+        message: `Login erfolgreich, aber ${ADMIN_EMAIL} fehlt in admin_profiles. Führe den SQL-Block aus SUPABASE_SETUP.md aus.`
+      };
+    }
+    return { ok: true, message: "Admin-Profil bestätigt." };
+  }
 
   function withTimeout(promise, ms, fallback) {
     return Promise.race([
@@ -35,8 +78,7 @@
 
   async function loadContent() {
     try {
-      client = api.getClient();
-      demoMode = !client;
+      refreshClient();
       state = await withTimeout(api.fetchContent(), 7000, { ...window.MELODY_DEMO_CONTENT, source: "demo-timeout" });
       state.orders = await withTimeout(fetchOrders(), 7000, []);
       settings = clone(state.settings || window.MELODY_DEMO_CONTENT.settings);
@@ -257,6 +299,7 @@
   }
 
   async function requireSession() {
+    refreshClient();
     if (demoMode) return;
     const { data } = await client.auth.getSession();
     if (data.session) {
@@ -277,29 +320,68 @@
     event.preventDefault();
     const submitButton = event.currentTarget.querySelector('button[type="submit"]');
     submitButton.disabled = true;
-    $("[data-login-status]").textContent = "Login wird geprüft...";
+    loginStatus("Login wird geprüft...");
+    refreshClient();
     if (demoMode) {
-      $("[data-login-status]").textContent = "Supabase ist noch nicht verbunden. Nutze Demo-Dashboard oder trage config.js ein.";
+      const cfg = window.MELODY_SUPABASE_CONFIG || {};
+      loginStatus(`Supabase ist nicht bereit. Project URL vorhanden: ${cfg.url ? "ja" : "nein"}. Anon Key vorhanden: ${cfg.anonKey ? "ja" : "nein"}. Supabase JS geladen: ${window.supabase ? "ja" : "nein"}.`);
       submitButton.disabled = false;
       return;
     }
     const form = new FormData(event.currentTarget);
     try {
-      const { error } = await client.auth.signInWithPassword({
-        email: form.get("email"),
-        password: form.get("password")
-      });
-      if (error) {
-        $("[data-login-status]").textContent = error.message;
+      const email = String(form.get("email") || "").trim().toLowerCase();
+      const password = String(form.get("password") || "");
+      if (email !== ADMIN_EMAIL) {
+        loginStatus(`Bitte melde dich mit ${ADMIN_EMAIL} an.`);
         return;
       }
-      $("[data-login-status]").textContent = "Login erfolgreich. Dashboard wird geöffnet...";
+      const { data, error } = await client.auth.signInWithPassword({
+        email: form.get("email"),
+        password
+      });
+      if (error) {
+        loginStatus(readableAuthError(error));
+        console.warn("Supabase admin login failed:", error);
+        return;
+      }
+      const profile = await checkAdminProfile(data?.user?.id);
+      if (!profile.ok) {
+        loginStatus(profile.message);
+        console.warn("Supabase admin profile check failed:", profile.message);
+        return;
+      }
+      loginStatus("Login erfolgreich. Dashboard wird geöffnet...");
       showDashboard();
       refreshDashboardAfterOpen();
     } catch (error) {
-      $("[data-login-status]").textContent = `Login fehlgeschlagen: ${error.message}`;
+      loginStatus(readableAuthError(error));
+      console.warn("Supabase admin login exception:", error);
     } finally {
       submitButton.disabled = false;
+    }
+  });
+
+  $("[data-reset-password]")?.addEventListener("click", async () => {
+    refreshClient();
+    if (demoMode) {
+      loginStatus("Passwort-Reset nicht möglich: Supabase ist nicht verbunden oder die Supabase JS-Bibliothek wurde nicht geladen.");
+      return;
+    }
+    try {
+      loginStatus("Passwort-Reset wird gesendet...");
+      const { error } = await client.auth.resetPasswordForEmail(ADMIN_EMAIL, {
+        redirectTo: `${location.origin}${location.pathname}`
+      });
+      if (error) {
+        loginStatus(`Passwort-Reset fehlgeschlagen: ${error.message}`);
+        console.error("Supabase password reset failed:", error);
+        return;
+      }
+      loginStatus(`Passwort-Reset wurde an ${ADMIN_EMAIL} gesendet. Prüfe dein Postfach.`);
+    } catch (error) {
+      loginStatus(`Passwort-Reset fehlgeschlagen: ${error.message}`);
+      console.error("Supabase password reset exception:", error);
     }
   });
 
