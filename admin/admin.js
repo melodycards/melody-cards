@@ -14,6 +14,7 @@
   const uid = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const escape = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
   const sorted = (items = []) => [...items].sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+  const assetUrl = (url = "") => !url ? "" : /^(https?:|data:|\/|\.\.\/)/.test(url) ? url : `../${url}`;
 
   function setStatus(message, stateName = "") {
     const node = $("[data-admin-status]");
@@ -308,7 +309,7 @@
 
   function row(key, item) {
     const image = item.url || item.photo || item.images?.[0] || "";
-    return `<article class="admin-row"><img class="admin-thumb" src="${escape(image)}" alt="" /><div><strong>${escape(item.title || item.name || item.question || item.id)}</strong><p>${escape(item.description || item.text || item.answer || "")}</p></div><div class="admin-actions"><button class="mini-btn" data-edit="${escape(item.id)}">Bearbeiten</button><button class="mini-btn" data-move="${escape(item.id)}" data-direction="-1">↑</button><button class="mini-btn" data-move="${escape(item.id)}" data-direction="1">↓</button><button class="mini-btn danger" data-delete="${escape(item.id)}">Löschen</button></div></article>`;
+    return `<article class="admin-row"><img class="admin-thumb" src="${escape(assetUrl(image))}" alt="" /><div><strong>${escape(item.title || item.name || item.question || item.id)}</strong><p>${escape(item.description || item.text || item.answer || "")}</p></div><div class="admin-actions"><button class="mini-btn" data-edit="${escape(item.id)}">Bearbeiten</button><button class="mini-btn" data-move="${escape(item.id)}" data-direction="-1">↑</button><button class="mini-btn" data-move="${escape(item.id)}" data-direction="1">↓</button><button class="mini-btn danger" data-delete="${escape(item.id)}">Löschen</button></div></article>`;
   }
 
   function editItem(key, id, fields) {
@@ -371,7 +372,7 @@
   }
 
   function renderMedia() {
-    $('[data-panel="media"]').innerHTML = card("Bilder hochladen", `<form data-media-form class="admin-grid">${input("title","Titel","")}${input("alt","Alt Text","")}${input("category","Kategorie","")}${file("upload","Bild")}<button class="btn btn-primary span-all" type="submit">Bild speichern</button></form><div class="admin-list">${(content.mediaLibrary || []).map((item) => `<article class="admin-row"><img class="admin-thumb" src="${escape(item.url)}" alt="" /><div><strong>${escape(item.title || "Bild")}</strong><p>${escape(item.alt || item.category || "")}</p></div><div class="admin-actions"><a class="mini-btn" href="${escape(item.url)}" target="_blank" rel="noreferrer">Öffnen</a><button class="mini-btn danger" data-delete-media="${escape(item.id)}">Entfernen</button></div></article>`).join("")}</div>`);
+    $('[data-panel="media"]').innerHTML = card("Bilder hochladen", `<form data-media-form class="admin-grid">${input("title","Titel","")}${input("alt","Alt Text","")}${input("category","Kategorie","")}${file("upload","Bild")}<button class="btn btn-primary span-all" type="submit">Bild speichern</button></form><div class="admin-list">${(content.mediaLibrary || []).map((item) => `<article class="admin-row"><img class="admin-thumb" src="${escape(assetUrl(item.url))}" alt="" /><div><strong>${escape(item.title || "Bild")}</strong><p>${escape(item.alt || item.category || "")}</p></div><div class="admin-actions"><a class="mini-btn" href="${escape(assetUrl(item.url))}" target="_blank" rel="noreferrer">Öffnen</a><button class="mini-btn danger" data-delete-media="${escape(item.id)}">Entfernen</button></div></article>`).join("")}</div>`);
     $('[data-media-form]').addEventListener("submit", async (event) => {
       event.preventDefault();
       await action("Bild", async () => {
