@@ -219,6 +219,7 @@
   function order(section) {
     const copy = orderCopy();
     const productOptions = sorted(content.products).map((product) => localizedItem("products", product)).map((product) => `<option>${escape(product.title)}</option>`).join("");
+    const optionList = (options = []) => options.map((option) => `<option value="${escape(option)}">${escape(option)}</option>`).join("");
     return `<section class="section order-section section-reveal" id="${escape(section.id)}">
       ${sectionHead(section)}
       <form class="order-form lux-card" id="premium-order-form">
@@ -227,6 +228,9 @@
         <label>${escape(copy.nameLabel)}<input name="name" required /></label>
         <label>${escape(copy.emailLabel)}<input name="email" type="email" required /></label>
         <label>${escape(copy.phoneLabel)}<input name="phone" type="tel" /></label>
+        <label>${escape(copy.songLanguageLabel)}<select name="song_language" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.songLanguageOptions)}</select></label>
+        <label>${escape(copy.voiceLabel)}<select name="voice" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.voiceOptions)}</select></label>
+        <label>${escape(copy.musicStyleLabel)}<select name="music_style" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.musicStyleOptions)}</select></label>
         <label class="span-all">${escape(copy.messageLabel)}<textarea name="message" rows="5" placeholder="${escape(copy.messagePlaceholder || "")}"></textarea></label>
         <button class="btn btn-primary" type="submit">${escape(copy.submitLabel)}</button>
         <p class="form-status" id="premium-order-status" role="status" aria-live="polite"></p>
@@ -321,7 +325,16 @@
         phone: values.phone || "",
         address: "",
         card_text: `${copy.cardTextProduct || "Geburtstagskarte"}: ${values.product}\n${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient}`,
-        music_wish: "",
+        music_wish: JSON.stringify({
+          song_language: values.song_language,
+          voice: values.voice,
+          music_style: values.music_style,
+          labels: {
+            song_language: copy.musicWishLanguage || "Sprache des Liedes",
+            voice: copy.musicWishVoice || "Stimme",
+            music_style: copy.musicWishStyle || "Musikrichtung"
+          }
+        }),
         message: values.message || "",
         status: "new"
       });

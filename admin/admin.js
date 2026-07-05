@@ -607,14 +607,106 @@
     $('[data-load-orders]')?.addEventListener("click", () => loadOrders());
   }
 
+  const songLanguageOptions = ["Deutsch", "Türkisch"];
+  const voiceOptions = ["Männlich", "Weiblich"];
+  const musicStyleOptions = ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"];
+
   async function loadOrders() {
     await action("Bestellungen", async () => {
       await refreshClient();
       if (!client) throw new Error("Supabase nicht verbunden.");
       const { data, error } = await client.from("premium_orders").select("*").order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
-      $('[data-orders-list]').innerHTML = (data || []).map((order) => `<article class="admin-row"><div></div><div><strong>${escape(order.name)}</strong><p>${escape(order.email)} · ${escape(order.status)}</p><p>${escape(order.card_text || order.message || "")}</p></div></article>`).join("") || "<p>Keine Bestellungen.</p>";
+      $('[data-orders-list]').innerHTML = (data || []).map(orderAdminCard).join("") || "<p>Keine Bestellungen.</p>";
+      $$("[data-order-form]").forEach((form) => form.addEventListener("submit", saveOrderEdits));
       setStatus("Bestellungen geladen.", "success");
+    });
+  }
+
+  function orderAdminCard(order) {
+    const wish = parseMusicWish(order.music_wish);
+    return `<article class="order-admin-card">
+      <header>
+        <div>
+          <strong>${escape(order.name || "Ohne Name")}</strong>
+          <p>${escape(order.email || "")}${order.phone ? ` · ${escape(order.phone)}` : ""}</p>
+        </div>
+        <span class="status-pill">${escape(order.status || "new")}</span>
+      </header>
+      <form data-order-form="${escape(order.id)}" class="order-admin-form">
+        ${adminSelect("song_language", "Sprache des Liedes", songLanguageOptions, wish.song_language)}
+        ${adminSelect("voice", "Stimme", voiceOptions, wish.voice)}
+        ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, wish.music_style)}
+        ${adminSelect("status", "Status", ["new", "in_progress", "done", "archived"], order.status || "new")}
+        <label class="span-all">Kartentext<textarea name="card_text" rows="3">${escape(order.card_text || "")}</textarea></label>
+        <label class="span-all">Nachricht<textarea name="message" rows="3">${escape(order.message || "")}</textarea></label>
+        <button class="btn btn-primary span-all" type="submit" data-order-save>Bestellung speichern</button>
+      </form>
+    </article>`;
+  }
+
+  function adminSelect(name, label, options, selected) {
+    return `<label>${escape(label)}<select name="${escape(name)}" required>${options.map((option) => `<option value="${escape(option)}" ${option === selected ? "selected" : ""}>${escape(option)}</option>`).join("")}</select></label>`;
+  }
+
+  function parseMusicWish(value = "") {
+    if (!value) return {};
+    try {
+      const parsed = JSON.parse(value);
+      return {
+        song_language: parsed.song_language || parsed.language || "",
+        voice: parsed.voice || "",
+        music_style: parsed.music_style || parsed.style || ""
+      };
+    } catch {
+      const text = String(value);
+      return {
+        song_language: extractMusicWishLine(text, ["Sprache des Liedes", "Şarkının dili"]),
+        voice: extractMusicWishLine(text, ["Stimme", "Ses"]),
+        music_style: extractMusicWishLine(text, ["Musikrichtung", "Müzik tarzı"])
+      };
+    }
+  }
+
+  function extractMusicWishLine(text, labels) {
+    for (const label of labels) {
+      const match = text.match(new RegExp(`${label}:\\s*([^\\n]+)`, "i"));
+      if (match) return match[1].trim();
+    }
+    return "";
+  }
+
+  function serializeMusicWish(form) {
+    return JSON.stringify({
+      song_language: form.elements.song_language.value,
+      voice: form.elements.voice.value,
+      music_style: form.elements.music_style.value,
+      labels: {
+        song_language: "Sprache des Liedes",
+        voice: "Stimme",
+        music_style: "Musikrichtung"
+      }
+    });
+  }
+
+  async function saveOrderEdits(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("[data-order-save]");
+    const id = form.dataset.orderForm;
+    await withButtonLoading(button, "Speichert...", async () => {
+      await action("Bestellung", async () => {
+        await refreshClient();
+        if (!client) throw new Error("Supabase nicht verbunden.");
+        const { error } = await client.from("premium_orders").update({
+          music_wish: serializeMusicWish(form),
+          status: form.elements.status.value,
+          card_text: form.elements.card_text.value,
+          message: form.elements.message.value
+        }).eq("id", id);
+        if (error) throw error;
+        setStatus("Bestellung wurde gespeichert.", "success");
+      });
     });
   }
 

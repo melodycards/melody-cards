@@ -222,6 +222,13 @@
           nameLabel: "Dein Name",
           emailLabel: "E-Mail",
           phoneLabel: "Telefon optional",
+          songLanguageLabel: "Sprache des Liedes",
+          selectPlaceholder: "Bitte auswählen",
+          songLanguageOptions: ["Deutsch", "Türkisch"],
+          voiceLabel: "Stimme",
+          voiceOptions: ["Männlich", "Weiblich"],
+          musicStyleLabel: "Musikrichtung",
+          musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
           messageLabel: "Wünsche zur Karte",
           messagePlaceholder: "Was soll die Karte ausdrücken? Gibt es etwas, das wir wissen sollen?",
           submitLabel: "Geburtstagskarte anfragen",
@@ -233,6 +240,9 @@
           error: "Die Anfrage konnte nicht gespeichert werden.",
           cardTextProduct: "Geburtstagskarte",
           cardTextRecipient: "Beschenkte Person",
+          musicWishLanguage: "Sprache des Liedes",
+          musicWishVoice: "Stimme",
+          musicWishStyle: "Musikrichtung",
           requestButton: "Anfragen"
         },
         translations: {
@@ -355,6 +365,13 @@
               nameLabel: "Adın",
               emailLabel: "E-posta",
               phoneLabel: "Telefon isteğe bağlı",
+              songLanguageLabel: "Şarkının dili",
+              selectPlaceholder: "Lütfen seç",
+              songLanguageOptions: ["Deutsch", "Türkisch"],
+              voiceLabel: "Ses",
+              voiceOptions: ["Männlich", "Weiblich"],
+              musicStyleLabel: "Müzik tarzı",
+              musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
               messageLabel: "Kart için isteklerin",
               messagePlaceholder: "Kart ne ifade etmeli? Bilmemiz gereken bir şey var mı?",
               submitLabel: "Doğum günü kartı talep et",
@@ -366,6 +383,9 @@
               error: "Talep kaydedilemedi.",
               cardTextProduct: "Doğum günü kartı",
               cardTextRecipient: "Hediye edilen kişi",
+              musicWishLanguage: "Şarkının dili",
+              musicWishVoice: "Ses",
+              musicWishStyle: "Müzik tarzı",
               requestButton: "Talep et"
             }
           }
