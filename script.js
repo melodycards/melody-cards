@@ -19,13 +19,26 @@
       },
       contact: { ...base.contact, ...(remote.contact || {}) },
       footer: { ...base.footer, ...(remote.footer || {}) },
-      legalPages: { ...base.legalPages, ...(remote.legalPages || {}) }
+      legalPages: { ...base.legalPages, ...(remote.legalPages || {}) },
+      orderForm: { ...base.orderForm, ...(remote.orderForm || {}) },
+      translations: { ...base.translations, ...(remote.translations || {}) },
+      languages: remote.languages || base.languages || []
     };
   }
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const escape = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
   const sorted = (items = []) => [...items].filter((item) => item && item.active !== false && item.status !== "inactive").sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+  const availableLanguages = sorted(content.languages || [{ code: "de", label: "DE", active: true }, { code: "tr", label: "TR", active: true }]);
+  const urlLanguage = new URLSearchParams(location.search).get("lang");
+  const storedLanguage = localStorage.getItem("melodyLanguage");
+  const currentLanguage = availableLanguages.some((language) => language.code === urlLanguage)
+    ? urlLanguage
+    : availableLanguages.some((language) => language.code === storedLanguage)
+      ? storedLanguage
+      : content.defaultLanguage || "de";
+  const translation = content.translations?.[currentLanguage] || {};
+  document.documentElement.lang = currentLanguage;
 
   function cssVar(name, value, suffix = "") {
     if (value !== undefined && value !== null && value !== "") document.documentElement.style.setProperty(name, `${value}${suffix}`);
@@ -62,7 +75,7 @@
   }
 
   function applySeo() {
-    const seo = content.seo || {};
+    const seo = { ...(content.seo || {}), ...(translation.seo || {}) };
     document.title = seo.title || content.brand.name || "Melody Cards";
     $('[data-seo-description]')?.setAttribute("content", seo.description || "");
     $('[data-og-title]')?.setAttribute("content", seo.ogTitle || document.title);
@@ -73,19 +86,56 @@
   }
 
   function renderBrand() {
-    const logo = content.brand.logoImage
-      ? `<img src="${escape(content.brand.logoImage)}" alt="${escape(content.brand.name)}" />`
+    const brand = { ...content.brand, ...(translation.brand || {}) };
+    const logo = brand.logoImage
+      ? `<img src="${escape(brand.logoImage)}" alt="${escape(brand.name)}" />`
       : `<span>${escape(content.brand.logoText || "MC")}</span>`;
-    $("[data-brand]").innerHTML = `${logo}<strong>${escape(content.brand.name || "Melody Cards")}</strong>`;
-    $("[data-loader] span").textContent = content.brand.name || "Melody Cards";
+    $("[data-brand]").innerHTML = `${logo}<strong>${escape(brand.name || "Melody Cards")}</strong>`;
+    $("[data-loader] span").textContent = brand.name || "Melody Cards";
   }
 
   function renderNavigation() {
     const nav = $("[data-nav]");
-    nav.innerHTML = sorted(content.navigation).map((item) => `<a class="${item.style === "primary" ? "nav-primary" : ""}" href="${escape(item.href)}">${escape(item.label)}</a>`).join("");
+    nav.innerHTML = sorted(translation.navigation || content.navigation).map((item) => `<a class="${item.style === "primary" ? "nav-primary" : ""}" href="${escape(item.href)}">${escape(item.label)}</a>`).join("");
+  }
+
+  function renderLanguageSwitcher() {
+    const switcher = $("[data-language-switcher]");
+    if (!switcher) return;
+    switcher.innerHTML = availableLanguages.map((language) => `<button class="lang-btn ${language.code === currentLanguage ? "is-active" : ""}" type="button" data-language="${escape(language.code)}">${escape(language.label || language.code.toUpperCase())}</button>`).join("");
+    switcher.querySelectorAll("[data-language]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const nextLanguage = button.dataset.language;
+        localStorage.setItem("melodyLanguage", nextLanguage);
+        const url = new URL(location.href);
+        url.searchParams.set("lang", nextLanguage);
+        location.href = url.toString();
+      });
+    });
   }
 
   const imageStyle = (url) => url ? `style="--image:url('${escape(url)}')"` : "";
+
+  function localizedSection(section) {
+    const local = translation.sections?.[section.id] || {};
+    return {
+      ...section,
+      ...local,
+      primaryButton: { ...(section.primaryButton || {}), ...(local.primaryButton || {}) },
+      secondaryButton: { ...(section.secondaryButton || {}), ...(local.secondaryButton || {}) },
+      items: Array.isArray(local.items)
+        ? local.items.map((item, index) => ({ ...(section.items?.[index] || {}), ...item }))
+        : section.items
+    };
+  }
+
+  function localizedItem(bucket, item) {
+    return { ...item, ...(translation[bucket]?.[item.id] || {}) };
+  }
+
+  function orderCopy() {
+    return { ...(content.orderForm || {}), ...(translation.orderForm || {}) };
+  }
 
   function hero(section) {
     return `<section class="hero section-reveal" id="${escape(section.id)}" ${imageStyle(section.image)}>
@@ -117,14 +167,16 @@
   }
 
   function products(section) {
+    const copy = orderCopy();
     return `<section class="section section-reveal" id="${escape(section.id)}">
       ${sectionHead(section)}
-      <div class="product-grid">${sorted(content.products).map(productCard).join("") || emptyState("Noch keine Produkte veröffentlicht.")}</div>
+      <div class="product-grid">${sorted(content.products).map((product) => productCard(localizedItem("products", product))).join("") || emptyState(copy.emptyProducts || "Noch keine Produkte veröffentlicht.")}</div>
     </section>`;
   }
 
   function productCard(product) {
     const image = product.images?.[0] || product.image_url || "";
+    const copy = orderCopy();
     return `<article class="product-card lux-card">
       <div class="product-image" ${imageStyle(image)}></div>
       <div><p class="eyebrow">${escape(product.category || "Geburtstag")}</p><h3>${escape(product.title)}</h3><p>${escape(product.description)}</p></div>
@@ -132,25 +184,32 @@
         ${product.price ? `<strong>${escape(product.price)}</strong>` : ""}
         ${product.discount ? `<span>${escape(product.discount)}</span>` : ""}
       </div>
-      <a class="btn btn-primary" href="#order" data-order-product="${escape(product.title)}">Anfragen</a>
+      <a class="btn btn-primary" href="#order" data-order-product="${escape(product.title)}">${escape(copy.requestButton || "Anfragen")}</a>
     </article>`;
   }
 
   function gallery(section) {
+    const copy = orderCopy();
     return `<section class="section section-reveal" id="${escape(section.id)}">
       ${sectionHead(section)}
-      <div class="gallery-grid">${sorted(content.gallery).map((item) => `<button class="gallery-item" type="button" data-lightbox-open data-title="${escape(item.title)}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(item.url || item.image_url || "")}"><img src="${escape(item.url || item.image_url || "")}" alt="${escape(item.alt || item.title || "")}" /><span>${escape(item.title || "")}</span></button>`).join("") || emptyState("Noch keine Galerie veröffentlicht.")}</div>
+      <div class="gallery-grid">${sorted(content.gallery).map((entry) => {
+        const item = localizedItem("gallery", entry);
+        return `<button class="gallery-item" type="button" data-lightbox-open data-title="${escape(item.title)}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(item.url || item.image_url || "")}"><img src="${escape(item.url || item.image_url || "")}" alt="${escape(item.alt || item.title || "")}" /><span>${escape(item.title || "")}</span></button>`;
+      }).join("") || emptyState(copy.emptyGallery || "Noch keine Galerie veröffentlicht.")}</div>
     </section>`;
   }
 
   function reviews(section) {
-    const items = sorted(content.reviews);
+    const items = sorted(content.reviews).map((item) => localizedItem("reviews", item));
     if (!items.length) return "";
     return `<section class="section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="review-grid">${items.map((review) => `<article class="lux-card review"><div class="stars">${"★".repeat(Number(review.rating || 5))}</div><p>${escape(review.text)}</p><strong>${escape(review.name)}</strong></article>`).join("")}</div></section>`;
   }
 
   function faq(section) {
-    return `<section class="section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="faq-list">${sorted(content.faqs).map((item, index) => `<details ${index === 0 ? "open" : ""}><summary>${escape(item.question)}</summary><p>${escape(item.answer)}</p></details>`).join("")}</div></section>`;
+    return `<section class="section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="faq-list">${sorted(content.faqs).map((entry, index) => {
+      const item = localizedItem("faqs", entry);
+      return `<details ${index === 0 ? "open" : ""}><summary>${escape(item.question)}</summary><p>${escape(item.answer)}</p></details>`;
+    }).join("")}</div></section>`;
   }
 
   function about(section) {
@@ -158,23 +217,25 @@
   }
 
   function order(section) {
+    const copy = orderCopy();
+    const productOptions = sorted(content.products).map((product) => localizedItem("products", product)).map((product) => `<option>${escape(product.title)}</option>`).join("");
     return `<section class="section order-section section-reveal" id="${escape(section.id)}">
       ${sectionHead(section)}
       <form class="order-form lux-card" id="premium-order-form">
-        <label>Geburtstagskarte<select name="product">${sorted(content.products).map((product) => `<option>${escape(product.title)}</option>`).join("")}</select></label>
-        <label>Name der beschenkten Person<input name="recipient" required placeholder="z. B. Mama, Sarah, mein Schatz" /></label>
-        <label>Dein Name<input name="name" required /></label>
-        <label>E-Mail<input name="email" type="email" required /></label>
-        <label>Telefon optional<input name="phone" type="tel" /></label>
-        <label class="span-all">Wünsche zur Karte<textarea name="message" rows="5" placeholder="Was soll die Karte ausdrücken? Gibt es etwas, das wir wissen sollen?"></textarea></label>
-        <button class="btn btn-primary" type="submit">Geburtstagskarte anfragen</button>
+        <label>${escape(copy.productLabel)}<select name="product">${productOptions || `<option>${escape(copy.productFallback || "Geburtstagskarte")}</option>`}</select></label>
+        <label>${escape(copy.recipientLabel)}<input name="recipient" required placeholder="${escape(copy.recipientPlaceholder || "")}" /></label>
+        <label>${escape(copy.nameLabel)}<input name="name" required /></label>
+        <label>${escape(copy.emailLabel)}<input name="email" type="email" required /></label>
+        <label>${escape(copy.phoneLabel)}<input name="phone" type="tel" /></label>
+        <label class="span-all">${escape(copy.messageLabel)}<textarea name="message" rows="5" placeholder="${escape(copy.messagePlaceholder || "")}"></textarea></label>
+        <button class="btn btn-primary" type="submit">${escape(copy.submitLabel)}</button>
         <p class="form-status" id="premium-order-status" role="status" aria-live="polite"></p>
       </form>
     </section>`;
   }
 
   function contact(section) {
-    const contact = content.contact || {};
+    const contact = { ...(content.contact || {}), ...(translation.contact || {}) };
     return `<section class="section contact-section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="contact-panel lux-card">
       ${contact.email ? `<a href="mailto:${escape(contact.email)}">${escape(contact.email)}</a>` : ""}
       ${contact.phone ? `<a href="tel:${escape(contact.phone)}">${escape(contact.phone)}</a>` : ""}
@@ -193,16 +254,18 @@
   const renderers = { hero, editorial, steps, products, gallery, reviews, faq, about, order, contact };
 
   function renderSections() {
-    $("[data-site-root]").innerHTML = sorted(content.sections).map((section) => renderers[section.type]?.(section) || "").join("");
+    $("[data-site-root]").innerHTML = sorted(content.sections).map((section) => localizedSection(section)).map((section) => renderers[section.type]?.(section) || "").join("");
   }
 
   function renderFooter() {
+    const brand = { ...content.brand, ...(translation.brand || {}) };
+    const footer = { ...content.footer, ...(translation.footer || {}) };
     const socials = [
       ["Instagram", content.contact.instagram],
       ["TikTok", content.contact.tiktok],
       ["YouTube", content.contact.youtube]
     ].filter(([, href]) => href);
-    $("[data-footer]").innerHTML = `<div><strong>${escape(content.brand.name)}</strong><p>${escape(content.brand.footerText || "")}</p></div><nav>${(content.footer.links || []).map((link) => `<a href="${escape(link.href)}">${escape(link.label)}</a>`).join("")}</nav><nav>${socials.map(([label, href]) => `<a href="${escape(href)}" target="_blank" rel="noreferrer">${escape(label)}</a>`).join("")}</nav>`;
+    $("[data-footer]").innerHTML = `<div><strong>${escape(brand.name)}</strong><p>${escape(brand.footerText || "")}</p></div><nav>${(footer.links || []).map((link) => `<a href="${escape(link.href)}">${escape(link.label)}</a>`).join("")}</nav><nav>${socials.map(([label, href]) => `<a href="${escape(href)}" target="_blank" rel="noreferrer">${escape(label)}</a>`).join("")}</nav>`;
   }
 
   function bindInteractions() {
@@ -248,7 +311,8 @@
     const status = $("#premium-order-status");
     const submit = form.querySelector("button[type='submit']");
     const values = Object.fromEntries(new FormData(form));
-    status.textContent = "Anfrage wird gesendet...";
+    const copy = orderCopy();
+    status.textContent = copy.sending || "Anfrage wird gesendet...";
     submit.disabled = true;
     try {
       await window.MelodySupabase.createPremiumOrder({
@@ -256,16 +320,16 @@
         email: values.email,
         phone: values.phone || "",
         address: "",
-        card_text: `Geburtstagskarte: ${values.product}\nBeschenkte Person: ${values.recipient}`,
+        card_text: `${copy.cardTextProduct || "Geburtstagskarte"}: ${values.product}\n${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient}`,
         music_wish: "",
         message: values.message || "",
         status: "new"
       });
       form.reset();
-      status.textContent = "Danke. Deine Anfrage wurde gesendet.";
+      status.textContent = copy.success || "Danke. Deine Anfrage wurde gesendet.";
     } catch (error) {
       console.error("Order submit failed:", error);
-      status.textContent = error.message || "Die Anfrage konnte nicht gespeichert werden.";
+      status.textContent = error.message || copy.error || "Die Anfrage konnte nicht gespeichert werden.";
     } finally {
       submit.disabled = false;
     }
@@ -288,6 +352,7 @@
   applySeo();
   renderBrand();
   renderNavigation();
+  renderLanguageSwitcher();
   renderSections();
   renderFooter();
   bindInteractions();

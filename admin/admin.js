@@ -58,7 +58,11 @@
       },
       contact: { ...base.contact, ...(remote?.contact || {}) },
       footer: { ...base.footer, ...(remote?.footer || {}) },
-      legalPages: { ...base.legalPages, ...(remote?.legalPages || {}) }
+      legalPages: { ...base.legalPages, ...(remote?.legalPages || {}) },
+      orderForm: { ...base.orderForm, ...(remote?.orderForm || {}) },
+      translations: { ...base.translations, ...(remote?.translations || {}) },
+      languages: remote?.languages || base.languages || [],
+      defaultLanguage: remote?.defaultLanguage || base.defaultLanguage || "de"
     };
   }
 
@@ -102,22 +106,39 @@
       loginStatus(`Bitte mit ${ADMIN_EMAIL} anmelden.`);
       return;
     }
-    await loadSite();
+    demoMode = false;
+    loginStatus("Login erfolgreich. Dashboard wird geöffnet...");
     showDashboard();
+    setStatus("Dashboard wird geöffnet...", "success");
+    try {
+      await loadSite();
+      showDashboard();
+      setStatus("Dashboard geöffnet.", "success");
+    } catch (error) {
+      console.warn("Dashboard content load failed:", error);
+      setStatus(`Dashboard sichtbar. Inhalte konnten nicht geladen werden: ${error.message || error}`, "error");
+    }
   }
 
   $("#admin-login-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    await action("Login", async () => {
+    const formNode = event.currentTarget;
+    const submit = formNode.querySelector("button[type='submit']");
+    submit.disabled = true;
+    try {
       loginStatus("Login wird geprüft...");
       await refreshClient();
       if (!client) throw new Error("Supabase konnte nicht geladen werden.");
-      const form = new FormData(event.currentTarget);
+      const form = new FormData(formNode);
       const { data, error } = await client.auth.signInWithPassword({ email: String(form.get("email")).trim(), password: String(form.get("password")) });
       if (error) throw error;
-      loginStatus("Login erfolgreich.");
       await openForSession(data.session || { user: data.user });
-    });
+    } catch (error) {
+      console.error("Admin login failed:", error);
+      loginStatus(`Login fehlgeschlagen: ${error.message || error}`);
+    } finally {
+      submit.disabled = false;
+    }
   });
 
   $("[data-demo-admin]")?.addEventListener("click", async () => {
@@ -148,6 +169,7 @@
     renderBrand();
     renderTheme();
     renderSeo();
+    renderTranslations();
     renderNavigation();
     renderSections();
     renderCollection("products", productFields());
@@ -229,6 +251,26 @@
       await uploadInto(form.faviconUpload, "favicons", (url) => content.seo.favicon = url);
       readPathForm(form);
     }));
+  }
+
+  function renderTranslations() {
+    $('[data-panel="translations"]').innerHTML = card("Mehrsprachigkeit DE / TR", `<form data-translations-form class="admin-grid">
+      ${input("defaultLanguage", "Standardsprache", content.defaultLanguage || "de")}
+      <label class="span-all">Sprachen<textarea name="languages" rows="6">${escape(JSON.stringify(content.languages || [], null, 2))}</textarea></label>
+      <label class="span-all">Übersetzungen für Türkisch und weitere Sprachen<textarea class="json-editor" name="translations" rows="18">${escape(JSON.stringify(content.translations || {}, null, 2))}</textarea></label>
+      <p class="span-all">Deutsch bearbeitest du in den normalen Bereichen. Türkisch und zusätzliche Sprachvarianten bearbeitest du hier als strukturierte JSON-Daten.</p>
+      <button class="btn btn-primary span-all" type="submit">Sprachen speichern</button>
+    </form>`);
+    $('[data-translations-form]').addEventListener("submit", (event) => {
+      event.preventDefault();
+      action("Sprachen", async () => {
+        const form = event.currentTarget;
+        content.defaultLanguage = form.defaultLanguage.value.trim() || "de";
+        content.languages = JSON.parse(form.languages.value || "[]");
+        content.translations = JSON.parse(form.translations.value || "{}");
+        await saveSite("Sprachen");
+      });
+    });
   }
 
   function renderNavigation() {

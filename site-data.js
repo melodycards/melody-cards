@@ -19,6 +19,11 @@
           logoImage: "",
           footerText: "Hochwertige Geburtstagskarten mit QR-Code zu einem persönlichen Lied."
         },
+        defaultLanguage: "de",
+        languages: [
+          { code: "de", label: "DE", name: "Deutsch", active: true },
+          { code: "tr", label: "TR", name: "Türkçe", active: true }
+        ],
         theme: {
           colors: {
             background: "#f7f4ef",
@@ -209,6 +214,161 @@
           agb: "",
           widerruf: "",
           versand: ""
+        },
+        orderForm: {
+          productLabel: "Geburtstagskarte",
+          recipientLabel: "Name der beschenkten Person",
+          recipientPlaceholder: "z. B. Mama, Sarah, mein Schatz",
+          nameLabel: "Dein Name",
+          emailLabel: "E-Mail",
+          phoneLabel: "Telefon optional",
+          messageLabel: "Wünsche zur Karte",
+          messagePlaceholder: "Was soll die Karte ausdrücken? Gibt es etwas, das wir wissen sollen?",
+          submitLabel: "Geburtstagskarte anfragen",
+          productFallback: "Geburtstagskarte",
+          emptyProducts: "Noch keine Produkte veröffentlicht.",
+          emptyGallery: "Noch keine Galerie veröffentlicht.",
+          sending: "Anfrage wird gesendet...",
+          success: "Danke. Deine Anfrage wurde gesendet.",
+          error: "Die Anfrage konnte nicht gespeichert werden.",
+          cardTextProduct: "Geburtstagskarte",
+          cardTextRecipient: "Beschenkte Person",
+          requestButton: "Anfragen"
+        },
+        translations: {
+          tr: {
+            seo: {
+              title: "Melody Cards | Kişiye özel şarkılı premium doğum günü kartları",
+              description: "Melody Cards, QR kodla açılan kişiye özel şarkıya sahip yüksek kaliteli doğum günü kartları sunar.",
+              ogTitle: "Melody Cards",
+              ogDescription: "QR kodla kişiye özel şarkı içeren premium doğum günü kartları."
+            },
+            brand: {
+              footerText: "Kişiye özel şarkıya bağlanan QR kodlu yüksek kaliteli doğum günü kartları."
+            },
+            navigation: [
+              { label: "Ana Sayfa", href: "#home", active: true },
+              { label: "Kartlar", href: "#products", active: true },
+              { label: "Süreç", href: "#process", active: true },
+              { label: "Galeri", href: "#gallery", active: true },
+              { label: "SSS", href: "#faq", active: true },
+              { label: "İletişim", href: "#contact", active: true },
+              { label: "Sipariş", href: "#order", active: true, style: "primary" }
+            ],
+            sections: {
+              home: {
+                eyebrow: "Melody Cards",
+                title: "Şarkı söyleyen bir doğum günü kartı.",
+                subtitle: "Sen kartı sipariş edersin. Biz kişiye özel şarkıyı hazırlar, QR kodu oluşturur ve yüksek kaliteli doğum günü kartına basarız.",
+                primaryButton: { label: "Doğum günü kartı sipariş et" },
+                secondaryButton: { label: "Nasıl çalışır" }
+              },
+              intro: {
+                eyebrow: "Fikir",
+                title: "Kişisel bir şarkı. Doğrudan kartın üzerinde.",
+                text: "Melody Cards, zarif bir doğum günü kartını özel hazırlanmış bir şarkıyla birleştirir. Hediye edilen kişi QR kodu okutur ve kişisel sürprizini hemen dinler."
+              },
+              process: {
+                eyebrow: "Süreç",
+                title: "Kolayca sipariş ver. Gerisini biz hallederiz.",
+                text: "Web sitesinde yalnızca kartı sipariş edersin. QR kod, şarkı ve baskı profesyonelce arka planda hazırlanır.",
+                items: [
+                  { title: "Kartı seç", text: "Bir doğum günü kartı seçer ve talebini gönderirsin." },
+                  { title: "Şarkı hazırlanır", text: "Hediye edilecek kişiye uygun kişisel şarkıyı oluştururuz." },
+                  { title: "QR kod karta basılır", text: "QR kod doğrudan tamamlanan şarkıya yönlendirir ve karta basılır." }
+                ]
+              },
+              products: {
+                eyebrow: "Doğum günü kartları",
+                title: "Güncel koleksiyon",
+                text: "Tüm ürünler doğum günü kartıdır. Varyantları, görselleri ve fiyatları admin panelinden yönetebilirsin."
+              },
+              gallery: {
+                eyebrow: "Galeri",
+                title: "Kağıt, detay ve hediye hissi",
+                text: "Tüm görseller admin panelinden değiştirilebilir ve sıralanabilir."
+              },
+              reviews: {
+                eyebrow: "Yorumlar",
+                title: "Müşteri yorumları",
+                text: "Yorumlar yalnızca admin panelinde aktif ettiğinde gösterilir."
+              },
+              faq: {
+                eyebrow: "SSS",
+                title: "Sık sorulan sorular",
+                text: "Tüm yanıtlar admin panelinden düzenlenebilir."
+              },
+              about: {
+                eyebrow: "Melody Cards hakkında",
+                title: "Özenle tasarlandı. Kişiye özel üretildi.",
+                text: "Melody Cards, sıradan bir kart vermek istemeyen insanlar için hazırlanır. Her kart bilinçli seçilmiş, değerli bir doğum günü hediyesi gibi hissettirmelidir."
+              },
+              order: {
+                eyebrow: "Sipariş",
+                title: "Doğum günü kartı talep et",
+                text: "Talebini gönder. Sonraki adımlar için seninle iletişime geçeriz."
+              },
+              contact: {
+                eyebrow: "İletişim",
+                title: "Sipariş öncesi soruların mı var?",
+                text: "Önceden netleştirmek istediğin bir konu varsa bize yaz."
+              }
+            },
+            products: {
+              "birthday-signature": {
+                title: "Signature Doğum Günü Kartı",
+                description: "Kişiye özel şarkıya yönlendiren QR kodlu zarif doğum günü kartı.",
+                price: "Talep üzerine",
+                category: "Doğum günü"
+              }
+            },
+            faqs: {
+              "faq-1": { question: "Şarkıyı ben mi hazırlıyorum?", answer: "Hayır. Sen doğum günü kartını sipariş edersin. Kişiye özel şarkı ve QR kod daha sonra Melody Cards tarafından hazırlanır." },
+              "faq-2": { question: "QR kodu benim sağlamam gerekiyor mu?", answer: "Hayır. QR kod arka planda oluşturulur ve karta basılır." },
+              "faq-3": { question: "Metin ve isteklerimi iletebilir miyim?", answer: "Evet. Sipariş formunda hediye edilecek kişi ve kart hakkında notlarını yazabilirsin." }
+            },
+            contact: {
+              emailLabel: "E-posta",
+              phoneLabel: "Telefon",
+              addressLabel: "Adres"
+            },
+            footer: {
+              links: [
+                { label: "Künye", href: "impressum.html" },
+                { label: "Gizlilik", href: "datenschutz.html" },
+                { label: "Şartlar", href: "agb.html" },
+                { label: "Cayma Hakkı", href: "widerruf.html" },
+                { label: "Kargo & Ödeme", href: "versand-zahlung.html" }
+              ]
+            },
+            legalPages: {
+              impressum: "<h1>Künye</h1><p>Bu sayfadaki bilgiler Melody Cards admin panelinden düzenlenebilir. Almanya için geçerli resmi künye bilgilerini buraya ekleyebilirsin.</p>",
+              datenschutz: "<h1>Gizlilik Politikası</h1><p>Kişisel veriler yalnızca talepleri işlemek ve iletişim kurmak için kullanılır. Ayrıntılı metni admin panelinden düzenleyebilirsin.</p>",
+              agb: "<h1>Genel Şartlar</h1><p>Melody Cards siparişleri ve hizmet koşulları için metni admin panelinden düzenleyebilirsin.</p>",
+              widerruf: "<h1>Cayma Hakkı</h1><p>Cayma hakkı ve kişiselleştirilmiş ürünlere ilişkin bilgileri admin panelinden düzenleyebilirsin.</p>",
+              versand: "<h1>Kargo & Ödeme</h1><p>Kargo ve ödeme bilgilerini admin panelinden güncelleyebilirsin.</p>"
+            },
+            orderForm: {
+              productLabel: "Doğum günü kartı",
+              recipientLabel: "Hediye edilecek kişinin adı",
+              recipientPlaceholder: "örn. Anne, Sarah, sevgilim",
+              nameLabel: "Adın",
+              emailLabel: "E-posta",
+              phoneLabel: "Telefon isteğe bağlı",
+              messageLabel: "Kart için isteklerin",
+              messagePlaceholder: "Kart ne ifade etmeli? Bilmemiz gereken bir şey var mı?",
+              submitLabel: "Doğum günü kartı talep et",
+              productFallback: "Doğum günü kartı",
+              emptyProducts: "Henüz yayınlanmış ürün yok.",
+              emptyGallery: "Henüz yayınlanmış galeri yok.",
+              sending: "Talebin gönderiliyor...",
+              success: "Teşekkürler. Talebin gönderildi.",
+              error: "Talep kaydedilemedi.",
+              cardTextProduct: "Doğum günü kartı",
+              cardTextRecipient: "Hediye edilen kişi",
+              requestButton: "Talep et"
+            }
+          }
         },
         mediaLibrary: []
       },
