@@ -111,7 +111,7 @@
             order: 4,
             eyebrow: "Geburtstagskarten",
             title: "Aktuelle Kollektion",
-            text: "Alle Produkte sind Geburtstagskarten. Varianten, Bilder und Preise kannst du komplett im Admin verwalten."
+            text: "Entdecke hochwertige Geburtstagskarten mit persönlichem QR-Code und einem Lied, das nur für diesen besonderen Menschen gestaltet wird."
           },
           {
             id: "gallery",
@@ -120,7 +120,7 @@
             order: 5,
             eyebrow: "Galerie",
             title: "Papier, Details und Geschenkgefühl",
-            text: "Alle Bilder sind über den Admin austauschbar und sortierbar."
+            text: "Inspirationen für besondere Geburtstagsmomente, liebevolle Details und Karten, die lange in Erinnerung bleiben."
           },
           {
             id: "reviews",
@@ -129,7 +129,7 @@
             order: 6,
             eyebrow: "Stimmen",
             title: "Kundenbewertungen",
-            text: "Bewertungen werden erst angezeigt, wenn du sie im Admin aktivierst."
+            text: "Persönliche Geschenke leben von echten Momenten. Hier teilen Kundinnen und Kunden ihre Erfahrungen mit Melody Cards."
           },
           {
             id: "faq",
@@ -138,7 +138,7 @@
             order: 7,
             eyebrow: "FAQ",
             title: "Häufige Fragen",
-            text: "Alle Antworten lassen sich im Admin bearbeiten."
+            text: "Hier findest du Antworten zu Bestellung, Ablauf, Lieferung und persönlichem Lied."
           },
           {
             id: "about",
@@ -147,7 +147,7 @@
             order: 8,
             eyebrow: "Über Melody Cards",
             title: "Hochwertig gestaltet. Persönlich produziert.",
-            text: "Melody Cards entsteht für Menschen, die nicht einfach nur eine Karte verschenken möchten. Jede Karte soll wie ein bewusst gewähltes, wertiges Geburtstagsgeschenk wirken.",
+            text: "Melody Cards verbindet hochwertige Karten mit persönlicher Musik und macht aus einem Geschenk eine bleibende Erinnerung.",
             image: image("gift-moment.png")
           },
           {
@@ -291,27 +291,27 @@
               products: {
                 eyebrow: "Doğum günü kartları",
                 title: "Güncel koleksiyon",
-                text: "Tüm ürünler doğum günü kartıdır. Varyantları, görselleri ve fiyatları admin panelinden yönetebilirsin."
+                text: "Kişisel QR kodu ve yalnızca o özel kişi için hazırlanan şarkıyla tasarlanan yüksek kaliteli doğum günü kartlarını keşfet."
               },
               gallery: {
                 eyebrow: "Galeri",
                 title: "Kağıt, detay ve hediye hissi",
-                text: "Tüm görseller admin panelinden değiştirilebilir ve sıralanabilir."
+                text: "Özel doğum günü anları, zarif detaylar ve uzun süre hatırlanacak kartlar için ilhamlar."
               },
               reviews: {
                 eyebrow: "Yorumlar",
                 title: "Müşteri yorumları",
-                text: "Yorumlar yalnızca admin panelinde aktif ettiğinde gösterilir."
+                text: "Kişisel hediyeler gerçek anlardan beslenir. Melody Cards deneyimlerini burada okuyabilirsin."
               },
               faq: {
                 eyebrow: "SSS",
                 title: "Sık sorulan sorular",
-                text: "Tüm yanıtlar admin panelinden düzenlenebilir."
+                text: "Sipariş, süreç, teslimat ve kişisel şarkı hakkında yanıtları burada bulabilirsin."
               },
               about: {
                 eyebrow: "Melody Cards hakkında",
                 title: "Özenle tasarlandı. Kişiye özel üretildi.",
-                text: "Melody Cards, sıradan bir kart vermek istemeyen insanlar için hazırlanır. Her kart bilinçli seçilmiş, değerli bir doğum günü hediyesi gibi hissettirmelidir."
+                text: "Melody Cards, yüksek kaliteli kartları kişisel müzikle birleştirir ve hediyeyi kalıcı bir anıya dönüştürür."
               },
               order: {
                 eyebrow: "Sipariş",
@@ -352,11 +352,11 @@
               ]
             },
             legalPages: {
-              impressum: "<h1>Künye</h1><p>Bu sayfadaki bilgiler Melody Cards admin panelinden düzenlenebilir. Almanya için geçerli resmi künye bilgilerini buraya ekleyebilirsin.</p>",
-              datenschutz: "<h1>Gizlilik Politikası</h1><p>Kişisel veriler yalnızca talepleri işlemek ve iletişim kurmak için kullanılır. Ayrıntılı metni admin panelinden düzenleyebilirsin.</p>",
-              agb: "<h1>Genel Şartlar</h1><p>Melody Cards siparişleri ve hizmet koşulları için metni admin panelinden düzenleyebilirsin.</p>",
-              widerruf: "<h1>Cayma Hakkı</h1><p>Cayma hakkı ve kişiselleştirilmiş ürünlere ilişkin bilgileri admin panelinden düzenleyebilirsin.</p>",
-              versand: "<h1>Kargo & Ödeme</h1><p>Kargo ve ödeme bilgilerini admin panelinden güncelleyebilirsin.</p>"
+              impressum: "<h1>Künye</h1><p>Melody Cards için yasal iletişim ve şirket bilgileri.</p>",
+              datenschutz: "<h1>Gizlilik Politikası</h1><p>Kişisel veriler talepleri işlemek, iletişim kurmak ve sipariş sürecini yürütmek için kullanılır.</p>",
+              agb: "<h1>Genel Şartlar</h1><p>Melody Cards siparişleri, kişiselleştirilmiş kartlar ve hizmet süreci için geçerli şartlar.</p>",
+              widerruf: "<h1>Cayma Hakkı</h1><p>Cayma hakkı ve kişiselleştirilmiş ürünlere ilişkin bilgiler.</p>",
+              versand: "<h1>Kargo & Ödeme</h1><p>Kargo, ödeme ve sipariş süreci hakkında bilgiler.</p>"
             },
             orderForm: {
               productLabel: "Doğum günü kartı",

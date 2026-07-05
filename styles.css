@@ -141,9 +141,11 @@ button, input, textarea, select { font: inherit; }
   color: #fff;
   overflow: hidden;
 }
+.hero.align-center { justify-items: center; text-align: center; }
 .hero-overlay {
   position: absolute;
   inset: 0;
+  opacity: var(--hero-overlay-opacity, 1);
   background: linear-gradient(90deg, rgba(0,0,0,.82), rgba(0,0,0,.42) 42%, rgba(0,0,0,.18)), linear-gradient(0deg, rgba(0,0,0,.76), transparent 48%);
 }
 .hero-inner {
@@ -166,6 +168,10 @@ h1, h2, h3 {
   margin: 0;
 }
 h1 { font-size: clamp(48px, 8vw, var(--hero-size)); max-width: 980px; }
+.hero h1 {
+  color: var(--hero-text-color, #fff);
+  font-size: clamp(48px, 8vw, var(--hero-title-size, var(--hero-size)));
+}
 h2 { font-size: clamp(36px, 5vw, var(--heading-size)); max-width: 760px; }
 h3 { font-size: 24px; line-height: 1.1; }
 .hero p:not(.eyebrow) {
@@ -383,7 +389,7 @@ textarea { resize: vertical; min-height: 140px; }
     min-height: 100svh;
     height: auto;
     align-items: center;
-    padding: 138px 20px 72px;
+    padding: var(--hero-padding-top, 138px) 20px 72px;
     overflow: visible;
     background-position: center top;
   }
@@ -391,9 +397,9 @@ textarea { resize: vertical; min-height: 140px; }
     background: linear-gradient(90deg, rgba(0,0,0,.88), rgba(0,0,0,.66) 54%, rgba(0,0,0,.44)), linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,.18) 58%);
   }
   .hero-inner { max-width: min(100%, 390px); }
-  h1 {
+  .hero h1 {
     max-width: 100%;
-    font-size: clamp(34px, 10vw, 44px);
+    font-size: clamp(34px, 10vw, var(--hero-mobile-title-size, 44px));
     line-height: 1.06;
     text-wrap: balance;
   }
@@ -420,7 +426,7 @@ textarea { resize: vertical; min-height: 140px; }
   .brand span:first-child,
   .brand img { width: 38px; height: 38px; }
   .hero { padding: 128px 18px 64px; }
-  h1 { font-size: clamp(32px, 9.4vw, 38px); line-height: 1.08; }
+  .hero h1 { font-size: clamp(32px, 9.4vw, var(--hero-mobile-title-size, 38px)); line-height: 1.08; }
   .hero-actions .btn { width: 100%; }
 }
 

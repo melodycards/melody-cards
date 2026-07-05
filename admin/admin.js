@@ -166,6 +166,7 @@
 
   function renderAll() {
     renderDashboard();
+    renderVisualEditor();
     renderBrand();
     renderTheme();
     renderSeo();
@@ -190,9 +191,233 @@
   function renderDashboard() {
     $('[data-panel="dashboard"]').innerHTML = `<div class="admin-grid">
       ${card("Inhalte", `<p>Produkte: ${content.products?.length || 0}</p><p>Galerie: ${content.gallery?.length || 0}</p><p>Bewertungen: ${content.reviews?.length || 0}</p><p>FAQ: ${content.faqs?.length || 0}</p>`)}
-      ${card("Workflow", `<p>Bearbeite Inhalte links. Speichern schreibt alles in Supabase <code>site_settings.content</code>.</p><button class="btn btn-primary" type="button" data-save-all>Alles speichern</button>`)}
+      ${card("Schneller Einstieg", `<p>Nutze den visuellen Editor, um die Website direkt anzuklicken und Inhalte ohne technische Felder zu bearbeiten.</p><button class="btn btn-primary" type="button" data-open-visual>Website visuell bearbeiten</button>`)}
     </div>`;
+    $('[data-open-visual]')?.addEventListener("click", () => selectPanel("visual"));
     $('[data-save-all]')?.addEventListener("click", () => action("Speichern", () => saveSite("Website")));
+  }
+
+  function renderVisualEditor() {
+    const panel = $('[data-panel="visual"]');
+    panel.innerHTML = `<div class="visual-editor-shell">
+      <div class="visual-preview-wrap">
+        <div class="visual-toolbar">
+          <strong>Live-Vorschau</strong>
+          <button class="mini-btn" type="button" data-visual-refresh>Vorschau neu laden</button>
+        </div>
+        <iframe class="visual-preview" title="Melody Cards Vorschau" data-visual-frame src="../index.html?admin-preview=${Date.now()}"></iframe>
+      </div>
+      <aside class="visual-editor-panel" data-visual-editor>
+        <p class="eyebrow">Visueller Editor</p>
+        <h3>Bereich anklicken</h3>
+        <p>Klicke links auf Hero, Produkt, Galerie-Bild oder FAQ. Die passenden Felder erscheinen hier.</p>
+        <div class="visual-quick-actions">
+          <button class="mini-btn" type="button" data-visual-new-product>Produkt hinzufügen</button>
+          <button class="mini-btn" type="button" data-visual-open-gallery>Galerie bearbeiten</button>
+          <button class="mini-btn" type="button" data-visual-new-faq>FAQ hinzufügen</button>
+        </div>
+      </aside>
+    </div>`;
+    $('[data-visual-refresh]')?.addEventListener("click", reloadVisualPreview);
+    $('[data-visual-new-product]')?.addEventListener("click", () => renderProductVisualEditor(""));
+    $('[data-visual-open-gallery]')?.addEventListener("click", () => selectPanel("gallery"));
+    $('[data-visual-new-faq]')?.addEventListener("click", () => renderFaqVisualEditor(""));
+    const frame = $('[data-visual-frame]');
+    frame?.addEventListener("load", () => window.setTimeout(prepareVisualFrame, 700));
+  }
+
+  function reloadVisualPreview() {
+    const frame = $('[data-visual-frame]');
+    if (frame) frame.src = `../index.html?admin-preview=${Date.now()}`;
+  }
+
+  function prepareVisualFrame() {
+    const frame = $('[data-visual-frame]');
+    const doc = frame?.contentDocument;
+    if (!doc) return;
+    const style = doc.createElement("style");
+    style.textContent = `
+      [data-edit-kind]{outline:2px solid rgba(200,169,106,.0); outline-offset:6px; cursor:pointer;}
+      [data-edit-kind]:hover{outline-color:rgba(200,169,106,.95);}
+      [data-edit-selected="true"]{outline:3px solid #c8a96a!important; outline-offset:7px;}
+    `;
+    doc.head.appendChild(style);
+    doc.querySelectorAll("[data-edit-kind]").forEach((node) => {
+      node.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        doc.querySelectorAll("[data-edit-selected]").forEach((item) => item.removeAttribute("data-edit-selected"));
+        node.setAttribute("data-edit-selected", "true");
+        showVisualEditor(node.dataset.editKind, node.dataset.editId);
+      });
+    });
+  }
+
+  function showVisualEditor(kind, id) {
+    if (kind === "section") return renderSectionVisualEditor(id);
+    if (kind === "product") return renderProductVisualEditor(id);
+    if (kind === "gallery") return renderGalleryVisualEditor(id);
+    if (kind === "faq") return renderFaqVisualEditor(id);
+    $('[data-visual-editor]').innerHTML = `<p>Dieses Element kann noch nicht visuell bearbeitet werden.</p>`;
+  }
+
+  function renderSectionVisualEditor(id) {
+    const section = (content.sections || []).find((item) => item.id === id);
+    if (!section) return;
+    const trSection = content.translations?.tr?.sections?.[id] || {};
+    const style = section.style || {};
+    $('[data-visual-editor]').innerHTML = `<form data-visual-section-form class="visual-form">
+      <p class="eyebrow">Bereich</p>
+      <h3>${escape(section.title || section.id)}</h3>
+      ${checkbox("active", "Sichtbar", section.active !== false)}
+      ${input("eyebrow", "Eyebrow DE", section.eyebrow || "")}
+      ${input("title", "Überschrift DE", section.title || "", "textarea")}
+      ${input("subtitle", "Untertitel DE", section.subtitle || section.text || "", "textarea")}
+      ${input("trEyebrow", "Eyebrow TR", trSection.eyebrow || "")}
+      ${input("trTitle", "Überschrift TR", trSection.title || "", "textarea")}
+      ${input("trText", "Text TR", trSection.subtitle || trSection.text || "", "textarea")}
+      ${section.primaryButton ? input("primaryLabel", "Buttontext DE", section.primaryButton.label || "") : ""}
+      ${section.primaryButton ? input("primaryHref", "Buttonlink", section.primaryButton.href || "") : ""}
+      ${section.secondaryButton ? input("secondaryLabel", "Zweiter Button DE", section.secondaryButton.label || "") : ""}
+      ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.image })}</div>${file("upload", "Bild ersetzen")}<button class="mini-btn danger" type="button" data-clear-section-image>Bild löschen</button>` : ""}
+      ${input("textColor", "Textfarbe", style.textColor || "#ffffff", "color")}
+      ${input("titleSize", "Schriftgröße Desktop", style.titleSize || "", "number")}
+      ${input("mobileTitleSize", "Schriftgröße Handy", style.mobileTitleSize || "", "number")}
+      ${input("overlayOpacity", "Overlay Dunkelheit 0-1", style.overlayOpacity ?? "", "number")}
+      ${input("paddingTop", "Abstand oben", style.paddingTop || "", "number")}
+      <label>Ausrichtung<select name="align"><option value="left" ${section.align !== "center" ? "selected" : ""}>Links</option><option value="center" ${section.align === "center" ? "selected" : ""}>Zentriert</option></select></label>
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+    </form>`;
+    $('[data-clear-section-image]')?.addEventListener("click", () => {
+      section.image = "";
+      setStatus("Bild entfernt. Bitte speichern.", "warning");
+      renderSectionVisualEditor(id);
+    });
+    $('[data-visual-section-form]').addEventListener("submit", (event) => saveVisualSection(event, section, trSection));
+  }
+
+  async function saveVisualSection(event, section, trSection) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Visueller Editor", async () => {
+      section.active = form.active.checked;
+      section.eyebrow = form.eyebrow.value;
+      section.title = form.title.value;
+      if ("subtitle" in section) section.subtitle = form.subtitle.value;
+      else section.text = form.subtitle.value;
+      section.align = form.align.value;
+      if (section.primaryButton) {
+        section.primaryButton.label = form.primaryLabel.value;
+        section.primaryButton.href = form.primaryHref.value;
+      }
+      if (section.secondaryButton && form.secondaryLabel) section.secondaryButton.label = form.secondaryLabel.value;
+      section.style = {
+        ...(section.style || {}),
+        textColor: form.textColor.value,
+        titleSize: Number(form.titleSize.value || 0) || "",
+        mobileTitleSize: Number(form.mobileTitleSize.value || 0) || "",
+        overlayOpacity: form.overlayOpacity.value === "" ? "" : Number(form.overlayOpacity.value),
+        paddingTop: Number(form.paddingTop.value || 0) || ""
+      };
+      await uploadInto(form.upload, "sections", (url) => section.image = url);
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.sections = content.translations.tr.sections || {};
+      content.translations.tr.sections[section.id] = {
+        ...trSection,
+        eyebrow: form.trEyebrow.value,
+        title: form.trTitle.value,
+        [section.subtitle !== undefined ? "subtitle" : "text"]: form.trText.value
+      };
+      await saveSite("Visueller Editor");
+      reloadVisualPreview();
+    }));
+  }
+
+  function renderProductVisualEditor(id) {
+    const item = (content.products || []).find((entry) => String(entry.id) === String(id)) || { id: uid("products"), status: "active", sortOrder: (content.products || []).length + 1, images: [] };
+    const isNew = !(content.products || []).some((entry) => String(entry.id) === String(id));
+    $('[data-visual-editor]').innerHTML = `<form data-visual-product-form class="visual-form">
+      <p class="eyebrow">Produkt</p><h3>${isNew ? "Produkt hinzufügen" : "Produkt bearbeiten"}</h3>
+      ${input("title", "Titel", item.title || "")}
+      ${input("description", "Beschreibung", item.description || "", "textarea")}
+      ${input("price", "Preis", item.price || "")}
+      ${input("category", "Kategorie", item.category || "")}
+      ${checkbox("active", "Aktiv", item.status !== "inactive")}
+      <div class="visual-image-preview">${galleryPreview({ url: item.images?.[0] })}</div>
+      ${file("upload", "Bild hochladen / ersetzen")}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Produkt löschen</button>`}
+    </form>`;
+    $('[data-visual-product-form]').addEventListener("submit", (event) => saveVisualProduct(event, item, isNew));
+    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("products", item.id, "Produkt"));
+  }
+
+  async function saveVisualProduct(event, item, isNew) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Produkt", async () => {
+      item.title = form.title.value;
+      item.description = form.description.value;
+      item.price = form.price.value;
+      item.category = form.category.value;
+      item.status = form.active.checked ? "active" : "inactive";
+      await uploadInto(form.upload, "products", (url) => item.images = [url]);
+      if (isNew) content.products = [...(content.products || []), item];
+      await saveSite("Produkt");
+      reloadVisualPreview();
+    }));
+  }
+
+  function renderGalleryVisualEditor(id) {
+    editing.gallery = (content.gallery || []).find((entry) => String(entry.id) === String(id)) || null;
+    renderGalleryEditor();
+    selectPanel("gallery");
+  }
+
+  function renderFaqVisualEditor(id) {
+    const item = (content.faqs || []).find((entry) => String(entry.id) === String(id)) || { id: uid("faq"), active: true, sortOrder: (content.faqs || []).length + 1 };
+    const isNew = !(content.faqs || []).some((entry) => String(entry.id) === String(id));
+    const trFaq = content.translations?.tr?.faqs?.[item.id] || {};
+    $('[data-visual-editor]').innerHTML = `<form data-visual-faq-form class="visual-form">
+      <p class="eyebrow">FAQ</p><h3>${isNew ? "FAQ hinzufügen" : "FAQ bearbeiten"}</h3>
+      ${input("question", "Frage DE", item.question || "")}
+      ${input("answer", "Antwort DE", item.answer || "", "textarea")}
+      ${input("trQuestion", "Frage TR", trFaq.question || "")}
+      ${input("trAnswer", "Antwort TR", trFaq.answer || "", "textarea")}
+      ${checkbox("active", "Sichtbar", item.active !== false)}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>FAQ löschen</button>`}
+    </form>`;
+    $('[data-visual-faq-form]').addEventListener("submit", (event) => saveVisualFaq(event, item, isNew));
+    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("faqs", item.id, "FAQ"));
+  }
+
+  async function saveVisualFaq(event, item, isNew) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("FAQ", async () => {
+      item.question = form.question.value;
+      item.answer = form.answer.value;
+      item.active = form.active.checked;
+      if (isNew) content.faqs = [...(content.faqs || []), item];
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.faqs = content.translations.tr.faqs || {};
+      content.translations.tr.faqs[item.id] = { question: form.trQuestion.value, answer: form.trAnswer.value };
+      await saveSite("FAQ");
+      reloadVisualPreview();
+    }));
+  }
+
+  async function deleteVisualItem(key, id, label) {
+    if (!window.confirm(`${label} wirklich löschen?`)) return;
+    await action(label, async () => {
+      content[key] = (content[key] || []).filter((item) => String(item.id) !== String(id));
+      await saveSite(label);
+      reloadVisualPreview();
+      $('[data-visual-editor]').innerHTML = `<p>${escape(label)} wurde gelöscht.</p>`;
+    });
   }
 
   function renderBrand() {

@@ -80,6 +80,75 @@
 .admin-card h3 { font-size: 22px; }
 .admin-card textarea { min-height: 170px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 .admin-list { display: grid; gap: 12px; }
+.visual-editor-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 18px;
+  min-height: calc(100svh - 150px);
+}
+.visual-preview-wrap,
+.visual-editor-panel {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(0,0,0,.05);
+}
+.visual-preview-wrap {
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(560px, 1fr);
+}
+.visual-toolbar {
+  min-height: 58px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.visual-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 680px;
+  border: 0;
+  background: #fff;
+}
+.visual-editor-panel {
+  position: sticky;
+  top: 112px;
+  align-self: start;
+  max-height: calc(100svh - 132px);
+  overflow: auto;
+  padding: 22px;
+}
+.visual-form {
+  display: grid;
+  gap: 14px;
+}
+.visual-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.visual-form h3 { font-size: 24px; line-height: 1.08; }
+.visual-image-preview {
+  min-height: 190px;
+  border: 1px dashed var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #f5f0e7;
+  color: var(--muted);
+}
+.visual-image-preview img {
+  width: 100%;
+  height: 100%;
+  min-height: 190px;
+  object-fit: cover;
+}
 .admin-row {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr) auto;
@@ -231,6 +300,9 @@
 
 @media (max-width: 920px) {
   .admin-login, .admin-app, .admin-grid { grid-template-columns: 1fr; }
+  .visual-editor-shell { grid-template-columns: 1fr; }
+  .visual-editor-panel { position: relative; top: auto; max-height: none; }
+  .visual-preview { min-height: 620px; }
   .gallery-editor { grid-template-columns: 1fr; }
   .admin-sidebar { position: relative; height: auto; }
   .admin-main { padding: 14px; }

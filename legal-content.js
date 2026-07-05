@@ -52,6 +52,28 @@
     if (element && value) element.textContent = value;
   }
 
+  function publicLegalText(text, language, page) {
+    const value = String(text || "");
+    if (!/admin|cms|demo|platzhalter|beispielinhalt|bearbeit|verwalten|düzenlenebilir|yönet/i.test(value)) return value;
+    const fallback = {
+      de: {
+        impressum: "<h1>Impressum</h1><p>Rechtliche Anbieterinformationen und Kontaktangaben von Melody Cards.</p>",
+        datenschutz: "<h1>Datenschutz</h1><p>Informationen zur Verarbeitung personenbezogener Daten bei Anfragen, Bestellungen und Nutzung dieser Website.</p>",
+        agb: "<h1>AGB</h1><p>Allgemeine Geschäftsbedingungen für Anfragen, Bestellungen und personalisierte Melody Cards.</p>",
+        widerruf: "<h1>Widerruf</h1><p>Informationen zum Widerrufsrecht und zu personalisierten Produkten.</p>",
+        versand: "<h1>Versand & Zahlung</h1><p>Informationen zu Versand, Zahlung und Ablauf deiner Bestellung.</p>"
+      },
+      tr: {
+        impressum: "<h1>Künye</h1><p>Melody Cards için yasal iletişim ve şirket bilgileri.</p>",
+        datenschutz: "<h1>Gizlilik Politikası</h1><p>Kişisel verilerin talepler, siparişler ve web sitesi kullanımı sırasında işlenmesine ilişkin bilgiler.</p>",
+        agb: "<h1>Genel Şartlar</h1><p>Melody Cards talepleri, siparişleri ve kişiselleştirilmiş ürünler için şartlar.</p>",
+        widerruf: "<h1>Cayma Hakkı</h1><p>Cayma hakkı ve kişiselleştirilmiş ürünlere ilişkin bilgiler.</p>",
+        versand: "<h1>Kargo & Ödeme</h1><p>Kargo, ödeme ve sipariş süreci hakkında bilgiler.</p>"
+      }
+    };
+    return fallback[language]?.[page] || fallback.de[page] || value;
+  }
+
   function renderLanguageSwitcher(content, language) {
     const header = document.querySelector(".site-header");
     if (!header || header.querySelector("[data-language-switcher]")) return;
@@ -100,7 +122,7 @@
       else if (brand.logoText || content.logoText) element.textContent = brand.logoText || content.logoText;
     });
     if (content.seo?.favicon || content.faviconImage) document.querySelector('link[rel="icon"]')?.setAttribute("href", content.seo?.favicon || content.faviconImage);
-    const legalText = translation.legalPages?.[page] || content.legalPages?.[page];
+    const legalText = publicLegalText(translation.legalPages?.[page] || content.legalPages?.[page], language, page);
     if (legalText) {
       const target = document.querySelector(".legal-content");
       if (target) target.innerHTML = legalText;
