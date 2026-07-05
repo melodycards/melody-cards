@@ -173,7 +173,7 @@
     renderNavigation();
     renderSections();
     renderCollection("products", productFields());
-    renderCollection("gallery", galleryFields());
+    renderGalleryEditor();
     renderCollection("reviews", reviewFields());
     renderCollection("faqs", faqFields());
     renderContact();
@@ -279,6 +279,175 @@
 
   function renderSections() {
     renderJsonPanel("sections", "Startseiten-Bereiche bearbeiten", "sections", content.sections);
+  }
+
+  function galleryPreview(item = {}) {
+    const image = item.url || item.image_url || "";
+    return image
+      ? `<img src="${escape(assetUrl(image))}" alt="${escape(item.alt || item.title || "Galerie Bild")}" />`
+      : `<span>Kein Bild ausgewählt</span>`;
+  }
+
+  function renderGalleryEditor() {
+    const current = editing.gallery || {};
+    const items = sorted(content.gallery || []);
+    $('[data-panel="gallery"]').innerHTML = `<div class="gallery-editor">
+      ${card(editing.gallery ? "Galerie-Bild bearbeiten" : "Neues Galerie-Bild", `<form data-gallery-form class="gallery-form">
+        <div class="gallery-form-preview" data-gallery-form-preview>${galleryPreview(current)}</div>
+        ${file("upload", editing.gallery ? "Bild ersetzen" : "Bild hochladen")}
+        ${input("title", "Titel", current.title || "")}
+        ${input("description", "Beschreibung", current.description || current.alt || "", "textarea")}
+        ${input("category", "Kategorie", current.category || "")}
+        ${checkbox("active", "Aktiv anzeigen", current.active !== false)}
+        <div class="admin-actions span-all">
+          <button class="btn btn-primary" type="submit" data-gallery-save>${editing.gallery ? "Änderungen speichern" : "Bild speichern"}</button>
+          <button class="btn btn-glass" type="button" data-gallery-new>Neues Bild</button>
+        </div>
+      </form>`)}
+      ${card("Galerie-Bilder", `<div class="gallery-card-grid">${items.map(galleryAdminCard).join("") || `<div class="empty-state">Noch keine Galerie-Bilder vorhanden.</div>`}</div>`)}
+    </div>`;
+
+    const form = $('[data-gallery-form]');
+    form.addEventListener("submit", saveGalleryItem);
+    form.upload?.addEventListener("change", () => previewSelectedGalleryFile(form.upload));
+    $('[data-gallery-new]')?.addEventListener("click", () => {
+      editing.gallery = null;
+      renderGalleryEditor();
+      setStatus("Neues Galerie-Bild bereit.");
+    });
+    $$("[data-gallery-edit]").forEach((button) => button.addEventListener("click", () => editGalleryItem(button.dataset.galleryEdit)));
+    $$("[data-gallery-delete]").forEach((button) => button.addEventListener("click", () => deleteGalleryItem(button.dataset.galleryDelete, button)));
+    $$("[data-gallery-move]").forEach((button) => button.addEventListener("click", () => moveGalleryItem(button.dataset.galleryMove, Number(button.dataset.direction), button)));
+  }
+
+  function galleryAdminCard(item) {
+    return `<article class="gallery-admin-card">
+      <div class="gallery-admin-image">${galleryPreview(item)}</div>
+      <div class="gallery-admin-copy">
+        <div>
+          <strong>${escape(item.title || "Ohne Titel")}</strong>
+          <p>${escape(item.category || "Keine Kategorie")}</p>
+        </div>
+        <span class="status-pill ${item.active === false ? "is-muted" : ""}">${item.active === false ? "Inaktiv" : "Aktiv"}</span>
+      </div>
+      <div class="gallery-admin-actions">
+        <button class="mini-btn" type="button" data-gallery-edit="${escape(item.id)}">Bearbeiten</button>
+        <button class="mini-btn danger" type="button" data-gallery-delete="${escape(item.id)}">Löschen</button>
+        <button class="mini-btn" type="button" data-gallery-move="${escape(item.id)}" data-direction="-1">Nach oben</button>
+        <button class="mini-btn" type="button" data-gallery-move="${escape(item.id)}" data-direction="1">Nach unten</button>
+      </div>
+    </article>`;
+  }
+
+  function previewSelectedGalleryFile(input) {
+    const preview = $('[data-gallery-form-preview]');
+    const fileItem = input?.files?.[0];
+    if (!preview || !fileItem) return;
+    const url = URL.createObjectURL(fileItem);
+    preview.innerHTML = `<img src="${escape(url)}" alt="Ausgewähltes Galerie-Bild" />`;
+  }
+
+  function editGalleryItem(id) {
+    const item = (content.gallery || []).find((entry) => String(entry.id) === String(id));
+    if (!item) {
+      setStatus("Galerie-Bild nicht gefunden.", "error");
+      return;
+    }
+    editing.gallery = item;
+    renderGalleryEditor();
+    setStatus("Galerie-Bild geladen.", "success");
+  }
+
+  async function saveGalleryItem(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("[data-gallery-save]");
+    await withButtonLoading(button, "Speichert...", async () => {
+      await action("Galerie", async () => {
+        setStatus("Galerie wird gespeichert...");
+        const existing = editing.gallery;
+        const item = existing || { id: uid("gallery"), sortOrder: (content.gallery || []).length + 1 };
+        item.title = form.title.value.trim();
+        item.description = form.description.value.trim();
+        item.alt = form.description.value.trim();
+        item.category = form.category.value.trim();
+        item.active = form.active.checked;
+        await uploadInto(form.upload, "gallery", async (url) => {
+          item.url = url;
+          item.image_url = url;
+        });
+        if (!item.url && !item.image_url) throw new Error("Bitte ein Bild hochladen.");
+        content.gallery = content.gallery || [];
+        if (!existing) content.gallery.push(item);
+        editing.gallery = null;
+        await saveSite("Galerie");
+      });
+    });
+  }
+
+  async function deleteGalleryItem(id, button) {
+    const item = (content.gallery || []).find((entry) => String(entry.id) === String(id));
+    if (!item) {
+      setStatus("Galerie-Bild nicht gefunden.", "error");
+      return;
+    }
+    if (!window.confirm("Dieses Bild wirklich löschen?")) return;
+    await withButtonLoading(button, "Löscht...", async () => {
+      await action("Galerie löschen", async () => {
+        setStatus("Galerie-Bild wird gelöscht...");
+        const cleanupWarnings = [
+          await deleteGalleryTableRow(id),
+          await deleteStorageFile(item.url || item.image_url)
+        ].filter(Boolean);
+        content.gallery = (content.gallery || []).filter((entry) => String(entry.id) !== String(id));
+        if (editing.gallery && String(editing.gallery.id) === String(id)) editing.gallery = null;
+        await saveSite("Galerie");
+        setStatus(cleanupWarnings.length ? `Galerie-Bild wurde gelöscht. Hinweis: ${cleanupWarnings.join(" ")}` : "Galerie-Bild wurde gelöscht.", cleanupWarnings.length ? "warning" : "success");
+      });
+    });
+  }
+
+  async function moveGalleryItem(id, direction, button) {
+    await withButtonLoading(button, "Speichert...", async () => {
+      await action("Galerie sortieren", async () => {
+        const items = sorted(content.gallery || []);
+        const index = items.findIndex((item) => String(item.id) === String(id));
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= items.length) return;
+        [items[index], items[target]] = [items[target], items[index]];
+        items.forEach((item, order) => item.sortOrder = order + 1);
+        content.gallery = items;
+        await saveSite("Galerie");
+      });
+    });
+  }
+
+  async function deleteGalleryTableRow(id) {
+    if (demoMode) return "";
+    await refreshClient();
+    if (!client) return "";
+    const { error } = await client.from("gallery_items").delete().eq("id", id);
+    if (!error || ["42P01", "PGRST205", "22P02"].includes(error.code)) return "";
+    return `gallery_items konnte nicht bereinigt werden: ${error.message || error}.`;
+  }
+
+  async function deleteStorageFile(url) {
+    const path = storagePathFromUrl(url);
+    if (!path || demoMode) return "";
+    await refreshClient();
+    if (!client) return "";
+    const bucket = (window.MELODY_SUPABASE_CONFIG || {}).storageBucket || "melody-assets";
+    const { error } = await client.storage.from(bucket).remove([path]);
+    return error ? `Storage-Datei konnte nicht gelöscht werden: ${error.message || error}.` : "";
+  }
+
+  function storagePathFromUrl(url = "") {
+    if (!url || !url.includes("/storage/v1/object/public/")) return "";
+    const bucket = (window.MELODY_SUPABASE_CONFIG || {}).storageBucket || "melody-assets";
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const index = url.indexOf(marker);
+    if (index === -1) return "";
+    return decodeURIComponent(url.slice(index + marker.length).split("?")[0]);
   }
 
   function renderContact() {
@@ -522,6 +691,18 @@
     const url = await api.uploadFile(input.files[0], folder);
     if (!url) throw new Error("Upload fehlgeschlagen.");
     setter(url);
+  }
+  async function withButtonLoading(button, text, fn) {
+    if (!button) return fn();
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = text;
+    try {
+      return await fn();
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
   }
   function labelFor(key) {
     return ({ products: "Produkte", gallery: "Galerie", reviews: "Bewertungen", faqs: "FAQ" }[key] || key);
