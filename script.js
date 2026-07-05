@@ -1,666 +1,295 @@
-(function bindMelodyConfigurator() {
-  const form = document.getElementById("premium-order-form");
-  if (!form || form.dataset.submitBound === "true") return;
-  form.dataset.submitBound = "true";
-  const requestTimeoutMs = 15000;
-  const totalSteps = 8;
-  let currentStep = 1;
-
-  function withTimeout(promise, label) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error(`${label} dauert zu lange.`)), requestTimeoutMs);
-      })
-    ]);
-  }
-
-  const $ = (selector) => form.querySelector(selector);
-  const $$ = (selector) => Array.from(form.querySelectorAll(selector));
-  const status = document.getElementById("premium-order-status") || form.querySelector("[data-form-status]");
-  const backButton = $("[data-config-back]");
-  const nextButton = $("[data-config-next]");
-  const submitButton = $("[data-config-submit]");
-  const currentStepLabel = $("[data-current-step]");
-  const progressFill = $("[data-progress-fill]");
-
-  function checkedValue(name) {
-    return form.querySelector(`[name="${name}"]:checked`)?.value || "";
-  }
-
-  function checkedValues(name) {
-    return $$(`[name="${name}"]:checked`).map((input) => input.value);
-  }
-
-  function fieldValue(name) {
-    return form.querySelector(`[name="${name}"]`)?.value.trim() || "";
-  }
-
-  function isEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
-
-  function stepKey(step) {
-    return {
-      1: "recipientFor",
-      2: "recipientName",
-      3: "occasion",
-      4: "included",
-      5: "specialPerson",
-      6: "memoryMessage",
-      7: "heartWords",
-      8: "contact"
-    }[step];
-  }
-
-  function stepRequired(step, fallback = true) {
-    const key = stepKey(step);
-    const value = window.MELODY_CONFIGURATOR_SETTINGS?.steps?.[key]?.required;
-    return value === undefined ? fallback : Boolean(value);
-  }
-
-  function stepIsValid(step = currentStep) {
-    if (!stepRequired(step)) return true;
-    if (step === 1) return Boolean(checkedValue("recipientFor"));
-    if (step === 2) return fieldValue("recipientName").length > 0;
-    if (step === 3) return Boolean(checkedValue("occasion"));
-    if (step === 4) return checkedValues("included").length > 0;
-    if (step === 5) return fieldValue("specialPerson").length > 0;
-    if (step === 6) return fieldValue("memoryMessage").length > 0;
-    if (step === 7) return fieldValue("heartWords").length > 0;
-    if (step === 8) return fieldValue("name").length > 0 && isEmail(fieldValue("email"));
-    return true;
-  }
-
-  function collectConfig() {
-    return {
-      recipientFor: checkedValue("recipientFor"),
-      recipientName: fieldValue("recipientName"),
-      occasion: checkedValue("occasion"),
-      included: checkedValues("included"),
-      specialPerson: fieldValue("specialPerson"),
-      memoryMessage: fieldValue("memoryMessage"),
-      heartWords: fieldValue("heartWords"),
-      name: fieldValue("name"),
-      email: fieldValue("email"),
-      phone: fieldValue("phone"),
-      notes: fieldValue("message")
-    };
-  }
-
-  function renderSummary() {
-    const summary = $("[data-config-summary]");
-    if (!summary) return;
-    const config = collectConfig();
-    const rows = [
-      ["Für wen", config.recipientFor],
-      ["Name/Anrede", config.recipientName],
-      ["Anlass", config.occasion],
-      ["Enthalten", config.included.join(", ")],
-      ["Besonders", config.specialPerson],
-      ["Erinnerung", config.memoryMessage],
-      ["Worte aus dem Herzen", config.heartWords]
-    ];
-    summary.innerHTML = rows.map(([label, value]) => `
-      <article>
-        <span>${label}</span>
-        <p>${value || "Noch nicht ausgefüllt"}</p>
-      </article>
-    `).join("");
-  }
-
-  function updateCharCounts() {
-    ["specialPerson", "memoryMessage", "heartWords"].forEach((name) => {
-      const field = form.querySelector(`[name="${name}"]`);
-      const count = form.querySelector(`[data-count-for="${name}"]`);
-      if (field && count) count.textContent = String(field.value.length);
-    });
-  }
-
-  function updateStep() {
-    $$("[data-step-panel]").forEach((panel) => {
-      panel.classList.toggle("is-active", Number(panel.dataset.stepPanel) === currentStep);
-    });
-    if (currentStepLabel) currentStepLabel.textContent = String(currentStep);
-    if (progressFill) progressFill.style.width = `${(currentStep / totalSteps) * 100}%`;
-    if (backButton) backButton.disabled = currentStep === 1;
-    if (nextButton) {
-      nextButton.hidden = currentStep === totalSteps;
-      nextButton.disabled = !stepIsValid();
-    }
-    if (submitButton) {
-      submitButton.hidden = currentStep !== totalSteps;
-      submitButton.disabled = !stepIsValid();
-    }
-    if (status) status.textContent = "";
-    if (currentStep === totalSteps) renderSummary();
-    updateCharCounts();
-  }
-
-  function saveLocalDemo(order) {
-    const existing = JSON.parse(localStorage.getItem("melodyDemoOrders") || "[]");
-    existing.unshift({ ...order, id: `demo-${Date.now()}`, created_at: new Date().toISOString() });
-    localStorage.setItem("melodyDemoOrders", JSON.stringify(existing.slice(0, 20)));
-  }
-
-  function buildOrderPayload(fileUrl = null, imageUrl = null, videoUrl = null, audioUrl = null) {
-    const config = collectConfig();
-    const story = [
-      `Für wen: ${config.recipientFor}`,
-      `Name/Anrede: ${config.recipientName}`,
-      `Anlass: ${config.occasion}`,
-      `Gewünschte Inhalte: ${config.included.join(", ")}`,
-      "",
-      "Was die Person besonders macht:",
-      config.specialPerson,
-      "",
-      "Erinnerung oder Botschaft:",
-      config.memoryMessage,
-      "",
-      "Worte aus dem Herzen:",
-      config.heartWords
-    ].join("\n");
-    const wantsSong = config.included.includes("Persönliches Lied");
-    return {
-      name: config.name,
-      email: config.email,
-      phone: config.phone,
-      address: "",
-      card_text: story,
-      music_wish: wantsSong ? `Persönliches Lied gewünscht. Grundlage:\n${config.specialPerson}\n\n${config.memoryMessage}\n\n${config.heartWords}` : "",
-      message: [`Konfigurator-Anfrage Melody Cards`, config.notes ? `Hinweise:\n${config.notes}` : ""].filter(Boolean).join("\n\n"),
-      file_url: fileUrl,
-      image_url: imageUrl,
-      video_url: videoUrl,
-      audio_url: audioUrl,
-      status: "new"
-    };
-  }
-
-  form.addEventListener("input", updateStep);
-  form.addEventListener("change", updateStep);
-
-  backButton?.addEventListener("click", () => {
-    if (currentStep > 1) {
-      currentStep -= 1;
-      updateStep();
-    }
-  });
-
-  nextButton?.addEventListener("click", () => {
-    if (!stepIsValid()) {
-      if (status) status.textContent = "Bitte fülle diesen Schritt aus, bevor du weitergehst.";
-      return;
-    }
-    currentStep = Math.min(totalSteps, currentStep + 1);
-    updateStep();
-  });
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (currentStep !== totalSteps) return;
-    if (!stepIsValid(totalSteps)) {
-      if (status) status.textContent = "Bitte gib deinen Namen und eine gültige E-Mail-Adresse ein.";
-      updateStep();
-      return;
-    }
-
-    if (status) status.textContent = "Sende Anfrage…";
-    if (submitButton) submitButton.disabled = true;
-    form.setAttribute("aria-busy", "true");
-
-    try {
-      if (!window.MelodySupabase?.isConfigured()) {
-        const order = buildOrderPayload();
-        saveLocalDemo(order);
-        if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
-        return;
-      }
-
-      const [fileUrl, imageUrl, videoUrl, audioUrl] = await withTimeout(Promise.all([
-        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="files"]')?.files?.[0], "files"),
-        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="image"]')?.files?.[0], "images"),
-        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="video"]')?.files?.[0], "videos"),
-        window.MelodySupabase.uploadOrderFile(form.querySelector('[name="audio"]')?.files?.[0], "audio")
-      ]), "Dateiupload");
-
-      await withTimeout(window.MelodySupabase.createPremiumOrder(buildOrderPayload(fileUrl, imageUrl, videoUrl, audioUrl)), "Speichern der Anfrage");
-
-      form.reset();
-      currentStep = 1;
-      updateStep();
-      if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
-    } catch (error) {
-      console.error("Premium order submit failed:", error);
-      if (window.MelodySupabase?.isConfigured()) {
-        if (status) status.textContent = error.message || "Die Anfrage konnte nicht gespeichert werden. Bitte versuche es erneut oder kontaktiere uns direkt.";
-      } else {
-        const order = buildOrderPayload();
-        saveLocalDemo(order);
-        if (status) status.textContent = "Danke, deine Anfrage wurde gesendet.";
-      }
-    } finally {
-      if (submitButton) submitButton.disabled = !stepIsValid(totalSteps);
-      form.removeAttribute("aria-busy");
-    }
-  });
-
-  updateStep();
-})();
-
 (async function () {
-  function withContentTimeout(promise, ms, fallback) {
-    return Promise.race([
-      promise,
-      new Promise((resolve) => window.setTimeout(() => resolve(fallback), ms))
-    ]);
+  const fallback = window.MELODY_DEFAULT_SITE || window.MELODY_DEMO_CONTENT;
+  const data = await window.MelodySupabase.fetchContent().catch(() => fallback);
+  const content = mergeContent(fallback.settings.content, data.settings?.content || {});
+
+  function mergeContent(base, remote) {
+    return {
+      ...base,
+      ...remote,
+      seo: { ...base.seo, ...(remote.seo || {}) },
+      brand: { ...base.brand, ...(remote.brand || {}) },
+      theme: {
+        ...base.theme,
+        ...(remote.theme || {}),
+        colors: { ...base.theme.colors, ...(remote.theme?.colors || {}) },
+        typography: { ...base.theme.typography, ...(remote.theme?.typography || {}) },
+        layout: { ...base.theme.layout, ...(remote.theme?.layout || {}) },
+        motion: { ...base.theme.motion, ...(remote.theme?.motion || {}) }
+      },
+      contact: { ...base.contact, ...(remote.contact || {}) },
+      footer: { ...base.footer, ...(remote.footer || {}) },
+      legalPages: { ...base.legalPages, ...(remote.legalPages || {}) }
+    };
   }
 
-  const data = await withContentTimeout(
-    window.MelodySupabase.fetchContent(),
-    5500,
-    { ...window.MELODY_DEMO_CONTENT, source: "demo-timeout" }
-  );
-  const settings = data.settings?.content || {};
-  const design = data.settings?.design || {};
-  function applyDesign() {
-    const root = document.documentElement;
-    if (design.background) root.style.setProperty("--black", design.background);
-    if (design.text) root.style.setProperty("--text", design.text);
-    if (design.muted) root.style.setProperty("--muted", design.muted);
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const escape = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+  const sorted = (items = []) => [...items].filter((item) => item && item.active !== false && item.status !== "inactive").sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+
+  function cssVar(name, value, suffix = "") {
+    if (value !== undefined && value !== null && value !== "") document.documentElement.style.setProperty(name, `${value}${suffix}`);
   }
 
-  function setText(selector, value) {
-    const el = document.querySelector(selector);
-    if (el && value) el.textContent = value;
-  }
-
-  function setHref(selector, value) {
-    const el = document.querySelector(selector);
-    if (el && value) el.href = value;
-  }
-
-  function setOptionalLink(selector, value, label, prefix = "") {
-    const el = document.querySelector(selector);
-    if (!el) return;
-    if (!value) {
-      el.hidden = true;
-      return;
+  function applyTheme() {
+    const { colors, typography, layout, motion } = content.theme;
+    Object.entries(colors || {}).forEach(([key, value]) => cssVar(`--${key}`, value));
+    cssVar("--max-width", layout.maxWidth, "px");
+    cssVar("--section-padding", layout.sectionPadding, "px");
+    cssVar("--radius", layout.radius, "px");
+    cssVar("--button-radius", layout.buttonRadius, "px");
+    cssVar("--card-shadow", layout.cardShadow, "px");
+    cssVar("--hero-size", typography.heroSize, "px");
+    cssVar("--heading-size", typography.headingSize, "px");
+    cssVar("--body-size", typography.bodySize, "px");
+    cssVar("--weight-heading", typography.weightHeading);
+    cssVar("--weight-body", typography.weightBody);
+    document.documentElement.style.setProperty("--motion-duration", `${motion.enabled === false ? 0 : motion.duration || 650}ms`);
+    const fonts = [typography.headingFont, typography.bodyFont].filter(Boolean);
+    if (fonts.length) {
+      const href = `https://fonts.googleapis.com/css2?${[...new Set(fonts)].map((font) => `family=${encodeURIComponent(font)}:wght@300;400;500;600;700;800`).join("&")}&display=swap`;
+      let link = document.querySelector("[data-google-fonts]");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.dataset.googleFonts = "true";
+        document.head.appendChild(link);
+      }
+      link.href = href;
+      document.documentElement.style.setProperty("--heading-font", `"${typography.headingFont}", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`);
+      document.documentElement.style.setProperty("--body-font", `"${typography.bodyFont}", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`);
     }
-    el.hidden = false;
-    el.href = `${prefix}${value}`;
-    if (label) el.textContent = label;
   }
 
-  function renderOptionGrid(panelStep, name, options, type = "radio") {
-    const panel = document.querySelector(`[data-step-panel="${panelStep}"]`);
-    const grid = panel?.querySelector(".option-grid");
-    if (!grid || !Array.isArray(options) || !options.length) return;
-    grid.innerHTML = options.map((value, index) => `
-      <label><input type="${type}" name="${name}" value="${value}" ${index === 0 && type === "radio" ? "required" : ""} /><span>${value}</span></label>
-    `).join("");
+  function applySeo() {
+    const seo = content.seo || {};
+    document.title = seo.title || content.brand.name || "Melody Cards";
+    $('[data-seo-description]')?.setAttribute("content", seo.description || "");
+    $('[data-og-title]')?.setAttribute("content", seo.ogTitle || document.title);
+    $('[data-og-description]')?.setAttribute("content", seo.ogDescription || seo.description || "");
+    if (seo.ogImage) $('[data-og-image]')?.setAttribute("content", seo.ogImage);
+    const favicon = seo.favicon || content.brand.favicon || "";
+    if (favicon) $('[data-favicon]')?.setAttribute("href", favicon);
+  }
+
+  function renderBrand() {
+    const logo = content.brand.logoImage
+      ? `<img src="${escape(content.brand.logoImage)}" alt="${escape(content.brand.name)}" />`
+      : `<span>${escape(content.brand.logoText || "MC")}</span>`;
+    $("[data-brand]").innerHTML = `${logo}<strong>${escape(content.brand.name || "Melody Cards")}</strong>`;
+    $("[data-loader] span").textContent = content.brand.name || "Melody Cards";
   }
 
   function renderNavigation() {
-    const nav = document.querySelector("[data-nav]");
-    if (!nav || !Array.isArray(settings.navItems) || !settings.navItems.length) return;
-    nav.innerHTML = settings.navItems
-      .filter((item) => item.active !== false)
-      .map((item) => `<a ${item.className ? `class="${item.className}"` : ""} href="${item.href || "#"}">${item.label || "Menüpunkt"}</a>`)
-      .join("");
+    const nav = $("[data-nav]");
+    nav.innerHTML = sorted(content.navigation).map((item) => `<a class="${item.style === "primary" ? "nav-primary" : ""}" href="${escape(item.href)}">${escape(item.label)}</a>`).join("");
   }
 
-  const relaunchContent = {
-    heroEyebrow: "Melody Cards",
-    heroTitleLine1: "Handgemachte Karten",
-    heroTitleLine2: "für besondere Menschen.",
-    heroText: "Persönliche Botschaften, Fotos, Erinnerungen und auf Wunsch ein QR-Code oder Lied. Warm gestaltet, handgemacht gedacht, bewusst verschenkt.",
-    primaryButtonText: "Karte gestalten",
-    primaryButtonHref: "#order",
-    secondaryButtonText: "Beispiele ansehen",
-    secondaryButtonHref: "#examples",
-    footerText: "Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.",
-    contactTitle: "Offen für Fragen vor der Anfrage.",
-    contactText: "Wenn du unsicher bist, ob Karte, Foto, Audio, Video, Lied oder QR-Code passt, schreibe uns kurz. Wir antworten persönlich und ohne Verkaufsdruck."
-  };
+  const imageStyle = (url) => url ? `style="--image:url('${escape(url)}')"` : "";
 
-  const retiredContent = {
-    heroEyebrow: ["Lux" + "ury " + "sound gifting", "Handmade " + "sound gifting"],
-    heroTitleLine1: ["Personalisierte Karten.", "Grußkarten, die singen."],
-    heroTitleLine2: ["Ein Lied, das bleibt.", "Persönlich. Warm. Unvergesslich."],
-    heroText: [
-      "Melody Cards verbindet hochwertige Grußkarten, individuelle Kompositionen und elegante QR-Code-Technologie zu einem Geschenk, das sofort berührt.",
-      "Melody Cards verbindet handgemachte Premium-Grußkarten mit deinem Foto, deinen Worten und einem eigens komponierten Lied, das per QR-Code sofort abgespielt wird."
-    ],
-    primaryButtonText: ["Jetzt bestellen"],
-    secondaryButtonText: ["Live " + "Demo testen"],
-    secondaryButtonHref: ["#demo"],
-    footerText: [
-      "Premium-Karten mit QR-Code und eigens komponiertem Lied.",
-      "Handgemachte Premium-Grußkarten mit persönlichem Lied, Foto, Text und QR-Code."
-    ],
-    contactTitle: ["Bereit für dein persönliches Lied?", "Bereit für eine Karte, die wirklich ankommt?"],
-    contactText: [
-      "Schreibe uns direkt per WhatsApp, E-Mail oder über das Bestellformular. Wir melden uns mit Preis, Timing und Designvorschlag.",
-      "Schreibe uns direkt per WhatsApp, E-Mail oder über das Anfrageformular. Wir antworten persönlich und ohne Verkaufsdruck."
-    ]
-  };
-
-  function content(key) {
-    const value = settings[key];
-    if (!value || (retiredContent[key] || []).includes(value)) return relaunchContent[key] || value;
-    return value;
-  }
-
-  function applyGlobalContent() {
-    renderNavigation();
-    setText(".brand-text", settings.brandName);
-    document.querySelectorAll(".brand-mark").forEach((el) => { if (settings.logoText) el.textContent = settings.logoText; });
-    if (settings.logoImage) {
-      document.querySelectorAll(".brand-mark").forEach((el) => {
-        el.innerHTML = `<img class="logo-image" src="${settings.logoImage}" alt="">`;
-      });
-    }
-    if (settings.faviconImage) {
-      document.querySelector('link[rel="icon"]')?.setAttribute("href", settings.faviconImage);
-    }
-    if (settings.heroImage) {
-      document.querySelector(".hero-visual")?.style.setProperty("background-image", `url("${settings.heroImage}")`);
-    }
-    setText(".loader span", settings.brandName);
-    setText(".hero .eyebrow", content("heroEyebrow"));
-    setText(".hero h1 span:first-child", content("heroTitleLine1"));
-    setText(".hero h1 span:last-child", content("heroTitleLine2"));
-    setText(".hero-content p:not(.eyebrow)", content("heroText"));
-    const primary = document.querySelector(".hero-actions .btn-primary");
-    const secondary = document.querySelector(".hero-actions .text-link");
-    if (primary) {
-      primary.textContent = content("primaryButtonText") || primary.textContent;
-      primary.href = content("primaryButtonHref") || "#order";
-    }
-    if (secondary) {
-      secondary.textContent = content("secondaryButtonText") || secondary.textContent;
-      secondary.href = content("secondaryButtonHref") || "#examples";
-    }
-    setText(".footer-brand strong", settings.brandName);
-    setText(".footer-brand p", content("footerText"));
-    setText(".contact-card h2", content("contactTitle"));
-    setText(".contact-card p:not(.eyebrow)", content("contactText"));
-    setOptionalLink("[data-contact-email]", settings.contactEmail, settings.contactEmail, "mailto:");
-    setOptionalLink("[data-contact-phone]", settings.contactPhone, settings.contactPhone, "tel:");
-    setText("[data-contact-address]", settings.contactAddress);
-    const whatsappNumber = String(settings.whatsappNumber || "").replace(/\D/g, "");
-    const whatsappText = encodeURIComponent(settings.whatsappMessage || "Hallo Melody Cards, ich habe eine Frage.");
-    setOptionalLink("[data-whatsapp-chat]", whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${whatsappText}` : "", "WhatsApp");
-    setOptionalLink("[data-social-instagram]", settings.socialInstagram, "Instagram");
-    setOptionalLink("[data-social-tiktok]", settings.socialTikTok, "TikTok");
-    setOptionalLink("[data-social-youtube]", settings.socialYouTube, "YouTube");
-    setText(".intro-section .eyebrow", settings.introEyebrow);
-    setText(".intro-copy h2", settings.introTitle);
-    setText(".intro-copy p:not(.eyebrow)", settings.introText);
-    setText("#process .section-head .eyebrow", settings.processEyebrow);
-    setText("#process .section-head h2", settings.processTitle);
-    setText("#process .section-head p:not(.eyebrow)", settings.processText);
-    setText("#products .section-head .eyebrow", settings.productsEyebrow);
-    setText("#products .section-head h2", settings.productsTitle);
-    setText("#products .section-head p:not(.eyebrow)", settings.productsText);
-    setText("#examples .section-head .eyebrow", settings.examplesEyebrow);
-    setText("#examples .section-head h2", settings.examplesTitle);
-    setText("#examples .section-head p:not(.eyebrow)", settings.examplesText);
-    setText("#gallery .section-head .eyebrow", settings.galleryEyebrow);
-    setText("#gallery .section-head h2", settings.galleryTitle);
-    setText("#gallery .section-head p:not(.eyebrow)", settings.galleryText);
-    setText("#faq .section-head .eyebrow", settings.faqEyebrow);
-    setText("#faq .section-head h2", settings.faqTitle);
-    setText("#about .section-head .eyebrow", settings.aboutEyebrow);
-    setText("#about .section-head h2", settings.aboutTitle);
-    setText("#about .section-head p:not(.eyebrow)", settings.aboutText);
-    setText("#order .section-head .eyebrow", settings.orderEyebrow);
-    setText("#order .section-head h2", settings.orderTitle);
-    setText("#order .section-head p:not(.eyebrow)", settings.orderText);
-    setText("#rechtliches .section-head .eyebrow", settings.legalEyebrow);
-    setText("#rechtliches .section-head h2", settings.legalTitle);
-    setText("#rechtliches .section-head p:not(.eyebrow)", settings.legalText);
-    setHref(".footer-links a[href='impressum.html']", "impressum.html");
-  }
-
-  function productCard(item, index) {
-    const tags = Array.isArray(item.tags) ? item.tags.slice(0, 2) : ["Botschaft", "Foto oder QR-Code"];
-    const imageStyle = item.image_url ? `style="background-image:url('${item.image_url}')"` : "";
-    return `
-      <article class="product-card reveal">
-        <div class="card-art warm-card-art card-art-${(index % 6) + 1}" ${imageStyle}>
-          <div class="mini-open-card">
-            <i></i><strong>${item.title}</strong><span></span>
-          </div>
-          <em>${String(index + 1).padStart(2, "0")}</em>
+  function hero(section) {
+    return `<section class="hero section-reveal" id="${escape(section.id)}" ${imageStyle(section.image)}>
+      <div class="hero-overlay"></div>
+      <div class="hero-inner">
+        <p class="eyebrow">${escape(section.eyebrow)}</p>
+        <h1>${escape(section.title)}</h1>
+        <p>${escape(section.subtitle || section.text)}</p>
+        <div class="hero-actions">
+          ${section.primaryButton?.label ? `<a class="btn btn-primary" href="${escape(section.primaryButton.href || "#order")}">${escape(section.primaryButton.label)}</a>` : ""}
+          ${section.secondaryButton?.label ? `<a class="btn btn-secondary" href="${escape(section.secondaryButton.href || "#process")}">${escape(section.secondaryButton.label)}</a>` : ""}
         </div>
-        <div class="card-body">
-          <h3>${item.title}</h3><p>${item.description || ""}</p>
-          <div class="tag-row">${tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
-          <a class="text-link" href="#order">Anfrage starten</a>
-        </div>
-      </article>`;
+      </div>
+    </section>`;
   }
 
-  function renderProducts() {
-    const productGrid = document.querySelector("[data-products]");
-    if (!productGrid) return;
-    const products = Array.isArray(data.products) ? data.products.slice(0, 6) : [];
-    const visibleProducts = products.length ? products : window.MELODY_DEMO_CONTENT.products;
-    productGrid.innerHTML = visibleProducts.filter((item) => item.active !== false).slice(0, 6).map(productCard).join("");
+  function editorial(section) {
+    return `<section class="section editorial section-reveal" id="${escape(section.id)}">
+      <div class="section-copy"><p class="eyebrow">${escape(section.eyebrow)}</p><h2>${escape(section.title)}</h2><p>${escape(section.text)}</p></div>
+      <div class="editorial-image" ${imageStyle(section.image)}></div>
+    </section>`;
   }
 
-  function renderDemoCards() {
-    const demoCards = document.querySelector("[data-demo-cards]");
-    if (!demoCards) return;
-    demoCards.innerHTML = data.products.slice(0, 4).map((item, index) => `
-      <button class="demo-card-btn ${index === 0 ? "is-active" : ""}" type="button" data-demo-card="${item.title}">
-        <span>${item.title}</span><span>QR testen</span>
-      </button>`).join("");
+  function steps(section) {
+    return `<section class="section section-reveal" id="${escape(section.id)}">
+      ${sectionHead(section)}
+      <div class="step-grid">${(section.items || []).map((item, index) => `<article class="lux-card"><span>${String(index + 1).padStart(2, "0")}</span><h3>${escape(item.title)}</h3><p>${escape(item.text)}</p></article>`).join("")}</div>
+    </section>`;
   }
 
-  function renderGallery() {
-    const gallery = document.querySelector("[data-gallery]");
-    if (!gallery) return;
-    const galleryItems = Array.isArray(data.gallery) ? data.gallery.slice(0, 6) : [];
-    const visibleGallery = galleryItems.length ? galleryItems : window.MELODY_DEMO_CONTENT.gallery;
-    gallery.innerHTML = visibleGallery.filter((item) => item.active !== false).slice(0, 6).map((item, index) => {
-      const imageStyle = item.image_url ? `style="background-image:url('${item.image_url}')"` : "";
-      return `
-        <button class="gallery-item reveal" type="button" data-gallery-title="${item.title}" data-gallery-text="${item.description || ""}">
-          <div class="gallery-art warm-gallery-art gallery-art-${(index % 6) + 1}" ${imageStyle}>
-            <div class="gallery-card-scene"><i></i><span></span><b></b></div>
-          </div><h3>${item.title}</h3><p>${item.category || item.description || "Melody Cards Beispiel"}</p>
-        </button>`;
-    }).join("");
+  function products(section) {
+    return `<section class="section section-reveal" id="${escape(section.id)}">
+      ${sectionHead(section)}
+      <div class="product-grid">${sorted(content.products).map(productCard).join("") || emptyState("Noch keine Produkte veröffentlicht.")}</div>
+    </section>`;
   }
 
-  function renderPromiseItems() {
-    const grid = document.querySelector(".promise-grid");
-    if (!grid || !Array.isArray(settings.promiseItems)) return;
-    grid.innerHTML = settings.promiseItems
-      .filter((item) => item.active !== false)
-      .map((item) => `<article><span>${item.number || ""}</span><strong>${item.title || ""}</strong><p>${item.text || ""}</p></article>`)
-      .join("");
+  function productCard(product) {
+    const image = product.images?.[0] || product.image_url || "";
+    return `<article class="product-card lux-card">
+      <div class="product-image" ${imageStyle(image)}></div>
+      <div><p class="eyebrow">${escape(product.category || "Geburtstag")}</p><h3>${escape(product.title)}</h3><p>${escape(product.description)}</p></div>
+      <div class="product-meta">
+        ${product.price ? `<strong>${escape(product.price)}</strong>` : ""}
+        ${product.discount ? `<span>${escape(product.discount)}</span>` : ""}
+      </div>
+      <a class="btn btn-primary" href="#order" data-order-product="${escape(product.title)}">Anfragen</a>
+    </article>`;
   }
 
-  function renderProcessSteps() {
-    const grid = document.querySelector(".steps");
-    if (!grid || !Array.isArray(settings.processSteps)) return;
-    grid.innerHTML = settings.processSteps
-      .filter((item) => item.active !== false)
-      .map((item) => `<article class="step reveal"><span>${item.number || ""}</span><h3>${item.title || ""}</h3><p>${item.text || ""}</p></article>`)
-      .join("");
+  function gallery(section) {
+    return `<section class="section section-reveal" id="${escape(section.id)}">
+      ${sectionHead(section)}
+      <div class="gallery-grid">${sorted(content.gallery).map((item) => `<button class="gallery-item" type="button" data-lightbox-open data-title="${escape(item.title)}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(item.url || item.image_url || "")}"><img src="${escape(item.url || item.image_url || "")}" alt="${escape(item.alt || item.title || "")}" /><span>${escape(item.title || "")}</span></button>`).join("") || emptyState("Noch keine Galerie veröffentlicht.")}</div>
+    </section>`;
   }
 
-  function renderExampleItems() {
-    const grid = document.querySelector(".example-grid");
-    if (!grid || !Array.isArray(settings.exampleItems)) return;
-    const classes = ["birthday", "wedding", "love", "family"];
-    grid.innerHTML = settings.exampleItems
-      .filter((item) => item.active !== false)
-      .map((item, index) => `<article class="example-card ${classes[index % classes.length]}"><span>${item.category || ""}</span><strong>${item.text || ""}</strong></article>`)
-      .join("");
+  function reviews(section) {
+    const items = sorted(content.reviews);
+    if (!items.length) return "";
+    return `<section class="section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="review-grid">${items.map((review) => `<article class="lux-card review"><div class="stars">${"★".repeat(Number(review.rating || 5))}</div><p>${escape(review.text)}</p><strong>${escape(review.name)}</strong></article>`).join("")}</div></section>`;
   }
 
-  function renderAudio() {
-    const audioGrid = document.querySelector("[data-audio]");
-    if (!audioGrid) return;
-    audioGrid.innerHTML = (data.audio || []).map((item) => `
-      <article class="audio-card reveal">
-        <div class="audio-top"><div class="audio-cover"></div><div><h3>${item.title}</h3><p>${item.description || ""}</p></div></div>
-        <div class="sound-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <button class="btn btn-glass" type="button" data-audio-play>Preview starten</button>
-      </article>`).join("");
+  function faq(section) {
+    return `<section class="section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="faq-list">${sorted(content.faqs).map((item, index) => `<details ${index === 0 ? "open" : ""}><summary>${escape(item.question)}</summary><p>${escape(item.answer)}</p></details>`).join("")}</div></section>`;
   }
 
-  function renderConfigurator() {
-    const cfg = settings.configurator || {};
-    window.MELODY_CONFIGURATOR_SETTINGS = cfg;
-    if (cfg.steps?.recipientFor) {
-      setText('[data-step-panel="1"] h3', cfg.steps.recipientFor.title);
-      renderOptionGrid(1, "recipientFor", cfg.steps.recipientFor.options, "radio");
-    }
-    if (cfg.steps?.recipientName) setText('[data-step-panel="2"] h3', cfg.steps.recipientName.title);
-    if (cfg.steps?.occasion) {
-      setText('[data-step-panel="3"] h3', cfg.steps.occasion.title);
-      renderOptionGrid(3, "occasion", cfg.steps.occasion.options, "radio");
-    }
-    if (cfg.steps?.included) {
-      setText('[data-step-panel="4"] h3', cfg.steps.included.title);
-      renderOptionGrid(4, "included", cfg.steps.included.options, "checkbox");
-    }
-    if (cfg.steps?.specialPerson) setText('[data-step-panel="5"] h3', cfg.steps.specialPerson.title);
-    if (cfg.steps?.memoryMessage) setText('[data-step-panel="6"] h3', cfg.steps.memoryMessage.title);
-    if (cfg.steps?.heartWords) setText('[data-step-panel="7"] h3', cfg.steps.heartWords.title);
-    if (cfg.steps?.contact) setText('[data-step-panel="8"] h3', cfg.steps.contact.title);
-    setText("[data-config-back]", cfg.backText);
-    setText("[data-config-next]", cfg.nextText);
-    setText("[data-config-submit]", cfg.submitText);
-    document.getElementById("premium-order-form")?.dispatchEvent(new Event("input", { bubbles: true }));
+  function about(section) {
+    return `<section class="section editorial section-reveal" id="${escape(section.id)}"><div class="section-copy"><p class="eyebrow">${escape(section.eyebrow)}</p><h2>${escape(section.title)}</h2><p>${escape(section.text)}</p></div><div class="editorial-image portrait" ${imageStyle(section.image)}></div></section>`;
   }
 
-  function renderFaq() {
-    const faqList = document.querySelector("[data-faq]");
-    if (!faqList) return;
-    const faqs = Array.isArray(data.faqs) ? data.faqs.slice(0, 8) : [];
-    const visibleFaqs = faqs.length ? faqs : window.MELODY_DEMO_CONTENT.faqs;
-    faqList.innerHTML = visibleFaqs.filter((item) => item.active !== false).slice(0, 8).map((item, index) => `<details ${index === 0 ? "open" : ""} class="reveal"><summary>${item.question}</summary><p>${item.answer}</p></details>`).join("");
+  function order(section) {
+    return `<section class="section order-section section-reveal" id="${escape(section.id)}">
+      ${sectionHead(section)}
+      <form class="order-form lux-card" id="premium-order-form">
+        <label>Geburtstagskarte<select name="product">${sorted(content.products).map((product) => `<option>${escape(product.title)}</option>`).join("")}</select></label>
+        <label>Name der beschenkten Person<input name="recipient" required placeholder="z. B. Mama, Sarah, mein Schatz" /></label>
+        <label>Dein Name<input name="name" required /></label>
+        <label>E-Mail<input name="email" type="email" required /></label>
+        <label>Telefon optional<input name="phone" type="tel" /></label>
+        <label class="span-all">Wünsche zur Karte<textarea name="message" rows="5" placeholder="Was soll die Karte ausdrücken? Gibt es etwas, das wir wissen sollen?"></textarea></label>
+        <button class="btn btn-primary" type="submit">Geburtstagskarte anfragen</button>
+        <p class="form-status" id="premium-order-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>`;
   }
 
-  function renderBlog() {
-    const blogGrid = document.querySelector("[data-blog]");
-    if (!blogGrid) return;
-    blogGrid.innerHTML = data.blog.map((item, index) => {
-      return `<article class="blog-card reveal"><div class="blog-art quiet-art"><span>${String(index + 1).padStart(2, "0")}</span></div><div><h3>${item.title}</h3><p>${item.excerpt || ""}</p><a class="btn btn-glass" href="#blog">Lesen</a></div></article>`;
-    }).join("");
+  function contact(section) {
+    const contact = content.contact || {};
+    return `<section class="section contact-section section-reveal" id="${escape(section.id)}">${sectionHead(section)}<div class="contact-panel lux-card">
+      ${contact.email ? `<a href="mailto:${escape(contact.email)}">${escape(contact.email)}</a>` : ""}
+      ${contact.phone ? `<a href="tel:${escape(contact.phone)}">${escape(contact.phone)}</a>` : ""}
+      ${contact.address ? `<p>${escape(contact.address)}</p>` : ""}
+    </div></section>`;
   }
 
-  function renderAbout() {
-    const grid = document.querySelector(".about-grid");
-    if (!grid || !Array.isArray(settings.aboutCards)) return;
-    grid.innerHTML = settings.aboutCards
-      .filter((item) => item.active !== false)
-      .map((item) => `<article><h3>${item.title}</h3><p>${item.text}</p></article>`)
-      .join("");
+  function sectionHead(section) {
+    return `<div class="section-head"><p class="eyebrow">${escape(section.eyebrow || "")}</p><h2>${escape(section.title || "")}</h2>${section.text ? `<p>${escape(section.text)}</p>` : ""}</div>`;
+  }
+
+  function emptyState(text) {
+    return `<div class="empty-state">${escape(text)}</div>`;
+  }
+
+  const renderers = { hero, editorial, steps, products, gallery, reviews, faq, about, order, contact };
+
+  function renderSections() {
+    $("[data-site-root]").innerHTML = sorted(content.sections).map((section) => renderers[section.type]?.(section) || "").join("");
+  }
+
+  function renderFooter() {
+    const socials = [
+      ["Instagram", content.contact.instagram],
+      ["TikTok", content.contact.tiktok],
+      ["YouTube", content.contact.youtube]
+    ].filter(([, href]) => href);
+    $("[data-footer]").innerHTML = `<div><strong>${escape(content.brand.name)}</strong><p>${escape(content.brand.footerText || "")}</p></div><nav>${(content.footer.links || []).map((link) => `<a href="${escape(link.href)}">${escape(link.label)}</a>`).join("")}</nav><nav>${socials.map(([label, href]) => `<a href="${escape(href)}" target="_blank" rel="noreferrer">${escape(label)}</a>`).join("")}</nav>`;
   }
 
   function bindInteractions() {
-    const navToggle = document.querySelector("[data-nav-toggle]");
-    const nav = document.querySelector("[data-nav]");
-    navToggle?.addEventListener("click", () => {
+    const nav = $("[data-nav]");
+    $("[data-nav-toggle]")?.addEventListener("click", (event) => {
       const open = nav.classList.toggle("is-open");
-      navToggle.setAttribute("aria-expanded", String(open));
+      event.currentTarget.setAttribute("aria-expanded", String(open));
     });
-    nav?.addEventListener("click", (event) => {
-      if (event.target.matches("a")) nav.classList.remove("is-open");
+    nav?.addEventListener("click", () => nav.classList.remove("is-open"));
+    $("[data-back-top]")?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    document.addEventListener("click", (event) => {
+      const opener = event.target.closest("[data-lightbox-open]");
+      if (opener) openLightbox(opener);
+      if (event.target.matches("[data-lightbox-close]")) closeLightbox();
+      const product = event.target.closest("[data-order-product]")?.dataset.orderProduct;
+      if (product) setTimeout(() => {
+        const select = $("#premium-order-form select[name='product']");
+        if (select) select.value = product;
+      }, 20);
     });
-
-    document.querySelectorAll("[data-demo-card]").forEach((button) => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll("[data-demo-card]").forEach((item) => item.classList.remove("is-active"));
-        button.classList.add("is-active");
-        document.querySelector("[data-demo-title]").textContent = `${button.dataset.demoCard} Song`;
-        document.querySelector("[data-demo-subtitle]").textContent = "QR-Code gescannt";
-      });
-    });
-
-    document.querySelector("[data-demo-play]")?.addEventListener("click", () => {
-      document.querySelector("[data-sound-wave]")?.classList.toggle("is-playing");
-    });
-    document.querySelector("[data-play-demo]")?.addEventListener("click", (event) => {
-      event.currentTarget.closest(".phone-screen")?.classList.toggle("is-playing");
-    });
-    document.querySelectorAll("[data-audio-play]").forEach((button) => {
-      button.addEventListener("click", () => button.previousElementSibling.classList.toggle("is-playing"));
-    });
-
-    const configForm = document.querySelector("[data-config-form]");
-    configForm?.addEventListener("change", () => {
-      const formData = new FormData(configForm);
-      document.querySelector("[data-preview-occasion]").textContent = formData.get("occasion");
-      document.querySelector("[data-preview-design]").textContent = formData.get("design");
-      document.querySelector("[data-preview-music]").textContent = `${formData.get("music")} · ${formData.get("language")}`;
-      document.querySelector("[data-preview-package]").textContent = `${formData.get("packaging")} / ${formData.get("box")}`;
-      document.querySelector("[data-preview-voice]").textContent = formData.get("voice");
-      document.querySelector("[data-preview-qr]").style.filter = formData.get("qr") === "Gold" ? "sepia(1) saturate(1.4)" : "none";
-    });
-
-    const lightbox = document.querySelector("[data-lightbox]");
-    document.querySelectorAll(".gallery-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        if (!lightbox) return;
-        lightbox.classList.add("is-open");
-        lightbox.setAttribute("aria-hidden", "false");
-        document.querySelector("[data-lightbox-art]").style.removeProperty("--gallery-bg");
-        document.querySelector("[data-lightbox-title]").textContent = item.dataset.galleryTitle;
-        document.querySelector("[data-lightbox-text]").textContent = item.dataset.galleryText;
-      });
-    });
-    document.querySelector("[data-lightbox-close]")?.addEventListener("click", () => {
-      lightbox.classList.remove("is-open");
-      lightbox.setAttribute("aria-hidden", "true");
-    });
-
-    document.querySelector("[data-newsletter]")?.addEventListener("submit", (event) => event.preventDefault());
-    document.querySelector("[data-cookie-accept]")?.addEventListener("click", () => document.querySelector("[data-cookie]")?.classList.add("is-hidden"));
-    document.querySelector("[data-back-top]")?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    $("#premium-order-form")?.addEventListener("submit", submitOrder);
+    reveal();
   }
 
-  function bindScrollAnimations() {
-    const loader = document.querySelector("[data-loader]");
-    setTimeout(() => loader?.classList.add("is-hidden"), 450);
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add("is-visible");
+  function openLightbox(opener) {
+    const box = $("[data-lightbox]");
+    $("[data-lightbox-image]").src = opener.dataset.image || "";
+    $("[data-lightbox-title]").textContent = opener.dataset.title || "";
+    $("[data-lightbox-text]").textContent = opener.dataset.text || "";
+    box.classList.add("is-open");
+    box.setAttribute("aria-hidden", "false");
+  }
+
+  function closeLightbox() {
+    const box = $("[data-lightbox]");
+    box.classList.remove("is-open");
+    box.setAttribute("aria-hidden", "true");
+  }
+
+  async function submitOrder(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = $("#premium-order-status");
+    const submit = form.querySelector("button[type='submit']");
+    const values = Object.fromEntries(new FormData(form));
+    status.textContent = "Anfrage wird gesendet...";
+    submit.disabled = true;
+    try {
+      await window.MelodySupabase.createPremiumOrder({
+        name: values.name,
+        email: values.email,
+        phone: values.phone || "",
+        address: "",
+        card_text: `Geburtstagskarte: ${values.product}\nBeschenkte Person: ${values.recipient}`,
+        music_wish: "",
+        message: values.message || "",
+        status: "new"
       });
-    }, { threshold: 0.12 });
-    document.querySelectorAll(".reveal").forEach((node) => revealObserver.observe(node));
+      form.reset();
+      status.textContent = "Danke. Deine Anfrage wurde gesendet.";
+    } catch (error) {
+      console.error("Order submit failed:", error);
+      status.textContent = error.message || "Die Anfrage konnte nicht gespeichert werden.";
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
+  function reveal() {
+    document.querySelectorAll(".section-reveal").forEach((node) => node.classList.add("is-visible"));
+    if (content.theme.motion?.enabled === false) return;
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      if (entry.isIntersecting) entry.target.classList.add("is-visible");
+    }), { threshold: 0.12 });
+    document.querySelectorAll(".section-reveal, .lux-card").forEach((node) => observer.observe(node));
     window.addEventListener("scroll", () => {
-      document.querySelector("[data-header]")?.classList.toggle("is-scrolled", window.scrollY > 40);
-      document.querySelector("[data-back-top]")?.classList.toggle("is-visible", window.scrollY > 700);
-      document.querySelector("[data-parallax]")?.style.setProperty("--parallax", `${window.scrollY * 0.06}px`);
+      $("[data-header]")?.classList.toggle("is-scrolled", window.scrollY > 40);
+      $("[data-back-top]")?.classList.toggle("is-visible", window.scrollY > 700);
     });
   }
 
-  function injectTools() {
-  }
-
-  applyDesign();
-  applyGlobalContent();
-  renderProducts();
-  renderPromiseItems();
-  renderProcessSteps();
-  renderExampleItems();
-  renderDemoCards();
-  renderGallery();
-  renderAudio();
-  renderConfigurator();
-  renderFaq();
-  renderBlog();
-  renderAbout();
+  applyTheme();
+  applySeo();
+  renderBrand();
+  renderNavigation();
+  renderSections();
+  renderFooter();
   bindInteractions();
-  bindScrollAnimations();
-  injectTools();
+  setTimeout(() => $("[data-loader]")?.classList.add("is-hidden"), 250);
 })();

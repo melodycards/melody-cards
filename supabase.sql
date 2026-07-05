@@ -34,8 +34,12 @@ create table if not exists public.products (
   description text,
   category text,
   price text,
+  discount text,
   image_url text,
+  images jsonb not null default '[]'::jsonb,
   tags jsonb not null default '[]'::jsonb,
+  status text not null default 'active',
+  featured boolean not null default false,
   sort_order int not null default 0,
   active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -112,6 +116,12 @@ create index if not exists premium_orders_created_at_idx on public.premium_order
 create index if not exists premium_orders_status_idx on public.premium_orders (status);
 
 alter table public.products add column if not exists category text;
+alter table public.products add column if not exists discount text;
+alter table public.products add column if not exists images jsonb not null default '[]'::jsonb;
+alter table public.products add column if not exists status text not null default 'active';
+alter table public.products add column if not exists featured boolean not null default false;
+alter table public.gallery_items add column if not exists alt_text text;
+alter table public.reviews add column if not exists photo text;
 
 alter table public.admin_profiles enable row level security;
 alter table public.site_settings enable row level security;

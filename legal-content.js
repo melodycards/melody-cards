@@ -17,12 +17,13 @@
   try {
     const data = await window.MelodySupabase.fetchContent();
     const content = data.settings?.content || {};
-    setText(".brand-text", content.brandName);
+    const brand = content.brand || {};
+    setText(".brand-text", brand.name || content.brandName);
     document.querySelectorAll(".brand-mark").forEach((element) => {
-      if (content.logoImage) element.innerHTML = `<img class="logo-image" src="${content.logoImage}" alt="">`;
-      else if (content.logoText) element.textContent = content.logoText;
+      if (brand.logoImage || content.logoImage) element.innerHTML = `<img class="logo-image" src="${brand.logoImage || content.logoImage}" alt="">`;
+      else if (brand.logoText || content.logoText) element.textContent = brand.logoText || content.logoText;
     });
-    if (content.faviconImage) document.querySelector('link[rel="icon"]')?.setAttribute("href", content.faviconImage);
+    if (content.seo?.favicon || content.faviconImage) document.querySelector('link[rel="icon"]')?.setAttribute("href", content.seo?.favicon || content.faviconImage);
     const legalText = content.legalPages?.[page];
     if (legalText) {
       const target = document.querySelector(".legal-content");

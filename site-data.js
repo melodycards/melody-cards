@@ -1,121 +1,207 @@
 (function () {
-  const productNames = [
-    ["Geburtstag", "Eine persönliche Karte mit Foto, Botschaft und auf Wunsch QR-Code oder Lied."],
-    ["Hochzeit", "Ein ruhiger Gruß für Worte, Erinnerungen und kleine Momente rund um den Tag."],
-    ["Liebe", "Eine schlichte Karte für Nähe, Dankbarkeit und Sätze, die bleiben sollen."],
-    ["Familie", "Für Eltern, Großeltern, Geschwister oder Menschen, die sich wie Familie anfühlen."],
-    ["Muttertag", "Eine handgemachte Karte mit warmem Text und persönlichem Bild."],
-    ["Erinnerung", "Für Abschied, Dankbarkeit oder einen Moment, den man bewahren möchte."]
-  ];
+  const image = (name) => `assets/images/${name}`;
 
-  const galleryTypes = ["Papier", "Foto", "Botschaft", "QR-Code", "Umschlag", "Detail"];
-  const faqQuestions = [
-    "Ist das Formular eine Bestellung?", "Kann ich ein Foto hochladen?", "Muss jede Karte ein Lied haben?", "Kann ein QR-Code integriert werden?",
-    "Kann ich den Text selbst schreiben?", "Wie läuft die Abstimmung ab?", "Gibt es automatische Zahlungen?", "Welche Dateien kann ich mitsenden?"
-  ];
-
-  window.MELODY_DEMO_CONTENT = {
+  window.MELODY_DEFAULT_SITE = {
     settings: {
       id: 1,
       content: {
-        brandName: "Melody Cards",
-        logoText: "MC",
-        logoImage: "",
-        faviconImage: "",
-        heroImage: "",
-        heroEyebrow: "Melody Cards",
-        heroTitleLine1: "Handgemachte Karten",
-        heroTitleLine2: "für besondere Menschen.",
-        heroText: "Persönliche Botschaften, Fotos, Erinnerungen und auf Wunsch ein QR-Code oder Lied. Warm gestaltet, handgemacht gedacht, bewusst verschenkt.",
-        primaryButtonText: "Karte gestalten",
-        primaryButtonHref: "#order",
-        secondaryButtonText: "Beispiele ansehen",
-        secondaryButtonHref: "#examples",
-        footerText: "Handgemachte Karten mit persönlicher Botschaft, Foto, Lied oder QR-Code.",
-        contactTitle: "Offen für Fragen vor der Anfrage.",
-        contactText: "Wenn du unsicher bist, ob Karte, Foto, Audio, Video, Lied oder QR-Code passt, schreibe uns kurz. Wir antworten persönlich und ohne Verkaufsdruck.",
-        contactEmail: "hello@melody-cards.example",
-        contactPhone: "+49 170 1234567",
-        contactAddress: "Musterstraße 1, 12345 Musterstadt",
-        whatsappNumber: "491701234567",
-        whatsappMessage: "Hallo Melody Cards, ich möchte eine Premium-Karte bestellen.",
-        socialInstagram: "https://instagram.com/",
-        socialTikTok: "https://www.tiktok.com/",
-        socialYouTube: "https://www.youtube.com/",
-        introEyebrow: "Der Gedanke",
-        introTitle: "Ein Geschenk, das sich persönlich anfühlt.",
-        introText: "Melody Cards ist für Geburtstage, Hochzeiten, Liebe, Familie, Muttertag und Erinnerungen gemacht. Jede Karte beginnt mit einer echten Geschichte und wird anschließend warm, ruhig und hochwertig gestaltet.",
-        promiseItems: [
-          { number: "01", title: "Botschaft", text: "Du erzählst, für wen die Karte ist und was sie ausdrücken soll.", active: true },
-          { number: "02", title: "Gestaltung", text: "Wir verbinden Text, Foto, Papierwirkung und digitale Elemente zu einem klaren Entwurf.", active: true },
-          { number: "03", title: "Erinnerung", text: "Optional ergänzen wir ein Lied oder einen QR-Code, wenn es zur Geschichte passt.", active: true }
-        ],
-        processEyebrow: "So funktioniert es",
-        processTitle: "Wenige Schritte. Viel Gefühl.",
-        processText: "Keine automatische Bestellung und keine Zahlung auf der Webseite. Du sendest eine Anfrage, wir melden uns persönlich mit Rückfragen und einem klaren Vorschlag.",
-        processSteps: [
-          { number: "01", title: "Anlass beschreiben", text: "Du wählst den Moment und beschreibst die Person, die Botschaft und die Stimmung.", active: true },
-          { number: "02", title: "Material senden", text: "Optional lädst du Foto, Text, Audio oder andere Erinnerungen hoch.", active: true },
-          { number: "03", title: "Entwurf abstimmen", text: "Wir klären, ob Karte, Lied oder QR-Code sinnvoll sind und wie schlicht das Ergebnis wirken soll.", active: true }
-        ],
-        productsEyebrow: "Anlässe",
-        productsTitle: "Für Momente, die Nähe brauchen.",
-        productsText: "Die Anlasskarten sind nur ein Startpunkt. Jede Melody Card wird danach individuell und ohne Standardtext gestaltet.",
-        examplesEyebrow: "Beispiele",
-        examplesTitle: "Warm außen. Persönlich innen.",
-        examplesText: "Feine Papierwirkung, ruhige Bilder, ein sichtbarer QR-Code und Worte, die zur Person passen.",
-        exampleItems: [
-          { category: "Geburtstag", text: "Eine offene Karte mit Foto, Namen und wenigen ehrlichen Zeilen.", active: true },
-          { category: "Hochzeit", text: "Champagnerfarbenes Papier für Worte, die bleiben sollen.", active: true },
-          { category: "Liebe", text: "Ein persönlicher Gruß, weich und nah, ohne Überladung.", active: true },
-          { category: "Familie", text: "Eine Botschaft, die Nähe über Generationen hinweg bewahrt.", active: true }
-        ],
-        galleryEyebrow: "Galerie",
-        galleryTitle: "Material, Licht und kleine Details.",
-        galleryText: "Die Galerie zeigt die Richtung: geöffnete Karten, QR-Code, Blumen, Geschenkband, Foto, Papierstruktur und warmes Licht.",
-        faqEyebrow: "FAQ",
-        faqTitle: "Antworten, bevor du anfragst.",
-        aboutEyebrow: "Über uns",
-        aboutTitle: "Handmade, persönlich und bewusst reduziert.",
-        aboutText: "Melody Cards entsteht aus der Idee, dass ein Geschenk nicht größer, lauter oder teurer wirken muss, um wichtig zu sein. Wir gestalten Karten mit Liebe zum Detail, ruhiger Typografie und einem klaren Blick für die Geschichte dahinter.",
-        aboutImage: "",
-        aboutCards: [
-          { title: "Persönlich", text: "Jede Anfrage wird gelesen, nicht automatisch verarbeitet.", active: true },
-          { title: "Handmade", text: "Das Ergebnis soll sich nach einem echten, gedachten Geschenk anfühlen.", active: true },
-          { title: "Zurückhaltend", text: "Design, Foto, Lied und QR-Code werden nur eingesetzt, wenn sie den Moment stärken.", active: true }
-        ],
-        orderEyebrow: "Karte gestalten",
-        orderTitle: "Erzähl uns, was die Karte sagen soll.",
-        orderText: "Das Formular ist eine Anfrage. Wir prüfen deine Angaben und melden uns persönlich zurück. Es wird keine Zahlung ausgelöst.",
-        legalEyebrow: "Rechtliches",
-        legalTitle: "Transparent vor deiner Anfrage.",
-        legalText: "Alle wichtigen rechtlichen Informationen sind jederzeit erreichbar: Datenschutz, AGB, Impressum, Widerruf sowie Versand und Zahlung.",
-        mediaLibrary: [],
-        navItems: [
-          { label: "Startseite", href: "#home", active: true },
-          { label: "So funktioniert es", href: "#process", active: true },
-          { label: "Anlässe", href: "#products", active: true },
-          { label: "Beispiele", href: "#examples", active: true },
+        seo: {
+          title: "Melody Cards | Premium Geburtstagskarten mit persönlichem Lied",
+          description: "Melody Cards verkauft hochwertige Geburtstagskarten mit QR-Code zu einem persönlichen Lied, das nach der Bestellung individuell erstellt wird.",
+          ogTitle: "Melody Cards",
+          ogDescription: "Premium-Geburtstagskarten mit persönlichem Lied per QR-Code.",
+          ogImage: "",
+          favicon: ""
+        },
+        brand: {
+          name: "Melody Cards",
+          logoText: "MC",
+          logoImage: "",
+          footerText: "Hochwertige Geburtstagskarten mit QR-Code zu einem persönlichen Lied."
+        },
+        theme: {
+          colors: {
+            background: "#f7f4ef",
+            surface: "#ffffff",
+            ink: "#090909",
+            anthracite: "#202020",
+            muted: "#706a61",
+            accent: "#c8a96a",
+            accentSoft: "#eadfc9",
+            border: "#e5ded3"
+          },
+          typography: {
+            headingFont: "Inter",
+            bodyFont: "Inter",
+            heroSize: 78,
+            headingSize: 48,
+            bodySize: 17,
+            weightHeading: 700,
+            weightBody: 400
+          },
+          layout: {
+            maxWidth: 1180,
+            sectionPadding: 128,
+            radius: 28,
+            buttonRadius: 999,
+            cardShadow: 28
+          },
+          motion: {
+            enabled: true,
+            parallax: true,
+            duration: 650
+          }
+        },
+        navigation: [
+          { label: "Start", href: "#home", active: true },
+          { label: "Karten", href: "#products", active: true },
+          { label: "Ablauf", href: "#process", active: true },
           { label: "Galerie", href: "#gallery", active: true },
-          { label: "Über uns", href: "#about", active: true },
           { label: "FAQ", href: "#faq", active: true },
           { label: "Kontakt", href: "#contact", active: true },
-          { label: "Karte gestalten", href: "#order", active: true, className: "nav-order" }
+          { label: "Bestellen", href: "#order", active: true, style: "primary" }
         ],
-        configurator: {
-          backText: "Zurück",
-          nextText: "Weiter",
-          submitText: "Anfrage senden",
-          steps: {
-            recipientFor: { title: "Für wen ist die Karte?", options: ["Ehemann", "Ehefrau", "Partner/in", "Freundin", "Freund", "Kind", "Vater", "Mutter", "Großeltern", "Enkelkind", "Schwester/Bruder", "Lehrer/in", "Haustier", "Ich selbst", "Sonstiges"], required: true },
-            recipientName: { title: "Wie heißt die Person?", required: true },
-            occasion: { title: "Was ist der Anlass?", options: ["Geburtstag", "Hochzeit", "Jahrestag", "Valentinstag", "Muttertag", "Vatertag", "Geburt", "Freundschaft", "Gute Besserung", "Abschied", "Danke", "Erinnerung", "Einfach so", "Sonstiges"], required: true },
-            included: { title: "Was soll in der Karte enthalten sein?", options: ["Persönliche Nachricht", "Foto", "Video", "Audioaufnahme", "QR-Code", "Persönliches Lied"], required: true },
-            specialPerson: { title: "Was macht die Person besonders?", required: true },
-            memoryMessage: { title: "Welche Erinnerung oder Botschaft soll rein?", required: true },
-            heartWords: { title: "Worte aus dem Herzen", required: true },
-            contact: { title: "Zusammenfassung + Kontaktdaten", required: true }
+        sections: [
+          {
+            id: "home",
+            type: "hero",
+            active: true,
+            order: 1,
+            align: "left",
+            image: image("premium-card-detail.png"),
+            eyebrow: "Melody Cards",
+            title: "Eine Geburtstagskarte, die singt.",
+            subtitle: "Du bestellst die Karte. Wir gestalten das persönliche Lied, erstellen den QR-Code und drucken ihn auf deine hochwertige Geburtstagskarte.",
+            primaryButton: { label: "Geburtstagskarte bestellen", href: "#order" },
+            secondaryButton: { label: "So funktioniert es", href: "#process" }
+          },
+          {
+            id: "intro",
+            type: "editorial",
+            active: true,
+            order: 2,
+            eyebrow: "Die Idee",
+            title: "Ein persönliches Lied. Direkt auf der Karte.",
+            text: "Melody Cards verbindet eine edle Geburtstagskarte mit einem individuell erstellten Lied. Die beschenkte Person scannt den QR-Code und hört sofort ihre persönliche Geburtstagsüberraschung.",
+            image: image("melody-cards-premium-hero.png")
+          },
+          {
+            id: "process",
+            type: "steps",
+            active: true,
+            order: 3,
+            eyebrow: "Ablauf",
+            title: "Einfach bestellen. Alles Weitere erledigen wir.",
+            text: "Auf der Website bestellst du nur die Karte. QR-Code, Lied und Druck werden im Hintergrund professionell vorbereitet.",
+            items: [
+              { title: "Karte auswählen", text: "Du entscheidest dich für eine Geburtstagskarte und sendest deine Anfrage ab." },
+              { title: "Lied entsteht", text: "Wir erstellen das persönliche Lied passend zur beschenkten Person." },
+              { title: "QR-Code auf Karte", text: "Der QR-Code führt direkt zum fertigen Lied und wird auf die Karte gedruckt." }
+            ]
+          },
+          {
+            id: "products",
+            type: "products",
+            active: true,
+            order: 4,
+            eyebrow: "Geburtstagskarten",
+            title: "Aktuelle Kollektion",
+            text: "Alle Produkte sind Geburtstagskarten. Varianten, Bilder und Preise kannst du komplett im Admin verwalten."
+          },
+          {
+            id: "gallery",
+            type: "gallery",
+            active: true,
+            order: 5,
+            eyebrow: "Galerie",
+            title: "Papier, Details und Geschenkgefühl",
+            text: "Alle Bilder sind über den Admin austauschbar und sortierbar."
+          },
+          {
+            id: "reviews",
+            type: "reviews",
+            active: true,
+            order: 6,
+            eyebrow: "Stimmen",
+            title: "Kundenbewertungen",
+            text: "Bewertungen werden erst angezeigt, wenn du sie im Admin aktivierst."
+          },
+          {
+            id: "faq",
+            type: "faq",
+            active: true,
+            order: 7,
+            eyebrow: "FAQ",
+            title: "Häufige Fragen",
+            text: "Alle Antworten lassen sich im Admin bearbeiten."
+          },
+          {
+            id: "about",
+            type: "about",
+            active: true,
+            order: 8,
+            eyebrow: "Über Melody Cards",
+            title: "Hochwertig gestaltet. Persönlich produziert.",
+            text: "Melody Cards entsteht für Menschen, die nicht einfach nur eine Karte verschenken möchten. Jede Karte soll wie ein bewusst gewähltes, wertiges Geburtstagsgeschenk wirken.",
+            image: image("gift-moment.png")
+          },
+          {
+            id: "order",
+            type: "order",
+            active: true,
+            order: 9,
+            eyebrow: "Bestellung",
+            title: "Geburtstagskarte anfragen",
+            text: "Sende deine Anfrage. Wir melden uns mit den nächsten Schritten zurück."
+          },
+          {
+            id: "contact",
+            type: "contact",
+            active: true,
+            order: 10,
+            eyebrow: "Kontakt",
+            title: "Fragen vor der Bestellung?",
+            text: "Schreibe uns, wenn du vorab etwas klären möchtest."
           }
+        ],
+        products: [
+          {
+            id: "birthday-signature",
+            title: "Signature Birthday Card",
+            description: "Edle Geburtstagskarte mit QR-Code zum persönlichen Lied.",
+            price: "Auf Anfrage",
+            discount: "",
+            category: "Geburtstag",
+            status: "active",
+            featured: true,
+            sortOrder: 1,
+            images: [image("premium-card-detail.png")]
+          }
+        ],
+        gallery: [],
+        reviews: [],
+        faqs: [
+          { id: "faq-1", question: "Erstelle ich das Lied selbst?", answer: "Nein. Du bestellst die Geburtstagskarte. Das persönliche Lied und der QR-Code werden anschließend von Melody Cards erstellt.", active: true, sortOrder: 1 },
+          { id: "faq-2", question: "Muss ich einen QR-Code bereitstellen?", answer: "Nein. Der QR-Code wird im Hintergrund erstellt und auf die Karte gedruckt.", active: true, sortOrder: 2 },
+          { id: "faq-3", question: "Kann ich Texte und Wünsche mitteilen?", answer: "Ja. Im Bestellformular kannst du Hinweise zur beschenkten Person und zur Karte eintragen.", active: true, sortOrder: 3 }
+        ],
+        contact: {
+          email: "hello@melody-cards.example",
+          phone: "",
+          address: "",
+          whatsappNumber: "",
+          instagram: "",
+          tiktok: "",
+          youtube: ""
+        },
+        footer: {
+          links: [
+            { label: "Impressum", href: "impressum.html" },
+            { label: "Datenschutz", href: "datenschutz.html" },
+            { label: "AGB", href: "agb.html" },
+            { label: "Widerruf", href: "widerruf.html" },
+            { label: "Versand & Zahlung", href: "versand-zahlung.html" }
+          ]
         },
         legalPages: {
           impressum: "",
@@ -123,45 +209,18 @@
           agb: "",
           widerruf: "",
           versand: ""
-        }
+        },
+        mediaLibrary: []
       },
-      design: {
-        background: "#fffaf4",
-        text: "#1d1d1f",
-        muted: "#746b62"
-      }
+      design: {}
     },
-    products: productNames.map(([title, description], index) => ({
-      id: `demo-product-${index + 1}`,
-      title,
-      description,
-      price: "",
-      image_url: "",
-      tags: ["Handmade", "Persönlich"],
-      sort_order: index + 1,
-      active: true
-    })),
-    gallery: Array.from({ length: 6 }, (_, index) => {
-      const type = galleryTypes[index % galleryTypes.length];
-      return {
-        id: `demo-gallery-${index + 1}`,
-        title: type,
-        description: `Ruhige Richtung für ${type.toLowerCase()} im Melody Cards Stil.`,
-        category: type,
-        image_url: "",
-        sort_order: index + 1,
-        active: true
-      };
-    }),
+    products: [],
+    gallery: [],
     reviews: [],
-    faqs: faqQuestions.map((question, index) => ({
-      id: `demo-faq-${index + 1}`,
-      question,
-      answer: "Wir klären diesen Punkt persönlich im Anfrageprozess. So bleibt die Karte passend zur Geschichte und es entstehen keine falschen Versprechen.",
-      sort_order: index + 1,
-      active: true
-    })),
+    faqs: [],
     blog: [],
     audio: []
   };
+
+  window.MELODY_DEMO_CONTENT = window.MELODY_DEFAULT_SITE;
 })();

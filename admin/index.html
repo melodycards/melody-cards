@@ -5,238 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
     <title>Melody Cards Admin</title>
-    <script src="../scroll-guard.js?v=20260702-admin-db-check"></script>
-    <link rel="stylesheet" href="../styles.css?v=20260702-admin-db-check" />
-    <link rel="stylesheet" href="admin.css?v=20260702-admin-db-check" />
+    <link rel="stylesheet" href="../styles.css?v=20260705-premium-relaunch" />
+    <link rel="stylesheet" href="admin.css?v=20260705-premium-relaunch" />
   </head>
   <body class="admin-body">
     <main class="admin-shell">
-      <section class="admin-login glass" data-login>
+      <section class="admin-login" data-login>
         <div>
-          <span class="brand-mark">MC</span>
-          <p class="eyebrow">Admin Login</p>
-          <h1>Melody Cards verwalten</h1>
-          <p>Logge dich mit deinem Supabase-Admin-Benutzer ein. Ohne Supabase läuft ein sicherer Demo-Modus ohne Speichern.</p>
+          <p class="eyebrow">Melody Cards CMS</p>
+          <h1>Website bearbeiten</h1>
+          <p>Alle Inhalte, Bilder, Farben, Typografie und Rechtstexte werden aus Supabase geladen und gespeichert.</p>
         </div>
         <form id="admin-login-form" data-login-form>
-          <label>E-Mail<input type="email" name="email" value="koglu@hotmail.de" placeholder="koglu@hotmail.de" required /></label>
-          <label>Passwort<input type="password" name="password" placeholder="Passwort" required /></label>
+          <label>E-Mail<input type="email" name="email" value="koglu@hotmail.de" required /></label>
+          <label>Passwort<input type="password" name="password" required /></label>
           <button class="btn btn-primary" type="submit">Einloggen</button>
-          <button class="btn btn-glass" type="button" data-reset-password>Passwort zurücksetzen</button>
-          <button class="btn btn-glass" type="button" data-demo-admin>Demo-Dashboard öffnen</button>
+          <button class="btn btn-glass" type="button" data-demo-admin>Demo öffnen</button>
           <p class="form-status" data-login-status></p>
         </form>
       </section>
 
       <section class="admin-app" data-admin-app hidden>
-        <aside class="admin-sidebar glass">
-          <div class="admin-brand"><span class="brand-mark">MC</span><strong>Admin</strong></div>
-          <button class="is-active" data-section="home">Startseite</button>
-          <button data-section="orders">Bestellungen</button>
+        <aside class="admin-sidebar">
+          <strong>Melody CMS</strong>
+          <button data-section="dashboard" class="is-active">Dashboard</button>
+          <button data-section="brand">Logo & Brand</button>
+          <button data-section="theme">Design</button>
+          <button data-section="seo">SEO</button>
+          <button data-section="navigation">Navigation</button>
+          <button data-section="sections">Startseite</button>
           <button data-section="products">Produkte</button>
           <button data-section="gallery">Galerie</button>
           <button data-section="reviews">Bewertungen</button>
-          <button data-section="faq">FAQ</button>
-          <button data-section="media">Bilder</button>
-          <button data-section="about">Über uns</button>
+          <button data-section="faqs">FAQ</button>
           <button data-section="contact">Kontakt</button>
-          <button data-section="navigation">Navigation</button>
-          <button data-section="configurator">Konfigurator</button>
           <button data-section="legal">Rechtliches</button>
-          <button data-section="design">Farben & Design</button>
-          <button data-section="settings">Einstellungen</button>
-          <a class="btn btn-glass" href="../index.html" target="_blank">Webseite öffnen</a>
+          <button data-section="media">Bilder</button>
+          <button data-section="orders">Bestellungen</button>
+          <button data-section="database">Datenbank</button>
+          <a class="btn btn-glass" href="../index.html" target="_blank">Website öffnen</a>
           <button class="btn btn-primary" type="button" data-logout>Logout</button>
         </aside>
 
         <div class="admin-main">
-          <header class="admin-top glass">
+          <header class="admin-top">
             <div>
               <p class="eyebrow" data-mode-label>Supabase CMS</p>
-              <h2 data-admin-title>Startseite</h2>
+              <h2 data-admin-title>Dashboard</h2>
             </div>
             <p class="form-status" data-admin-status></p>
           </header>
 
-          <section class="admin-panel is-active" data-panel="home">
-            <form class="admin-form glass" data-settings-form>
-              <h3>Startseite bearbeiten</h3>
-              <label>Logo Text<input name="logoText" /></label>
-              <label>Logo Bild<input name="logoImageFile" type="file" accept="image/*" /></label>
-              <label>Favicon<input name="faviconImageFile" type="file" accept="image/*" /></label>
-              <label>Hero Bild<input name="heroImageFile" type="file" accept="image/*" /></label>
-              <label>Hero Eyebrow<input name="heroEyebrow" /></label>
-              <label>Hero Überschrift Zeile 1<input name="heroTitleLine1" /></label>
-              <label>Hero Überschrift Zeile 2<input name="heroTitleLine2" /></label>
-              <label>Hero Text<textarea name="heroText" rows="4"></textarea></label>
-              <label>Button 1 Text<input name="primaryButtonText" /></label>
-              <label>Button 1 Link<input name="primaryButtonHref" /></label>
-              <label>Button 2 Text<input name="secondaryButtonText" /></label>
-              <label>Button 2 Link<input name="secondaryButtonHref" /></label>
-              <label>Intro Eyebrow<input name="introEyebrow" /></label>
-              <label>Intro Titel<input name="introTitle" /></label>
-              <label>Intro Text<textarea name="introText" rows="4"></textarea></label>
-              <label class="span-all">Intro-Karten, je Zeile: Nummer | Titel | Text | aktiv<textarea name="promiseItemsText" rows="5"></textarea></label>
-              <label>Prozess Eyebrow<input name="processEyebrow" /></label>
-              <label>Prozess Titel<input name="processTitle" /></label>
-              <label>Prozess Text<textarea name="processText" rows="4"></textarea></label>
-              <label class="span-all">Prozess-Schritte, je Zeile: Nummer | Titel | Text | aktiv<textarea name="processStepsText" rows="5"></textarea></label>
-              <label>Produkte Eyebrow<input name="productsEyebrow" /></label>
-              <label>Produkte Titel<input name="productsTitle" /></label>
-              <label>Produkte Text<textarea name="productsText" rows="4"></textarea></label>
-              <label>Beispiele Eyebrow<input name="examplesEyebrow" /></label>
-              <label>Beispiele Titel<input name="examplesTitle" /></label>
-              <label>Beispiele Text<textarea name="examplesText" rows="4"></textarea></label>
-              <label class="span-all">Beispielkarten, je Zeile: Kategorie | Text | aktiv<textarea name="exampleItemsText" rows="6"></textarea></label>
-              <label>Galerie Eyebrow<input name="galleryEyebrow" /></label>
-              <label>Galerie Titel<input name="galleryTitle" /></label>
-              <label>Galerie Text<textarea name="galleryText" rows="4"></textarea></label>
-              <label>FAQ Eyebrow<input name="faqEyebrow" /></label>
-              <label>FAQ Titel<input name="faqTitle" /></label>
-              <label>Anfrage Eyebrow<input name="orderEyebrow" /></label>
-              <label>Anfrage Titel<input name="orderTitle" /></label>
-              <label>Anfrage Text<textarea name="orderText" rows="4"></textarea></label>
-              <button class="btn btn-primary" type="submit">Startseite speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="orders">
-            <div class="admin-form glass">
-              <div class="crud-header">
-                <div>
-                  <p class="eyebrow">Anfragen</p>
-                  <h3>Bestellungen anzeigen</h3>
-                </div>
-                <button class="btn btn-glass" type="button" data-refresh-orders>Aktualisieren</button>
-              </div>
-              <div class="orders-list" data-orders-list></div>
-            </div>
-          </section>
-
-          <section class="admin-panel" data-panel="products">
-            <div class="admin-crud glass" data-crud="products"></div>
-          </section>
-
-          <section class="admin-panel" data-panel="gallery">
-            <div class="admin-crud glass" data-crud="gallery"></div>
-          </section>
-
-          <section class="admin-panel" data-panel="reviews">
-            <div class="admin-crud glass" data-crud="reviews"></div>
-          </section>
-
-          <section class="admin-panel" data-panel="faq">
-            <div class="admin-crud glass" data-crud="faqs"></div>
-          </section>
-
-          <section class="admin-panel" data-panel="media">
-            <form class="admin-form glass" data-media-form>
-              <h3>Bilder verwalten</h3>
-              <label>Bildtitel<input name="title" /></label>
-              <label>Alt-Text<input name="alt" /></label>
-              <label>Kategorie<input name="category" placeholder="Startseite, Galerie, Produkt..." /></label>
-              <label>Bild hochladen<input name="file" type="file" accept="image/*" /></label>
-              <button class="btn btn-primary" type="submit">Bild speichern</button>
-            </form>
-            <div class="admin-crud glass" data-media-list></div>
-          </section>
-
-          <section class="admin-panel" data-panel="about">
-            <form class="admin-form glass" data-about-form>
-              <h3>Über uns bearbeiten</h3>
-              <label>Eyebrow<input name="aboutEyebrow" /></label>
-              <label>Titel<input name="aboutTitle" /></label>
-              <label>Text<textarea name="aboutText" rows="5"></textarea></label>
-              <label>Bild<input name="aboutImageFile" type="file" accept="image/*" /></label>
-              <label class="span-all">Abschnitte, je Zeile: Titel | Text | aktiv<textarea name="aboutCardsText" rows="7"></textarea></label>
-              <button class="btn btn-primary" type="submit">Über uns speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="contact">
-            <form class="admin-form glass" data-contact-form>
-              <h3>Kontakt & Social Media</h3>
-              <label>Kontakt Titel<input name="contactTitle" /></label>
-              <label>Kontakt Text<textarea name="contactText" rows="4"></textarea></label>
-              <label>E-Mail<input name="contactEmail" /></label>
-              <label>Telefon<input name="contactPhone" /></label>
-              <label>Adresse<textarea name="contactAddress" rows="3"></textarea></label>
-              <label>WhatsApp Nummer<input name="whatsappNumber" /></label>
-              <label>WhatsApp Nachricht<textarea name="whatsappMessage" rows="3"></textarea></label>
-              <label>Instagram<input name="socialInstagram" /></label>
-              <label>TikTok<input name="socialTikTok" /></label>
-              <label>YouTube<input name="socialYouTube" /></label>
-              <label>Footer Text<textarea name="footerText" rows="3"></textarea></label>
-              <button class="btn btn-primary" type="submit">Kontakt speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="navigation">
-            <form class="admin-form glass" data-navigation-form>
-              <h3>Navigation bearbeiten</h3>
-              <label class="span-all">Menüpunkte, je Zeile: Label | Link | aktiv<textarea name="navItemsText" rows="10"></textarea></label>
-              <button class="btn btn-primary" type="submit">Navigation speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="configurator">
-            <form class="admin-form glass" data-configurator-form>
-              <h3>Konfigurator bearbeiten</h3>
-              <label>Zurück Button<input name="backText" /></label>
-              <label>Weiter Button<input name="nextText" /></label>
-              <label>Senden Button<input name="submitText" /></label>
-              <label class="span-all">Für wen Optionen, je Zeile eine Option<textarea name="recipientForOptions" rows="7"></textarea></label>
-              <label class="span-all">Anlass Optionen, je Zeile eine Option<textarea name="occasionOptions" rows="7"></textarea></label>
-              <label class="span-all">Inhalt Optionen, je Zeile eine Option<textarea name="includedOptions" rows="7"></textarea></label>
-              <label class="span-all">Alle Konfigurator-Daten JSON<textarea name="configuratorJson" rows="12"></textarea></label>
-              <button class="btn btn-primary" type="submit">Konfigurator speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="legal">
-            <form class="admin-form glass" data-legal-form>
-              <h3>Rechtliches bearbeiten</h3>
-              <label>Rechtliches Eyebrow<input name="legalEyebrow" /></label>
-              <label>Rechtliches Titel<input name="legalTitle" /></label>
-              <label class="span-all">Rechtliches Text<textarea name="legalText" rows="3"></textarea></label>
-              <label class="span-all">Impressum HTML/Text<textarea name="impressum" rows="8"></textarea></label>
-              <label class="span-all">Datenschutz HTML/Text<textarea name="datenschutz" rows="8"></textarea></label>
-              <label class="span-all">AGB HTML/Text<textarea name="agb" rows="8"></textarea></label>
-              <label class="span-all">Widerruf HTML/Text<textarea name="widerruf" rows="8"></textarea></label>
-              <label class="span-all">Versand & Zahlung HTML/Text<textarea name="versand" rows="8"></textarea></label>
-              <button class="btn btn-primary" type="submit">Rechtliches speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="design">
-            <form class="admin-form glass" data-design-form>
-              <h3>Farben & Design</h3>
-              <label>Gold<input name="gold" type="color" /></label>
-              <label>Gold hell<input name="gold2" type="color" /></label>
-              <label>Hintergrund<input name="background" type="color" /></label>
-              <label>Text<input name="text" type="color" /></label>
-              <label>Muted Text<input name="muted" type="color" /></label>
-              <button class="btn btn-primary" type="submit">Design speichern</button>
-            </form>
-          </section>
-
-          <section class="admin-panel" data-panel="settings">
-            <div class="admin-form glass">
-              <h3>Einstellungen</h3>
-              <p><strong>Status:</strong> <span data-connection-status>Prüfe Verbindung...</span></p>
-              <p><strong>Storage Bucket:</strong> <span data-bucket-name></span></p>
-              <p>Secret Keys werden bewusst nicht im Frontend gespeichert. Trage nur URL und Anon Key in <code>config.js</code> ein.</p>
-              <button class="btn btn-glass" type="button" data-refresh>Inhalte neu laden</button>
-            </div>
-          </section>
+          <section class="admin-panel is-active" data-panel="dashboard"></section>
+          <section class="admin-panel" data-panel="brand"></section>
+          <section class="admin-panel" data-panel="theme"></section>
+          <section class="admin-panel" data-panel="seo"></section>
+          <section class="admin-panel" data-panel="navigation"></section>
+          <section class="admin-panel" data-panel="sections"></section>
+          <section class="admin-panel" data-panel="products"></section>
+          <section class="admin-panel" data-panel="gallery"></section>
+          <section class="admin-panel" data-panel="reviews"></section>
+          <section class="admin-panel" data-panel="faqs"></section>
+          <section class="admin-panel" data-panel="contact"></section>
+          <section class="admin-panel" data-panel="legal"></section>
+          <section class="admin-panel" data-panel="media"></section>
+          <section class="admin-panel" data-panel="orders"></section>
+          <section class="admin-panel" data-panel="database"></section>
         </div>
       </section>
     </main>
 
     <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../config.js?v=20260702-admin-db-check"></script>
-    <script src="../site-data.js?v=20260702-admin-db-check"></script>
-    <script src="../supabase-client.js?v=20260702-admin-db-check"></script>
-    <script src="admin.js?v=20260702-admin-db-check"></script>
+    <script src="../config.js?v=20260705-premium-relaunch"></script>
+    <script src="../site-data.js?v=20260705-premium-relaunch"></script>
+    <script src="../supabase-client.js?v=20260705-premium-relaunch"></script>
+    <script src="admin.js?v=20260705-premium-relaunch"></script>
   </body>
 </html>
