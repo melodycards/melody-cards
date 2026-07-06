@@ -98,6 +98,7 @@
 
   async function saveSite(label = "Website") {
     setStatus(`${label} wird gespeichert...`);
+    localStorage.setItem("melodyPreviewContent", JSON.stringify(content));
     if (demoMode) {
       state.settings.content = clone(content);
       renderAll();
@@ -303,9 +304,11 @@
 
   function showVisualEditor(kind, id) {
     if (kind === "section") return renderSectionVisualEditor(id);
+    if (kind === "step-item") return renderStepItemVisualEditor(id);
     if (kind === "product") return renderProductVisualEditor(id);
     if (kind === "category") return renderCategoryVisualEditor(id);
     if (kind === "gallery") return renderGalleryVisualEditor(id);
+    if (kind === "media-item") return renderMediaSectionItemVisualEditor(id);
     if (kind === "faq") return renderFaqVisualEditor(id);
     if (kind === "review") return renderReviewVisualEditor(id);
     if (kind === "brand") return renderBrandVisualEditor();
@@ -332,19 +335,26 @@
       ${section.primaryButton ? input("primaryLabel", "Buttontext DE", section.primaryButton.label || "") : ""}
       ${section.primaryButton ? input("primaryHref", "Buttonlink", section.primaryButton.href || "") : ""}
       ${section.secondaryButton ? input("secondaryLabel", "Zweiter Button DE", section.secondaryButton.label || "") : ""}
+      ${section.secondaryButton ? input("secondaryHref", "Zweiter Button Link", section.secondaryButton.href || "") : ""}
       ${section.id === "contact" ? input("contactEmail", "Kontakt E-Mail", content.contact.email || "") + input("contactPhone", "Telefon", content.contact.phone || "") + input("contactAddress", "Adresse", content.contact.address || "", "textarea") : ""}
-      ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.image })}</div>${file("upload", "Bild ersetzen")}<button class="mini-btn danger" type="button" data-clear-section-image>Bild löschen</button>` : ""}
+      ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.video || section.image, mediaType: section.video ? "video" : "" })}</div>${file("upload", "Bild/GIF ersetzen")}${file("videoUpload", "Video/Startseiten-Clip ersetzen")}<button class="mini-btn danger" type="button" data-clear-section-image>Bild löschen</button><button class="mini-btn danger" type="button" data-clear-section-video>Video löschen</button>` : ""}
       ${input("textColor", "Textfarbe", style.textColor || "#ffffff", "color")}
       ${input("titleSize", "Schriftgröße Desktop", style.titleSize || "", "number")}
       ${input("mobileTitleSize", "Schriftgröße Handy", style.mobileTitleSize || "", "number")}
       ${input("overlayOpacity", "Overlay Dunkelheit 0-1", style.overlayOpacity ?? "", "number")}
       ${input("paddingTop", "Abstand oben", style.paddingTop || "", "number")}
+      ${input("paddingBottom", "Abstand unten", style.paddingBottom || "", "number")}
       <label>Ausrichtung<select name="align"><option value="left" ${section.align !== "center" ? "selected" : ""}>Links</option><option value="center" ${section.align === "center" ? "selected" : ""}>Zentriert</option></select></label>
       <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
     </form>`;
     $('[data-clear-section-image]')?.addEventListener("click", () => {
       section.image = "";
       setStatus("Bild entfernt. Bitte speichern.", "warning");
+      renderSectionVisualEditor(id);
+    });
+    $('[data-clear-section-video]')?.addEventListener("click", () => {
+      section.video = "";
+      setStatus("Video entfernt. Bitte speichern.", "warning");
       renderSectionVisualEditor(id);
     });
     $('[data-visual-section-form]').addEventListener("submit", (event) => saveVisualSection(event, section, trSection));
@@ -364,7 +374,10 @@
         section.primaryButton.label = form.primaryLabel.value;
         section.primaryButton.href = form.primaryHref.value;
       }
-      if (section.secondaryButton && form.secondaryLabel) section.secondaryButton.label = form.secondaryLabel.value;
+      if (section.secondaryButton && form.secondaryLabel) {
+        section.secondaryButton.label = form.secondaryLabel.value;
+        section.secondaryButton.href = form.secondaryHref.value;
+      }
       if (section.id === "contact") {
         content.contact.email = form.contactEmail.value;
         content.contact.phone = form.contactPhone.value;
@@ -376,9 +389,14 @@
         titleSize: Number(form.titleSize.value || 0) || "",
         mobileTitleSize: Number(form.mobileTitleSize.value || 0) || "",
         overlayOpacity: form.overlayOpacity.value === "" ? "" : Number(form.overlayOpacity.value),
-        paddingTop: Number(form.paddingTop.value || 0) || ""
+        paddingTop: Number(form.paddingTop.value || 0) || "",
+        paddingBottom: Number(form.paddingBottom.value || 0) || ""
       };
-      await uploadInto(form.upload, "sections", (url) => section.image = url);
+      await uploadInto(form.upload, "sections", (url, fileItem) => {
+        if (isVideoMedia(url, fileItem?.type)) section.video = url;
+        else section.image = url;
+      });
+      await uploadInto(form.videoUpload, "videos", (url) => section.video = url);
       content.translations = content.translations || {};
       content.translations.tr = content.translations.tr || {};
       content.translations.tr.sections = content.translations.tr.sections || {};
@@ -389,6 +407,80 @@
         [section.subtitle !== undefined ? "subtitle" : "text"]: form.trText.value
       };
       await saveSite("Visueller Editor");
+      reloadVisualPreview();
+    }));
+  }
+
+  function renderStepItemVisualEditor(rawId) {
+    const [sectionId, indexValue] = String(rawId || "").split(":");
+    const index = Number(indexValue);
+    const section = (content.sections || []).find((item) => item.id === sectionId);
+    const item = section?.items?.[index];
+    if (!section || !item) return setStatus("Ablauf-Element nicht gefunden.", "error");
+    const trItem = content.translations?.tr?.sections?.[sectionId]?.items?.[index] || {};
+    const style = item.style || {};
+    $('[data-visual-editor]').innerHTML = `<form data-visual-step-form class="visual-form">
+      <p class="eyebrow">Ablauf-Karte</p><h3>${escape(item.title || "Schritt bearbeiten")}</h3>
+      ${checkbox("active", "Sichtbar", item.active !== false)}
+      ${input("number", "Nummer", item.number || String(index + 1).padStart(2, "0"))}
+      ${input("title", "Überschrift DE", item.title || "")}
+      ${input("text", "Text DE", item.text || "", "textarea")}
+      ${input("trTitle", "Überschrift TR", trItem.title || "")}
+      ${input("trText", "Text TR", trItem.text || "", "textarea")}
+      <div class="visual-image-preview">${galleryPreview({ url: item.media, mediaType: item.mediaType })}</div>
+      ${file("upload", "Bild/GIF/Video hochladen")}
+      <button class="mini-btn danger" type="button" data-clear-step-media>Medium löschen</button>
+      ${input("color", "Textfarbe", style.color || "#090909", "color")}
+      ${input("numberColor", "Nummernfarbe", style.numberColor || "#c8a96a", "color")}
+      ${input("fontSize", "Textgröße", style.fontSize || "", "number")}
+      ${input("fontWeight", "Schriftstärke", style.fontWeight || "", "number")}
+      ${input("paddingTop", "Abstand oben", style.paddingTop || "", "number")}
+      ${input("paddingBottom", "Abstand unten", style.paddingBottom || "", "number")}
+      <label>Ausrichtung<select name="align"><option value="left" ${item.align !== "center" ? "selected" : ""}>Links</option><option value="center" ${item.align === "center" ? "selected" : ""}>Zentriert</option></select></label>
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+    </form>`;
+    $('[data-clear-step-media]')?.addEventListener("click", () => {
+      item.media = "";
+      item.mediaType = "";
+      renderStepItemVisualEditor(rawId);
+      setStatus("Medium entfernt. Bitte speichern.", "warning");
+    });
+    $('[data-visual-step-form]').addEventListener("submit", (event) => saveVisualStepItem(event, section, item, index, trItem));
+  }
+
+  async function saveVisualStepItem(event, section, item, index, trItem) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Ablauf-Karte", async () => {
+      item.active = form.active.checked;
+      item.number = form.number.value;
+      item.title = form.title.value;
+      item.text = form.text.value;
+      item.align = form.align.value;
+      item.style = {
+        ...(item.style || {}),
+        color: form.color.value,
+        numberColor: form.numberColor.value,
+        fontSize: Number(form.fontSize.value || 0) || "",
+        fontWeight: Number(form.fontWeight.value || 0) || "",
+        paddingTop: Number(form.paddingTop.value || 0) || "",
+        paddingBottom: Number(form.paddingBottom.value || 0) || ""
+      };
+      await uploadInto(form.upload, "steps", (url, fileItem) => {
+        item.media = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.sections = content.translations.tr.sections || {};
+      content.translations.tr.sections[section.id] = content.translations.tr.sections[section.id] || {};
+      content.translations.tr.sections[section.id].items = content.translations.tr.sections[section.id].items || [];
+      content.translations.tr.sections[section.id].items[index] = {
+        ...trItem,
+        title: form.trTitle.value,
+        text: form.trText.value
+      };
+      await saveSite("Ablauf-Karte");
       reloadVisualPreview();
     }));
   }
@@ -424,7 +516,10 @@
       item.price = form.price.value;
       item.category = form.category.value;
       item.status = form.active.checked ? "active" : "inactive";
-      await uploadInto(form.upload, "products", (url) => item.images = [url]);
+      await uploadInto(form.upload, "products", (url, fileItem) => {
+        item.images = [url];
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
       if (isNew) content.products = [...(content.products || []), item];
       content.translations = content.translations || {};
       content.translations.tr = content.translations.tr || {};
@@ -474,7 +569,10 @@
       item.title = form.title.value;
       item.description = form.description.value;
       item.active = form.active.checked;
-      await uploadInto(form.upload, "categories", (url) => item.image = url);
+      await uploadInto(form.upload, "categories", (url, fileItem) => {
+        item.image = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
       if (isNew) content.categories = [...(content.categories || []), item];
       content.translations = content.translations || {};
       content.translations.tr = content.translations.tr || {};
@@ -516,13 +614,59 @@
       item.alt = form.description.value;
       item.category = form.category.value;
       item.active = form.active.checked;
-      await uploadInto(form.upload, "gallery", (url) => {
+      await uploadInto(form.upload, "gallery", (url, fileItem) => {
         item.url = url;
         item.image_url = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
       });
       if (isNew && !item.url && !item.image_url) throw new Error("Bitte ein Bild hochladen.");
       if (isNew) content.gallery = [...(content.gallery || []), item];
       await saveSite("Galerie");
+      reloadVisualPreview();
+    }));
+  }
+
+  function renderMediaSectionItemVisualEditor(rawId) {
+    const [sectionId, indexValue] = String(rawId || "").split(":");
+    const index = Number(indexValue);
+    const section = (content.sections || []).find((item) => item.id === sectionId);
+    const item = section?.items?.[index];
+    if (!section || !item) return setStatus("Medium nicht gefunden.", "error");
+    $('[data-visual-editor]').innerHTML = `<form data-visual-media-item-form class="visual-form">
+      <p class="eyebrow">Mediensektion</p><h3>Medium bearbeiten</h3>
+      <div class="visual-image-preview">${galleryPreview(item)}</div>
+      ${file("upload", "Bild/GIF/Video ersetzen")}
+      ${input("title", "Titel", item.title || "")}
+      ${input("description", "Beschreibung", item.description || item.alt || "", "textarea")}
+      ${checkbox("active", "Sichtbar", item.active !== false)}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+      <button class="mini-btn danger" type="button" data-visual-delete>Medium löschen</button>
+    </form>`;
+    $('[data-visual-media-item-form]').addEventListener("submit", (event) => saveMediaSectionItem(event, section, item));
+    $('[data-visual-delete]')?.addEventListener("click", async () => {
+      if (!window.confirm("Dieses Medium wirklich löschen?")) return;
+      section.items = (section.items || []).filter((entry) => entry !== item);
+      await action("Medium löschen", async () => {
+        await saveSite("Mediensektion");
+        reloadVisualPreview();
+        $('[data-visual-editor]').innerHTML = "<p>Medium wurde gelöscht.</p>";
+      });
+    });
+  }
+
+  async function saveMediaSectionItem(event, section, item) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Mediensektion", async () => {
+      item.title = form.title.value;
+      item.description = form.description.value;
+      item.alt = form.description.value;
+      item.active = form.active.checked;
+      await uploadInto(form.upload, "media-sections", (url, fileItem) => {
+        item.url = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
+      await saveSite("Mediensektion");
       reloadVisualPreview();
     }));
   }
@@ -835,7 +979,7 @@
     const preview = $('[data-category-preview]');
     const fileItem = input?.files?.[0];
     if (!preview || !fileItem) return;
-    preview.innerHTML = `<img src="${escape(URL.createObjectURL(fileItem))}" alt="Ausgewählte Kategorie" />`;
+    preview.innerHTML = mediaPreview(URL.createObjectURL(fileItem), fileItem.type, "Ausgewählte Kategorie");
   }
 
   function editCategoryItem(id) {
@@ -854,7 +998,10 @@
       item.title = form.title.value.trim();
       item.description = form.description.value.trim();
       item.active = form.active.checked;
-      await uploadInto(form.upload, "categories", (url) => item.image = url);
+      await uploadInto(form.upload, "categories", (url, fileItem) => {
+        item.image = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
       content.categories = content.categories || [];
       if (!editing.categories) content.categories.push(item);
       content.translations = content.translations || {};
@@ -962,7 +1109,10 @@
       item.category = form.category.value.trim();
       item.featured = form.featured.checked;
       item.status = form.active.checked ? "active" : "inactive";
-      await uploadInto(form.upload, "products", (url) => item.images = [url]);
+      await uploadInto(form.upload, "products", (url, fileItem) => {
+        item.images = [url];
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
       content.products = content.products || [];
       if (!editing.products) content.products.push(item);
       content.translations = content.translations || {};
@@ -1092,16 +1242,33 @@
   }
 
   function galleryPreview(item = {}) {
-    const image = item.url || item.image_url || item.image || item.images?.[0] || "";
-    return image
-      ? `<img src="${escape(assetUrl(image))}" alt="${escape(item.alt || item.title || "Galerie Bild")}" />`
+    const media = item.url || item.media || item.video || item.image_url || item.image || item.images?.[0] || "";
+    return media
+      ? mediaPreview(media, item.mediaType || item.type, item.alt || item.title || "Medium")
       : `<span>Kein Bild ausgewählt</span>`;
+  }
+
+  function mediaTypeForUrl(url = "") {
+    if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url))) return "video";
+    if (/\.gif(\?.*)?$/i.test(String(url))) return "image/gif";
+    return "image";
+  }
+
+  function isVideoMedia(url = "", type = "") {
+    return String(type).startsWith("video") || mediaTypeForUrl(url) === "video";
+  }
+
+  function mediaPreview(url, type = "", alt = "Medium") {
+    const src = escape(assetUrl(url));
+    return isVideoMedia(url, type)
+      ? `<video src="${src}" muted loop playsinline preload="metadata" controls></video>`
+      : `<img src="${src}" alt="${escape(alt)}" />`;
   }
 
   function previewAdminFile(input, preview) {
     const fileItem = input?.files?.[0];
     if (!preview || !fileItem) return;
-    preview.innerHTML = `<img src="${escape(URL.createObjectURL(fileItem))}" alt="Ausgewähltes Bild" />`;
+    preview.innerHTML = mediaPreview(URL.createObjectURL(fileItem), fileItem.type, "Ausgewähltes Medium");
   }
 
   function renderGalleryEditor() {
@@ -1160,7 +1327,7 @@
     const fileItem = input?.files?.[0];
     if (!preview || !fileItem) return;
     const url = URL.createObjectURL(fileItem);
-    preview.innerHTML = `<img src="${escape(url)}" alt="Ausgewähltes Galerie-Bild" />`;
+    preview.innerHTML = mediaPreview(url, fileItem.type, "Ausgewähltes Galerie-Medium");
   }
 
   function editGalleryItem(id) {
@@ -1188,9 +1355,10 @@
         item.alt = form.description.value.trim();
         item.category = form.category.value.trim();
         item.active = form.active.checked;
-        await uploadInto(form.upload, "gallery", async (url) => {
+        await uploadInto(form.upload, "gallery", async (url, fileItem) => {
           item.url = url;
           item.image_url = url;
+          item.mediaType = fileItem?.type || mediaTypeForUrl(url);
         });
         if (!item.url && !item.image_url) throw new Error("Bitte ein Bild hochladen.");
         content.gallery = content.gallery || [];
@@ -1402,23 +1570,155 @@
   }
 
   function renderMedia() {
-    $('[data-panel="media"]').innerHTML = card("Bilder hochladen", `<form data-media-form class="admin-grid">${input("title","Titel","")}${input("alt","Alt Text","")}${input("category","Kategorie","")}${file("upload","Bild")}<button class="btn btn-primary span-all" type="submit">Bild speichern</button></form><div class="admin-list">${(content.mediaLibrary || []).map((item) => `<article class="admin-row"><img class="admin-thumb" src="${escape(assetUrl(item.url))}" alt="" /><div><strong>${escape(item.title || "Bild")}</strong><p>${escape(item.alt || item.category || "")}</p></div><div class="admin-actions"><a class="mini-btn" href="${escape(assetUrl(item.url))}" target="_blank" rel="noreferrer">Öffnen</a><button class="mini-btn danger" data-delete-media="${escape(item.id)}">Entfernen</button></div></article>`).join("")}</div>`);
+    content.mediaLibrary = content.mediaLibrary || [];
+    $('[data-panel="media"]').innerHTML = `<div class="gallery-editor">
+      ${card("Medien hochladen", `<form data-media-form class="gallery-form">
+        <div class="gallery-form-preview" data-media-preview><span>Kein Medium ausgewählt</span></div>
+        ${input("title","Titel","")}
+        ${input("alt","Beschreibung / Alt-Text","")}
+        ${input("category","Kategorie","")}
+        <label>Zuweisen zu<select name="target">
+          <option value="">Nur in Medien speichern</option>
+          <option value="hero-video">Hero-Video / Startseiten-Clip</option>
+          <option value="hero-image">Hero-Fallback-Bild</option>
+          <option value="gallery">Galerie</option>
+          <option value="products">Produktbereich</option>
+          <option value="process">Ablauf-Bereich</option>
+          <option value="about">Über-uns-Bereich</option>
+          <option value="media-section">Neue Mediensektion</option>
+        </select></label>
+        ${file("upload","Bild, GIF oder Video")}
+        <button class="btn btn-primary span-all" type="submit" data-media-save>Medium speichern</button>
+      </form>`)}
+      ${card("Medien", `<div class="gallery-card-grid">${content.mediaLibrary.map(mediaLibraryCard).join("") || `<div class="empty-state">Noch keine Medien vorhanden.</div>`}</div>`)}
+    </div>`;
     $('[data-media-form]').addEventListener("submit", async (event) => {
       event.preventDefault();
-      await action("Bild", async () => {
+      const button = event.currentTarget.querySelector("[data-media-save]");
+      await withButtonLoading(button, "Speichert...", async () => action("Medium", async () => {
         const form = event.currentTarget;
         let uploaded = "";
-        await uploadInto(form.upload, "media", (url) => uploaded = url);
-        if (!uploaded) throw new Error("Bitte ein Bild auswählen.");
+        let uploadedType = "";
+        await uploadInto(form.upload, "media", (url, fileItem) => {
+          uploaded = url;
+          uploadedType = fileItem?.type || mediaTypeForUrl(url);
+        });
+        if (!uploaded) throw new Error("Bitte ein Medium auswählen.");
         content.mediaLibrary = content.mediaLibrary || [];
-        content.mediaLibrary.unshift({ id: uid("media"), title: form.title.value, alt: form.alt.value, category: form.category.value, url: uploaded, active: true, sortOrder: 1 });
-        await saveSite("Bilder");
-      });
+        const item = { id: uid("media"), title: form.title.value, alt: form.alt.value, category: form.category.value, url: uploaded, mediaType: uploadedType, active: true, sortOrder: 1 };
+        content.mediaLibrary.unshift(item);
+        assignMediaToTarget(item, form.target.value);
+        await saveSite("Medien");
+        renderMedia();
+      }));
     });
-    $$("[data-delete-media]").forEach((button) => button.addEventListener("click", () => action("Bild entfernen", async () => {
-      content.mediaLibrary = (content.mediaLibrary || []).filter((item) => String(item.id) !== String(button.dataset.deleteMedia));
-      await saveSite("Bilder");
-    })));
+    $('[data-media-form] input[type="file"]')?.addEventListener("change", (event) => previewAdminFile(event.currentTarget, $('[data-media-preview]')));
+    $$("[data-delete-media]").forEach((button) => button.addEventListener("click", () => deleteMediaItem(button.dataset.deleteMedia, button)));
+    $$("[data-assign-media]").forEach((button) => button.addEventListener("click", () => assignExistingMedia(button.dataset.assignMedia, button)));
+  }
+
+  function mediaLibraryCard(item) {
+    return `<article class="gallery-admin-card">
+      <div class="gallery-admin-image">${galleryPreview(item)}</div>
+      <div class="gallery-admin-copy"><div><strong>${escape(item.title || "Medium")}</strong><p>${escape(item.category || item.mediaType || "")}</p></div><span class="status-pill">${isVideoMedia(item.url, item.mediaType) ? "Video" : /\.gif(\?.*)?$/i.test(item.url || "") ? "GIF" : "Bild"}</span></div>
+      <label>Zuweisen zu<select data-media-target="${escape(item.id)}">
+        <option value="hero-video">Hero-Video</option>
+        <option value="hero-image">Hero-Bild</option>
+        <option value="gallery">Galerie</option>
+        <option value="products">Produktbereich</option>
+        <option value="process">Ablauf-Bereich</option>
+        <option value="about">Über uns</option>
+        <option value="media-section">Neue Mediensektion</option>
+      </select></label>
+      <div class="gallery-admin-actions">
+        <button class="mini-btn" type="button" data-assign-media="${escape(item.id)}">Zuweisen</button>
+        <a class="mini-btn" href="${escape(assetUrl(item.url))}" target="_blank" rel="noreferrer">Öffnen</a>
+        <button class="mini-btn danger" type="button" data-delete-media="${escape(item.id)}">Löschen</button>
+      </div>
+    </article>`;
+  }
+
+  async function assignExistingMedia(id, button) {
+    const item = (content.mediaLibrary || []).find((entry) => String(entry.id) === String(id));
+    if (!item) return setStatus("Medium nicht gefunden.", "error");
+    const target = $$("[data-media-target]").find((select) => String(select.dataset.mediaTarget) === String(id))?.value || "";
+    await withButtonLoading(button, "Speichert...", async () => action("Medium zuweisen", async () => {
+      assignMediaToTarget(item, target);
+      await saveSite("Medien");
+      renderMedia();
+    }));
+  }
+
+  function assignMediaToTarget(item, target) {
+    if (!target) return;
+    const url = item.url;
+    const type = item.mediaType || mediaTypeForUrl(url);
+    const sectionById = (id) => (content.sections || []).find((section) => section.id === id);
+    if (target === "hero-video") {
+      const heroSection = sectionById("home");
+      if (heroSection) heroSection.video = url;
+      return;
+    }
+    if (target === "hero-image") {
+      const heroSection = sectionById("home");
+      if (heroSection) heroSection.image = url;
+      return;
+    }
+    if (target === "gallery") {
+      content.gallery = content.gallery || [];
+      content.gallery.unshift({ id: uid("gallery"), title: item.title || "Galerie", description: item.alt || "", alt: item.alt || item.title || "", category: item.category || "", url, image_url: url, mediaType: type, active: true, sortOrder: 1 });
+      return;
+    }
+    if (target === "products") {
+      const product = sorted(content.products || [])[0];
+      if (product) {
+        product.images = [url];
+        product.mediaType = type;
+      }
+      return;
+    }
+    if (target === "process") {
+      const process = sectionById("process");
+      if (process?.items?.[0]) {
+        process.items[0].media = url;
+        process.items[0].mediaType = type;
+      }
+      return;
+    }
+    if (target === "about") {
+      const about = sectionById("about");
+      if (about) {
+        if (isVideoMedia(url, type)) about.video = url;
+        else about.image = url;
+      }
+      return;
+    }
+    if (target === "media-section") {
+      content.sections = content.sections || [];
+      content.sections.push({
+        id: uid("media-section"),
+        type: "media",
+        active: true,
+        order: (content.sections || []).length + 1,
+        eyebrow: "Medien",
+        title: item.title || "Medien",
+        text: item.alt || "",
+        items: [{ id: uid("media-item"), title: item.title || "Medium", description: item.alt || "", alt: item.alt || "", url, mediaType: type, active: true, sortOrder: 1 }]
+      });
+    }
+  }
+
+  async function deleteMediaItem(id, button) {
+    const item = (content.mediaLibrary || []).find((entry) => String(entry.id) === String(id));
+    if (!item) return setStatus("Medium nicht gefunden.", "error");
+    if (!window.confirm("Dieses Medium wirklich löschen?")) return;
+    await withButtonLoading(button, "Löscht...", async () => action("Medium löschen", async () => {
+      const storageWarning = await deleteStorageFile(item.url);
+      content.mediaLibrary = (content.mediaLibrary || []).filter((entry) => String(entry.id) !== String(id));
+      await saveSite("Medien");
+      renderMedia();
+      if (storageWarning) setStatus(`Medium gelöscht. Hinweis: ${storageWarning}`, "warning");
+    }));
   }
 
   async function renderOrders() {
@@ -1579,7 +1879,7 @@
     return `<label>${escape(label)}<input name="${name}" type="checkbox" ${checked ? "checked" : ""} /></label>`;
   }
   function file(name, label) {
-    return `<label>${escape(label)}<input name="${name}" type="file" accept="image/*" /></label>`;
+    return `<label>${escape(label)}<input name="${name}" type="file" accept="image/*,image/gif,video/mp4,video/webm,video/ogg" /></label>`;
   }
   function fieldInput([name, label, type = "text"]) {
     if (type === "checkbox") return checkbox(name, label, false);
@@ -1614,9 +1914,10 @@
     if (!input?.files?.[0]) return;
     await refreshClient();
     if (!client) throw new Error("Upload benötigt Supabase.");
-    const url = await api.uploadFile(input.files[0], folder);
+    const fileItem = input.files[0];
+    const url = await api.uploadFile(fileItem, folder);
     if (!url) throw new Error("Upload fehlgeschlagen.");
-    setter(url);
+    setter(url, fileItem);
   }
   async function withButtonLoading(button, text, fn) {
     if (!button) return fn();

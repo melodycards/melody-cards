@@ -1,7 +1,16 @@
 (async function () {
   const fallback = window.MELODY_DEFAULT_SITE || window.MELODY_DEMO_CONTENT;
   const data = await window.MelodySupabase.fetchContent().catch(() => fallback);
-  const content = sanitizePublicContent(mergeContent(fallback.settings.content, data.settings?.content || {}));
+  const previewContent = new URLSearchParams(location.search).has("admin-preview") ? readPreviewContent() : null;
+  const content = sanitizePublicContent(mergeContent(fallback.settings.content, previewContent || data.settings?.content || {}));
+
+  function readPreviewContent() {
+    try {
+      return JSON.parse(localStorage.getItem("melodyPreviewContent") || "null");
+    } catch {
+      return null;
+    }
+  }
 
   function mergeContent(base, remote) {
     return {
@@ -186,6 +195,47 @@
     if (section.style?.mobileTitleSize) values.push(`--hero-mobile-title-size:${Number(section.style.mobileTitleSize)}px`);
     if (section.style?.overlayOpacity !== "" && section.style?.overlayOpacity !== undefined) values.push(`--hero-overlay-opacity:${Number(section.style.overlayOpacity)}`);
     if (section.style?.paddingTop) values.push(`--hero-padding-top:${Number(section.style.paddingTop)}px`);
+    if (section.style?.paddingBottom) values.push(`--hero-padding-bottom:${Number(section.style.paddingBottom)}px`);
+    return values.length ? `style="${values.join(";")}"` : "";
+  }
+
+  function mediaUrl(item = {}) {
+    return item.url || item.media || item.video || item.image_url || item.image || item.images?.[0] || "";
+  }
+
+  function isVideo(url = "", type = "") {
+    return String(type).startsWith("video") || /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url));
+  }
+
+  function mediaFrame(item = {}, className = "media-frame", alt = "") {
+    const url = mediaUrl(item);
+    const type = item.mediaType || item.type || "";
+    if (!url) return `<div class="${escape(className)}"></div>`;
+    if (isVideo(url, type)) {
+      return `<div class="${escape(className)} has-video"><video src="${escape(url)}" muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}"></video></div>`;
+    }
+    return `<div class="${escape(className)}" ${imageStyle(url)} role="img" aria-label="${escape(alt || item.alt || item.title || "")}"></div>`;
+  }
+
+  function mediaThumb(item = {}, alt = "") {
+    const url = mediaUrl(item);
+    const type = item.mediaType || item.type || "";
+    if (!url) return "";
+    if (isVideo(url, type)) {
+      return `<video src="${escape(url)}" muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}"></video>`;
+    }
+    return `<img src="${escape(url)}" alt="${escape(alt || item.alt || item.title || "")}" loading="lazy" />`;
+  }
+
+  function itemStyle(item = {}) {
+    const style = item.style || {};
+    const values = [];
+    if (style.color) values.push(`--item-color:${escape(style.color)}`);
+    if (style.numberColor) values.push(`--item-number-color:${escape(style.numberColor)}`);
+    if (style.fontSize) values.push(`--item-font-size:${Number(style.fontSize)}px`);
+    if (style.fontWeight) values.push(`--item-font-weight:${Number(style.fontWeight)}`);
+    if (style.paddingTop) values.push(`--item-padding-top:${Number(style.paddingTop)}px`);
+    if (style.paddingBottom) values.push(`--item-padding-bottom:${Number(style.paddingBottom)}px`);
     return values.length ? `style="${values.join(";")}"` : "";
   }
 
@@ -216,6 +266,7 @@
 
   function hero(section) {
     return `<section class="hero section-reveal align-${escape(section.align || "left")}" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}" ${imageStyle(section.image, section)}>
+      ${section.video ? `<video class="hero-video" src="${escape(section.video)}" autoplay muted loop playsinline preload="metadata" poster="${escape(section.image || "")}"></video>` : ""}
       <div class="hero-overlay"></div>
       <div class="hero-inner">
         <p class="eyebrow">${escape(section.eyebrow)}</p>
@@ -232,14 +283,14 @@
   function editorial(section) {
     return `<section class="section editorial section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       <div class="section-copy"><p class="eyebrow">${escape(section.eyebrow)}</p><h2>${escape(section.title)}</h2><p>${escape(section.text)}</p></div>
-      <div class="editorial-image" ${imageStyle(section.image)}></div>
+      ${mediaFrame(section, "editorial-image", section.title)}
     </section>`;
   }
 
   function steps(section) {
     return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       ${sectionHead(section)}
-      <div class="step-grid">${(section.items || []).map((item, index) => `<article class="lux-card"><span>${String(index + 1).padStart(2, "0")}</span><h3>${escape(item.title)}</h3><p>${escape(item.text)}</p></article>`).join("")}</div>
+      <div class="step-grid">${(section.items || []).map((item, index) => ({ item, index })).filter(({ item }) => item.active !== false).map(({ item, index }) => `<article class="lux-card align-${escape(item.align || "left")}" data-edit-kind="step-item" data-edit-id="${escape(`${section.id}:${index}`)}" ${itemStyle(item)}>${item.media ? mediaFrame(item, "step-media", item.title) : ""}<span>${escape(item.number || String(index + 1).padStart(2, "0"))}</span><h3>${escape(item.title)}</h3><p>${escape(item.text)}</p></article>`).join("")}</div>
     </section>`;
   }
 
@@ -255,7 +306,7 @@
 
   function categoryCard(category) {
     return `<article class="category-card lux-card" data-edit-kind="category" data-edit-id="${escape(category.id)}">
-      <div class="category-image" ${imageStyle(category.image)}></div>
+      ${mediaFrame(category, "category-image", category.title)}
       <div><h3>${escape(category.title)}</h3><p>${escape(category.description || "")}</p></div>
       <a class="btn btn-secondary" href="#order" data-order-category="${escape(category.id)}">${escape(orderCopy().requestButton || "Anfragen")}</a>
     </article>`;
@@ -265,7 +316,7 @@
     const image = product.images?.[0] || product.image_url || "";
     const copy = orderCopy();
     return `<article class="product-card lux-card" data-edit-kind="product" data-edit-id="${escape(product.id)}">
-      <div class="product-image" ${imageStyle(image)}></div>
+      ${mediaFrame({ ...product, image }, "product-image", product.title)}
       <div><p class="eyebrow">${escape(product.category || "Geburtstag")}</p><h3>${escape(product.title)}</h3><p>${escape(product.description)}</p></div>
       <div class="product-meta">
         ${product.price ? `<strong>${escape(product.price)}</strong>` : ""}
@@ -281,8 +332,17 @@
       ${sectionHead(section)}
       <div class="gallery-grid">${sorted(content.gallery).map((entry) => {
         const item = localizedItem("gallery", entry);
-        return `<button class="gallery-item" type="button" data-edit-kind="gallery" data-edit-id="${escape(item.id)}" data-lightbox-open data-title="${escape(item.title)}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(item.url || item.image_url || "")}"><img src="${escape(item.url || item.image_url || "")}" alt="${escape(item.alt || item.title || "")}" /><span>${escape(item.title || "")}</span></button>`;
+        const url = mediaUrl(item);
+        const type = item.mediaType || item.type || "";
+        return `<button class="gallery-item" type="button" data-edit-kind="gallery" data-edit-id="${escape(item.id)}" data-lightbox-open data-title="${escape(item.title)}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(url)}" data-media-type="${escape(isVideo(url, type) ? "video" : "image")}">${mediaThumb(item, item.title)}<span>${escape(item.title || "")}</span></button>`;
       }).join("") || emptyState(copy.emptyGallery || "Noch keine Galerie veröffentlicht.")}</div>
+    </section>`;
+  }
+
+  function mediaSection(section) {
+    return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
+      ${sectionHead(section)}
+      <div class="gallery-grid">${(section.items || []).filter((item) => item.active !== false).map((item, index) => `<button class="gallery-item" type="button" data-edit-kind="media-item" data-edit-id="${escape(`${section.id}:${index}`)}" data-lightbox-open data-title="${escape(item.title || section.title || "")}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(mediaUrl(item))}" data-media-type="${escape(isVideo(mediaUrl(item), item.mediaType || item.type) ? "video" : "image")}">${mediaThumb(item, item.title)}<span>${escape(item.title || "")}</span></button>`).join("")}</div>
     </section>`;
   }
 
@@ -300,7 +360,7 @@
   }
 
   function about(section) {
-    return `<section class="section editorial section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}"><div class="section-copy"><p class="eyebrow">${escape(section.eyebrow)}</p><h2>${escape(section.title)}</h2><p>${escape(section.text)}</p></div><div class="editorial-image portrait" ${imageStyle(section.image)}></div></section>`;
+    return `<section class="section editorial section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}"><div class="section-copy"><p class="eyebrow">${escape(section.eyebrow)}</p><h2>${escape(section.title)}</h2><p>${escape(section.text)}</p></div>${mediaFrame(section, "editorial-image portrait", section.title)}</section>`;
   }
 
   function order(section) {
@@ -345,7 +405,7 @@
     return `<div class="empty-state">${escape(text)}</div>`;
   }
 
-  const renderers = { hero, editorial, steps, products, gallery, reviews, faq, about, order, contact };
+  const renderers = { hero, editorial, steps, products, gallery, media: mediaSection, reviews, faq, about, order, contact };
 
   function renderSections() {
     $("[data-site-root]").innerHTML = sorted(content.sections).map((section) => localizedSection(section)).map((section) => renderers[section.type]?.(section) || "").join("");
@@ -403,7 +463,21 @@
 
   function openLightbox(opener) {
     const box = $("[data-lightbox]");
-    $("[data-lightbox-image]").src = opener.dataset.image || "";
+    const image = $("[data-lightbox-image]");
+    let video = $("[data-lightbox-video]");
+    if (!video) {
+      video = document.createElement("video");
+      video.dataset.lightboxVideo = "true";
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      image.after(video);
+    }
+    const isLightboxVideo = opener.dataset.mediaType === "video";
+    image.hidden = isLightboxVideo;
+    video.hidden = !isLightboxVideo;
+    image.src = isLightboxVideo ? "" : opener.dataset.image || "";
+    video.src = isLightboxVideo ? opener.dataset.image || "" : "";
     $("[data-lightbox-title]").textContent = opener.dataset.title || "";
     $("[data-lightbox-text]").textContent = opener.dataset.text || "";
     box.classList.add("is-open");
@@ -412,6 +486,11 @@
 
   function closeLightbox() {
     const box = $("[data-lightbox]");
+    const video = $("[data-lightbox-video]");
+    if (video) {
+      video.pause();
+      video.removeAttribute("src");
+    }
     box.classList.remove("is-open");
     box.setAttribute("aria-hidden", "true");
   }
