@@ -107,12 +107,33 @@
   gap: 12px;
   border-bottom: 1px solid var(--border);
 }
+.visual-device-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.visual-device-switch .mini-btn.is-active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
 .visual-preview {
   width: 100%;
   height: 100%;
   min-height: 680px;
   border: 0;
   background: #fff;
+}
+.visual-preview-wrap[data-device="tablet"] .visual-preview {
+  width: min(820px, 100%);
+  justify-self: center;
+  border-inline: 1px solid var(--border);
+}
+.visual-preview-wrap[data-device="mobile"] .visual-preview {
+  width: min(390px, 100%);
+  justify-self: center;
+  border-inline: 1px solid var(--border);
 }
 .visual-editor-panel {
   position: sticky;

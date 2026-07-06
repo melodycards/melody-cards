@@ -66,6 +66,24 @@
           { label: "Kontakt", href: "#contact", active: true },
           { label: "Bestellen", href: "#order", active: true, style: "primary" }
         ],
+        categories: [
+          {
+            id: "birthday",
+            title: "Geburtstagskarte",
+            description: "Hochwertige Geburtstagskarten mit persönlichem QR-Code und einem Lied, das nur für diesen besonderen Menschen gestaltet wird.",
+            image: image("premium-card-detail.png"),
+            active: true,
+            sortOrder: 1
+          },
+          {
+            id: "apology",
+            title: "Entschuldigungskarte",
+            description: "Persönliche Entschuldigungskarten mit QR-Code und einem emotionalen Entschuldigungssong.",
+            image: image("gift-moment.png"),
+            active: true,
+            sortOrder: 2
+          }
+        ],
         sections: [
           {
             id: "home",
@@ -216,7 +234,11 @@
           versand: ""
         },
         orderForm: {
+          categoryLabel: "Kartentyp",
+          categoryHelp: "Wähle zuerst, welche Karte du gestalten möchtest.",
           productLabel: "Geburtstagskarte",
+          occasionLabel: "Anlass",
+          occasionPlaceholder: "z. B. Geburtstag, Entschuldigung, Versöhnung",
           recipientLabel: "Name der beschenkten Person",
           recipientPlaceholder: "z. B. Mama, Sarah, mein Schatz",
           nameLabel: "Dein Name",
@@ -229,8 +251,10 @@
           voiceOptions: ["Männlich", "Weiblich"],
           musicStyleLabel: "Musikrichtung",
           musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
-          messageLabel: "Wünsche zur Karte",
-          messagePlaceholder: "Was soll die Karte ausdrücken? Gibt es etwas, das wir wissen sollen?",
+          storyLabel: "Persönliche Infos / Geschichte",
+          storyPlaceholder: "Erzähle kurz, was diese Person besonders macht oder was du sagen möchtest.",
+          messageLabel: "Persönliche Infos / Geschichte",
+          messagePlaceholder: "Erzähle kurz, was diese Person besonders macht oder was du sagen möchtest.",
           submitLabel: "Geburtstagskarte anfragen",
           productFallback: "Geburtstagskarte",
           emptyProducts: "Noch keine Produkte veröffentlicht.",
@@ -239,7 +263,9 @@
           success: "Danke. Deine Anfrage wurde gesendet.",
           error: "Die Anfrage konnte nicht gespeichert werden.",
           cardTextProduct: "Geburtstagskarte",
+          cardTextCategory: "Kartentyp",
           cardTextRecipient: "Beschenkte Person",
+          cardTextOccasion: "Anlass",
           musicWishLanguage: "Sprache des Liedes",
           musicWishVoice: "Stimme",
           musicWishStyle: "Musikrichtung",
@@ -332,6 +358,16 @@
                 category: "Doğum günü"
               }
             },
+            categories: {
+              birthday: {
+                title: "Doğum günü kartı",
+                description: "Kişisel QR kodu ve yalnızca o özel kişi için hazırlanan şarkıyla tasarlanan yüksek kaliteli doğum günü kartları."
+              },
+              apology: {
+                title: "Özür kartı",
+                description: "QR kodlu ve duygusal bir özür şarkısıyla kişiselleştirilen özel özür kartları."
+              }
+            },
             faqs: {
               "faq-1": { question: "Şarkıyı ben mi hazırlıyorum?", answer: "Hayır. Sen doğum günü kartını sipariş edersin. Kişiye özel şarkı ve QR kod daha sonra Melody Cards tarafından hazırlanır." },
               "faq-2": { question: "QR kodu benim sağlamam gerekiyor mu?", answer: "Hayır. QR kod arka planda oluşturulur ve karta basılır." },
@@ -359,7 +395,11 @@
               versand: "<h1>Kargo & Ödeme</h1><p>Kargo, ödeme ve sipariş süreci hakkında bilgiler.</p>"
             },
             orderForm: {
+              categoryLabel: "Kart türü",
+              categoryHelp: "Önce hangi kartı tasarlamak istediğini seç.",
               productLabel: "Doğum günü kartı",
+              occasionLabel: "Sebep",
+              occasionPlaceholder: "örn. doğum günü, özür, barışma",
               recipientLabel: "Hediye edilecek kişinin adı",
               recipientPlaceholder: "örn. Anne, Sarah, sevgilim",
               nameLabel: "Adın",
@@ -372,8 +412,10 @@
               voiceOptions: ["Männlich", "Weiblich"],
               musicStyleLabel: "Müzik tarzı",
               musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
-              messageLabel: "Kart için isteklerin",
-              messagePlaceholder: "Kart ne ifade etmeli? Bilmemiz gereken bir şey var mı?",
+              storyLabel: "Kişisel bilgiler / hikaye",
+              storyPlaceholder: "Bu kişiyi özel yapan şeyi veya söylemek istediğin duyguyu kısaca anlat.",
+              messageLabel: "Kişisel bilgiler / hikaye",
+              messagePlaceholder: "Bu kişiyi özel yapan şeyi veya söylemek istediğin duyguyu kısaca anlat.",
               submitLabel: "Doğum günü kartı talep et",
               productFallback: "Doğum günü kartı",
               emptyProducts: "Henüz yayınlanmış ürün yok.",
@@ -382,7 +424,9 @@
               success: "Teşekkürler. Talebin gönderildi.",
               error: "Talep kaydedilemedi.",
               cardTextProduct: "Doğum günü kartı",
+              cardTextCategory: "Kart türü",
               cardTextRecipient: "Hediye edilen kişi",
+              cardTextOccasion: "Sebep",
               musicWishLanguage: "Şarkının dili",
               musicWishVoice: "Ses",
               musicWishStyle: "Müzik tarzı",

@@ -60,10 +60,40 @@
       footer: { ...base.footer, ...(remote?.footer || {}) },
       legalPages: { ...base.legalPages, ...(remote?.legalPages || {}) },
       orderForm: { ...base.orderForm, ...(remote?.orderForm || {}) },
-      translations: { ...base.translations, ...(remote?.translations || {}) },
+      translations: mergeTranslations(base.translations || {}, remote?.translations || {}),
       languages: remote?.languages || base.languages || [],
       defaultLanguage: remote?.defaultLanguage || base.defaultLanguage || "de"
     };
+  }
+
+  function mergeTranslations(base = {}, remote = {}) {
+    const result = { ...clone(base), ...clone(remote || {}) };
+    Object.keys(result).forEach((language) => {
+      const baseLanguage = base[language] || {};
+      const remoteLanguage = remote[language] || {};
+      result[language] = {
+        ...clone(baseLanguage),
+        ...clone(remoteLanguage),
+        seo: { ...(baseLanguage.seo || {}), ...(remoteLanguage.seo || {}) },
+        brand: { ...(baseLanguage.brand || {}), ...(remoteLanguage.brand || {}) },
+        sections: { ...(baseLanguage.sections || {}), ...(remoteLanguage.sections || {}) },
+        products: { ...(baseLanguage.products || {}), ...(remoteLanguage.products || {}) },
+        categories: { ...(baseLanguage.categories || {}), ...(remoteLanguage.categories || {}) },
+        gallery: { ...(baseLanguage.gallery || {}), ...(remoteLanguage.gallery || {}) },
+        reviews: { ...(baseLanguage.reviews || {}), ...(remoteLanguage.reviews || {}) },
+        faqs: { ...(baseLanguage.faqs || {}), ...(remoteLanguage.faqs || {}) },
+        contact: { ...(baseLanguage.contact || {}), ...(remoteLanguage.contact || {}) },
+        legalPages: { ...(baseLanguage.legalPages || {}), ...(remoteLanguage.legalPages || {}) },
+        orderForm: { ...(baseLanguage.orderForm || {}), ...(remoteLanguage.orderForm || {}) },
+        footer: {
+          ...(baseLanguage.footer || {}),
+          ...(remoteLanguage.footer || {}),
+          links: remoteLanguage.footer?.links || baseLanguage.footer?.links || []
+        },
+        navigation: remoteLanguage.navigation || baseLanguage.navigation || []
+      };
+    });
+    return result;
   }
 
   async function saveSite(label = "Website") {
@@ -173,9 +203,10 @@
     renderTranslations();
     renderNavigation();
     renderSections();
-    renderCollection("products", productFields());
+    renderCategoryEditor();
+    renderProductManager();
     renderGalleryEditor();
-    renderCollection("reviews", reviewFields());
+    renderReviewManager();
     renderCollection("faqs", faqFields());
     renderContact();
     renderLegal();
@@ -203,14 +234,19 @@
       <div class="visual-preview-wrap">
         <div class="visual-toolbar">
           <strong>Live-Vorschau</strong>
-          <button class="mini-btn" type="button" data-visual-refresh>Vorschau neu laden</button>
+          <div class="visual-device-switch">
+            <button class="mini-btn is-active" type="button" data-visual-device="desktop">Desktop</button>
+            <button class="mini-btn" type="button" data-visual-device="tablet">Tablet</button>
+            <button class="mini-btn" type="button" data-visual-device="mobile">Handy</button>
+            <button class="mini-btn" type="button" data-visual-refresh>Neu laden</button>
+          </div>
         </div>
         <iframe class="visual-preview" title="Melody Cards Vorschau" data-visual-frame src="../index.html?admin-preview=${Date.now()}"></iframe>
       </div>
       <aside class="visual-editor-panel" data-visual-editor>
         <p class="eyebrow">Visueller Editor</p>
         <h3>Bereich anklicken</h3>
-        <p>Klicke links auf Hero, Produkt, Galerie-Bild oder FAQ. Die passenden Felder erscheinen hier.</p>
+        <p>Klicke links auf Logo, Navigation, Hero, Kategorie, Produkt, Galerie-Bild, FAQ, Kontakt oder Footer. Die passenden Felder erscheinen hier.</p>
         <div class="visual-quick-actions">
           <button class="mini-btn" type="button" data-visual-new-product>Produkt hinzufügen</button>
           <button class="mini-btn" type="button" data-visual-open-gallery>Galerie bearbeiten</button>
@@ -219,6 +255,7 @@
       </aside>
     </div>`;
     $('[data-visual-refresh]')?.addEventListener("click", reloadVisualPreview);
+    $$("[data-visual-device]").forEach((button) => button.addEventListener("click", () => setVisualDevice(button.dataset.visualDevice, button)));
     $('[data-visual-new-product]')?.addEventListener("click", () => renderProductVisualEditor(""));
     $('[data-visual-open-gallery]')?.addEventListener("click", () => selectPanel("gallery"));
     $('[data-visual-new-faq]')?.addEventListener("click", () => renderFaqVisualEditor(""));
@@ -231,33 +268,49 @@
     if (frame) frame.src = `../index.html?admin-preview=${Date.now()}`;
   }
 
+  function setVisualDevice(device, button) {
+    const wrap = $(".visual-preview-wrap");
+    wrap.dataset.device = device;
+    $$("[data-visual-device]").forEach((item) => item.classList.toggle("is-active", item === button));
+  }
+
   function prepareVisualFrame() {
     const frame = $('[data-visual-frame]');
     const doc = frame?.contentDocument;
     if (!doc) return;
-    const style = doc.createElement("style");
-    style.textContent = `
-      [data-edit-kind]{outline:2px solid rgba(200,169,106,.0); outline-offset:6px; cursor:pointer;}
-      [data-edit-kind]:hover{outline-color:rgba(200,169,106,.95);}
-      [data-edit-selected="true"]{outline:3px solid #c8a96a!important; outline-offset:7px;}
-    `;
-    doc.head.appendChild(style);
-    doc.querySelectorAll("[data-edit-kind]").forEach((node) => {
-      node.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        doc.querySelectorAll("[data-edit-selected]").forEach((item) => item.removeAttribute("data-edit-selected"));
-        node.setAttribute("data-edit-selected", "true");
-        showVisualEditor(node.dataset.editKind, node.dataset.editId);
-      });
+    if (!doc.querySelector("[data-visual-editor-style]")) {
+      const style = doc.createElement("style");
+      style.dataset.visualEditorStyle = "true";
+      style.textContent = `
+        [data-edit-kind]{outline:2px solid rgba(200,169,106,.0); outline-offset:6px; cursor:pointer;}
+        [data-edit-kind]:hover{outline-color:rgba(200,169,106,.95);}
+        [data-edit-selected="true"]{outline:3px solid #c8a96a!important; outline-offset:7px;}
+      `;
+      doc.head.appendChild(style);
+    }
+    if (doc.body.dataset.visualEditorReady === "true") return;
+    doc.body.dataset.visualEditorReady = "true";
+    doc.addEventListener("click", (event) => {
+      const node = event.target.closest?.("[data-edit-kind]");
+      if (!node) return;
+      event.preventDefault();
+      event.stopPropagation();
+      doc.querySelectorAll("[data-edit-selected]").forEach((item) => item.removeAttribute("data-edit-selected"));
+      node.setAttribute("data-edit-selected", "true");
+      showVisualEditor(node.dataset.editKind, node.dataset.editId);
     });
   }
 
   function showVisualEditor(kind, id) {
     if (kind === "section") return renderSectionVisualEditor(id);
     if (kind === "product") return renderProductVisualEditor(id);
+    if (kind === "category") return renderCategoryVisualEditor(id);
     if (kind === "gallery") return renderGalleryVisualEditor(id);
     if (kind === "faq") return renderFaqVisualEditor(id);
+    if (kind === "review") return renderReviewVisualEditor(id);
+    if (kind === "brand") return renderBrandVisualEditor();
+    if (kind === "navigation" || kind === "nav-item") return renderNavigationVisualEditor(id);
+    if (kind === "footer" || kind === "footer-link") return renderFooterVisualEditor(id);
     $('[data-visual-editor]').innerHTML = `<p>Dieses Element kann noch nicht visuell bearbeitet werden.</p>`;
   }
 
@@ -279,6 +332,7 @@
       ${section.primaryButton ? input("primaryLabel", "Buttontext DE", section.primaryButton.label || "") : ""}
       ${section.primaryButton ? input("primaryHref", "Buttonlink", section.primaryButton.href || "") : ""}
       ${section.secondaryButton ? input("secondaryLabel", "Zweiter Button DE", section.secondaryButton.label || "") : ""}
+      ${section.id === "contact" ? input("contactEmail", "Kontakt E-Mail", content.contact.email || "") + input("contactPhone", "Telefon", content.contact.phone || "") + input("contactAddress", "Adresse", content.contact.address || "", "textarea") : ""}
       ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.image })}</div>${file("upload", "Bild ersetzen")}<button class="mini-btn danger" type="button" data-clear-section-image>Bild löschen</button>` : ""}
       ${input("textColor", "Textfarbe", style.textColor || "#ffffff", "color")}
       ${input("titleSize", "Schriftgröße Desktop", style.titleSize || "", "number")}
@@ -311,6 +365,11 @@
         section.primaryButton.href = form.primaryHref.value;
       }
       if (section.secondaryButton && form.secondaryLabel) section.secondaryButton.label = form.secondaryLabel.value;
+      if (section.id === "contact") {
+        content.contact.email = form.contactEmail.value;
+        content.contact.phone = form.contactPhone.value;
+        content.contact.address = form.contactAddress.value;
+      }
       section.style = {
         ...(section.style || {}),
         textColor: form.textColor.value,
@@ -337,10 +396,13 @@
   function renderProductVisualEditor(id) {
     const item = (content.products || []).find((entry) => String(entry.id) === String(id)) || { id: uid("products"), status: "active", sortOrder: (content.products || []).length + 1, images: [] };
     const isNew = !(content.products || []).some((entry) => String(entry.id) === String(id));
+    const trProduct = content.translations?.tr?.products?.[item.id] || {};
     $('[data-visual-editor]').innerHTML = `<form data-visual-product-form class="visual-form">
       <p class="eyebrow">Produkt</p><h3>${isNew ? "Produkt hinzufügen" : "Produkt bearbeiten"}</h3>
       ${input("title", "Titel", item.title || "")}
       ${input("description", "Beschreibung", item.description || "", "textarea")}
+      ${input("trTitle", "Titel TR", trProduct.title || "")}
+      ${input("trDescription", "Beschreibung TR", trProduct.description || "", "textarea")}
       ${input("price", "Preis", item.price || "")}
       ${input("category", "Kategorie", item.category || "")}
       ${checkbox("active", "Aktiv", item.status !== "inactive")}
@@ -364,15 +426,105 @@
       item.status = form.active.checked ? "active" : "inactive";
       await uploadInto(form.upload, "products", (url) => item.images = [url]);
       if (isNew) content.products = [...(content.products || []), item];
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.products = content.translations.tr.products || {};
+      content.translations.tr.products[item.id] = {
+        ...(content.translations.tr.products[item.id] || {}),
+        title: form.trTitle.value,
+        description: form.trDescription.value,
+        category: form.category.value,
+        price: form.price.value
+      };
       await saveSite("Produkt");
       reloadVisualPreview();
     }));
   }
 
+  function renderCategoryVisualEditor(id) {
+    const item = (content.categories || []).find((entry) => String(entry.id) === String(id)) || { id: uid("category"), active: true, sortOrder: (content.categories || []).length + 1 };
+    const isNew = !(content.categories || []).some((entry) => String(entry.id) === String(id));
+    const trCategory = content.translations?.tr?.categories?.[item.id] || {};
+    $('[data-visual-editor]').innerHTML = `<form data-visual-category-form class="visual-form">
+      <p class="eyebrow">Kategorie</p><h3>${isNew ? "Kategorie hinzufügen" : "Kategorie bearbeiten"}</h3>
+      <div class="visual-image-preview">${galleryPreview({ url: item.image })}</div>
+      ${file("upload", "Bild hochladen / ersetzen")}
+      <button class="mini-btn danger" type="button" data-visual-clear-category-image>Bild löschen</button>
+      ${input("title", "Titel DE", item.title || "")}
+      ${input("description", "Beschreibung DE", item.description || "", "textarea")}
+      ${input("trTitle", "Titel TR", trCategory.title || "")}
+      ${input("trDescription", "Beschreibung TR", trCategory.description || "", "textarea")}
+      ${checkbox("active", "Aktiv", item.active !== false)}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Kategorie löschen</button>`}
+    </form>`;
+    $('[data-visual-clear-category-image]')?.addEventListener("click", () => {
+      item.image = "";
+      setStatus("Bild entfernt. Bitte speichern.", "warning");
+      renderCategoryVisualEditor(item.id);
+    });
+    $('[data-visual-category-form]').addEventListener("submit", (event) => saveVisualCategory(event, item, isNew));
+    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("categories", item.id, "Kategorie"));
+  }
+
+  async function saveVisualCategory(event, item, isNew) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Kategorie", async () => {
+      item.title = form.title.value;
+      item.description = form.description.value;
+      item.active = form.active.checked;
+      await uploadInto(form.upload, "categories", (url) => item.image = url);
+      if (isNew) content.categories = [...(content.categories || []), item];
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.categories = content.translations.tr.categories || {};
+      content.translations.tr.categories[item.id] = {
+        ...(content.translations.tr.categories[item.id] || {}),
+        title: form.trTitle.value,
+        description: form.trDescription.value
+      };
+      await saveSite("Kategorie");
+      reloadVisualPreview();
+    }));
+  }
+
   function renderGalleryVisualEditor(id) {
-    editing.gallery = (content.gallery || []).find((entry) => String(entry.id) === String(id)) || null;
-    renderGalleryEditor();
-    selectPanel("gallery");
+    const item = (content.gallery || []).find((entry) => String(entry.id) === String(id)) || { id: uid("gallery"), active: true, sortOrder: (content.gallery || []).length + 1 };
+    const isNew = !(content.gallery || []).some((entry) => String(entry.id) === String(id));
+    $('[data-visual-editor]').innerHTML = `<form data-visual-gallery-form class="visual-form">
+      <p class="eyebrow">Galerie</p><h3>${isNew ? "Bild hinzufügen" : "Bild bearbeiten"}</h3>
+      <div class="visual-image-preview">${galleryPreview(item)}</div>
+      ${file("upload", "Bild hochladen / ersetzen")}
+      ${input("title", "Titel", item.title || "")}
+      ${input("description", "Beschreibung", item.description || item.alt || "", "textarea")}
+      ${input("category", "Kategorie", item.category || "")}
+      ${checkbox("active", "Aktiv", item.active !== false)}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Bild löschen</button>`}
+    </form>`;
+    $('[data-visual-gallery-form]').addEventListener("submit", (event) => saveVisualGallery(event, item, isNew));
+    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("gallery", item.id, "Galerie-Bild"));
+  }
+
+  async function saveVisualGallery(event, item, isNew) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Galerie", async () => {
+      item.title = form.title.value;
+      item.description = form.description.value;
+      item.alt = form.description.value;
+      item.category = form.category.value;
+      item.active = form.active.checked;
+      await uploadInto(form.upload, "gallery", (url) => {
+        item.url = url;
+        item.image_url = url;
+      });
+      if (isNew && !item.url && !item.image_url) throw new Error("Bitte ein Bild hochladen.");
+      if (isNew) content.gallery = [...(content.gallery || []), item];
+      await saveSite("Galerie");
+      reloadVisualPreview();
+    }));
   }
 
   function renderFaqVisualEditor(id) {
@@ -410,6 +562,45 @@
     }));
   }
 
+  function renderReviewVisualEditor(id) {
+    const item = (content.reviews || []).find((entry) => String(entry.id) === String(id)) || { id: uid("review"), active: true, rating: 5, sortOrder: (content.reviews || []).length + 1 };
+    const isNew = !(content.reviews || []).some((entry) => String(entry.id) === String(id));
+    const trReview = content.translations?.tr?.reviews?.[item.id] || {};
+    $('[data-visual-editor]').innerHTML = `<form data-visual-review-form class="visual-form">
+      <p class="eyebrow">Bewertung</p><h3>${isNew ? "Bewertung hinzufügen" : "Bewertung bearbeiten"}</h3>
+      <div class="visual-image-preview">${galleryPreview({ url: item.photo })}</div>
+      ${file("upload", "Foto hochladen / ersetzen")}
+      ${input("name", "Name", item.name || "")}
+      ${input("text", "Text DE", item.text || "", "textarea")}
+      ${input("trText", "Text TR", trReview.text || "", "textarea")}
+      ${input("rating", "Sterne", item.rating || 5, "number")}
+      ${checkbox("active", "Sichtbar", item.active !== false)}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Bewertung löschen</button>`}
+    </form>`;
+    $('[data-visual-review-form]').addEventListener("submit", (event) => saveVisualReview(event, item, isNew));
+    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("reviews", item.id, "Bewertung"));
+  }
+
+  async function saveVisualReview(event, item, isNew) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Bewertung", async () => {
+      item.name = form.name.value;
+      item.text = form.text.value;
+      item.rating = Number(form.rating.value || 5);
+      item.active = form.active.checked;
+      await uploadInto(form.upload, "reviews", (url) => item.photo = url);
+      if (isNew) content.reviews = [...(content.reviews || []), item];
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.reviews = content.translations.tr.reviews || {};
+      content.translations.tr.reviews[item.id] = { ...(content.translations.tr.reviews[item.id] || {}), text: form.trText.value };
+      await saveSite("Bewertung");
+      reloadVisualPreview();
+    }));
+  }
+
   async function deleteVisualItem(key, id, label) {
     if (!window.confirm(`${label} wirklich löschen?`)) return;
     await action(label, async () => {
@@ -417,6 +608,95 @@
       await saveSite(label);
       reloadVisualPreview();
       $('[data-visual-editor]').innerHTML = `<p>${escape(label)} wurde gelöscht.</p>`;
+    });
+  }
+
+  function renderNavigationVisualEditor(activeIndex = 0) {
+    const items = sorted(content.navigation || []);
+    const item = items[Number(activeIndex)] || items[0] || { label: "", href: "#", active: true };
+    const trItems = content.translations?.tr?.navigation || [];
+    const trItem = trItems[Number(activeIndex)] || {};
+    $('[data-visual-editor]').innerHTML = `<form data-visual-nav-form class="visual-form">
+      <p class="eyebrow">Navigation</p><h3>Menüpunkt bearbeiten</h3>
+      <label>Menüpunkt<select name="index">${items.map((entry, index) => `<option value="${index}" ${entry === item ? "selected" : ""}>${escape(entry.label || `Menüpunkt ${index + 1}`)}</option>`).join("")}</select></label>
+      ${input("label", "Text Deutsch", item.label || "")}
+      ${input("trLabel", "Text Türkisch", trItem.label || "")}
+      ${input("href", "Link", item.href || "")}
+      ${checkbox("active", "Sichtbar", item.active !== false)}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+    </form>`;
+    const form = $('[data-visual-nav-form]');
+    form.index.addEventListener("change", () => renderNavigationVisualEditor(form.index.value));
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Navigation", async () => {
+        item.label = form.label.value;
+        item.href = form.href.value;
+        item.active = form.active.checked;
+        content.translations = content.translations || {};
+        content.translations.tr = content.translations.tr || {};
+        content.translations.tr.navigation = content.translations.tr.navigation || [];
+        content.translations.tr.navigation[Number(form.index.value)] = {
+          ...item,
+          ...(content.translations.tr.navigation[Number(form.index.value)] || {}),
+          label: form.trLabel.value,
+          href: form.href.value,
+          active: form.active.checked
+        };
+        await saveSite("Navigation");
+        reloadVisualPreview();
+      }));
+    });
+  }
+
+  function renderBrandVisualEditor() {
+    $('[data-visual-editor]').innerHTML = `<form data-visual-brand-form class="visual-form">
+      <p class="eyebrow">Logo & Marke</p><h3>Logo bearbeiten</h3>
+      <div class="visual-image-preview">${galleryPreview({ url: content.brand.logoImage, title: content.brand.name })}</div>
+      ${file("logoUpload", "Logo hochladen / ersetzen")}
+      ${input("name", "Markenname", content.brand.name || "")}
+      ${input("logoText", "Logo Text", content.brand.logoText || "")}
+      ${input("footerText", "Footer Text", content.brand.footerText || "", "textarea")}
+      ${file("faviconUpload", "Favicon hochladen")}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+    </form>`;
+    const form = $('[data-visual-brand-form]');
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Logo & Marke", async () => {
+        content.brand.name = form.name.value;
+        content.brand.logoText = form.logoText.value;
+        content.brand.footerText = form.footerText.value;
+        await uploadInto(form.logoUpload, "brand", (url) => content.brand.logoImage = url);
+        await uploadInto(form.faviconUpload, "favicons", (url) => content.seo.favicon = url);
+        await saveSite("Logo & Marke");
+        reloadVisualPreview();
+      }));
+    });
+  }
+
+  function renderFooterVisualEditor(activeIndex = 0) {
+    content.footer.links = content.footer.links || [];
+    const item = content.footer.links[Number(activeIndex)] || content.footer.links[0] || { label: "", href: "" };
+    $('[data-visual-editor]').innerHTML = `<form data-visual-footer-form class="visual-form">
+      <p class="eyebrow">Footer</p><h3>Footer bearbeiten</h3>
+      ${input("footerText", "Footer Text", content.brand.footerText || "", "textarea")}
+      <label>Link auswählen<select name="index">${content.footer.links.map((entry, index) => `<option value="${index}" ${entry === item ? "selected" : ""}>${escape(entry.label || `Link ${index + 1}`)}</option>`).join("")}</select></label>
+      ${input("label", "Linktext", item.label || "")}
+      ${input("href", "Linkziel", item.href || "")}
+      <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
+    </form>`;
+    const form = $('[data-visual-footer-form]');
+    form.index.addEventListener("change", () => renderFooterVisualEditor(form.index.value));
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Footer", async () => {
+        content.brand.footerText = form.footerText.value;
+        item.label = form.label.value;
+        item.href = form.href.value;
+        await saveSite("Footer");
+        reloadVisualPreview();
+      }));
     });
   }
 
@@ -506,11 +786,322 @@
     renderJsonPanel("sections", "Startseiten-Bereiche bearbeiten", "sections", content.sections);
   }
 
+  function renderCategoryEditor() {
+    const current = editing.categories || {};
+    const items = sorted(content.categories || []);
+    $('[data-panel="categories"]').innerHTML = `<div class="gallery-editor">
+      ${card(editing.categories ? "Kategorie bearbeiten" : "Kategorie hinzufügen", `<form data-category-form class="gallery-form">
+        <div class="gallery-form-preview" data-category-preview>${galleryPreview(current)}</div>
+      ${file("upload", editing.categories ? "Bild ersetzen" : "Bild hochladen")}
+      ${input("title", "Titel", current.title || "")}
+      ${input("description", "Beschreibung", current.description || "", "textarea")}
+      ${input("trTitle", "Titel Türkisch", content.translations?.tr?.categories?.[current.id]?.title || "")}
+      ${input("trDescription", "Beschreibung Türkisch", content.translations?.tr?.categories?.[current.id]?.description || "", "textarea")}
+      ${checkbox("active", "Aktiv", current.active !== false)}
+        <div class="admin-actions span-all">
+          <button class="btn btn-primary" type="submit" data-category-save>${editing.categories ? "Änderungen speichern" : "Kategorie speichern"}</button>
+          <button class="btn btn-glass" type="button" data-category-new>Neue Kategorie</button>
+        </div>
+      </form>`)}
+      ${card("Kategorien", `<div class="gallery-card-grid">${items.map(categoryAdminCard).join("")}</div>`)}
+    </div>`;
+    const form = $('[data-category-form]');
+    form.addEventListener("submit", saveCategoryItem);
+    form.upload?.addEventListener("change", () => previewCategoryFile(form.upload));
+    $('[data-category-new]')?.addEventListener("click", () => {
+      editing.categories = null;
+      renderCategoryEditor();
+      setStatus("Neue Kategorie bereit.");
+    });
+    $$("[data-category-edit]").forEach((button) => button.addEventListener("click", () => editCategoryItem(button.dataset.categoryEdit)));
+    $$("[data-category-delete]").forEach((button) => button.addEventListener("click", () => deleteCategoryItem(button.dataset.categoryDelete, button)));
+    $$("[data-category-move]").forEach((button) => button.addEventListener("click", () => moveCategoryItem(button.dataset.categoryMove, Number(button.dataset.direction), button)));
+  }
+
+  function categoryAdminCard(item) {
+    return `<article class="gallery-admin-card">
+      <div class="gallery-admin-image">${galleryPreview(item)}</div>
+      <div class="gallery-admin-copy"><div><strong>${escape(item.title || "Kategorie")}</strong><p>${escape(item.description || "")}</p></div><span class="status-pill ${item.active === false ? "is-muted" : ""}">${item.active === false ? "Inaktiv" : "Aktiv"}</span></div>
+      <div class="gallery-admin-actions">
+        <button class="mini-btn" type="button" data-category-edit="${escape(item.id)}">Bearbeiten</button>
+        <button class="mini-btn danger" type="button" data-category-delete="${escape(item.id)}">Löschen</button>
+        <button class="mini-btn" type="button" data-category-move="${escape(item.id)}" data-direction="-1">Nach oben</button>
+        <button class="mini-btn" type="button" data-category-move="${escape(item.id)}" data-direction="1">Nach unten</button>
+      </div>
+    </article>`;
+  }
+
+  function previewCategoryFile(input) {
+    const preview = $('[data-category-preview]');
+    const fileItem = input?.files?.[0];
+    if (!preview || !fileItem) return;
+    preview.innerHTML = `<img src="${escape(URL.createObjectURL(fileItem))}" alt="Ausgewählte Kategorie" />`;
+  }
+
+  function editCategoryItem(id) {
+    const item = (content.categories || []).find((entry) => String(entry.id) === String(id));
+    if (!item) return setStatus("Kategorie nicht gefunden.", "error");
+    editing.categories = item;
+    renderCategoryEditor();
+    setStatus("Kategorie geladen.", "success");
+  }
+
+  async function saveCategoryItem(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-category-save]"), "Speichert...", async () => action("Kategorie", async () => {
+      const item = editing.categories || { id: uid("category"), sortOrder: (content.categories || []).length + 1 };
+      item.title = form.title.value.trim();
+      item.description = form.description.value.trim();
+      item.active = form.active.checked;
+      await uploadInto(form.upload, "categories", (url) => item.image = url);
+      content.categories = content.categories || [];
+      if (!editing.categories) content.categories.push(item);
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.categories = content.translations.tr.categories || {};
+      content.translations.tr.categories[item.id] = {
+        ...(content.translations.tr.categories[item.id] || {}),
+        title: form.trTitle.value.trim(),
+        description: form.trDescription.value.trim()
+      };
+      editing.categories = null;
+      await saveSite("Kategorien");
+      renderCategoryEditor();
+    }));
+  }
+
+  async function deleteCategoryItem(id, button) {
+    if (!window.confirm("Diese Kategorie wirklich löschen?")) return;
+    await withButtonLoading(button, "Löscht...", async () => action("Kategorie", async () => {
+      content.categories = (content.categories || []).filter((item) => String(item.id) !== String(id));
+      await saveSite("Kategorien");
+      renderCategoryEditor();
+    }));
+  }
+
+  async function moveCategoryItem(id, direction, button) {
+    await withButtonLoading(button, "Speichert...", async () => action("Kategorien sortieren", async () => {
+      const items = sorted(content.categories || []);
+      const index = items.findIndex((item) => String(item.id) === String(id));
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= items.length) return;
+      [items[index], items[target]] = [items[target], items[index]];
+      items.forEach((item, order) => item.sortOrder = order + 1);
+      content.categories = items;
+      await saveSite("Kategorien");
+      renderCategoryEditor();
+    }));
+  }
+
+  function renderProductManager() {
+    const current = editing.products || {};
+    const trProduct = content.translations?.tr?.products?.[current.id] || {};
+    const items = sorted(content.products || []);
+    $('[data-panel="products"]').innerHTML = `<div class="gallery-editor">
+      ${card(editing.products ? "Produkt bearbeiten" : "Produkt hinzufügen", `<form data-product-card-form class="gallery-form">
+        <div class="gallery-form-preview">${galleryPreview({ url: current.images?.[0] || current.image_url })}</div>
+        ${file("upload", editing.products ? "Bild ersetzen" : "Bild hochladen")}
+        ${input("title", "Titel Deutsch", current.title || "")}
+        ${input("description", "Beschreibung Deutsch", current.description || "", "textarea")}
+        ${input("trTitle", "Titel Türkisch", trProduct.title || "")}
+        ${input("trDescription", "Beschreibung Türkisch", trProduct.description || "", "textarea")}
+        ${input("price", "Preis", current.price || "")}
+        ${input("category", "Kategorie", current.category || "")}
+        ${checkbox("featured", "Empfohlen", Boolean(current.featured))}
+        ${checkbox("active", "Aktiv", current.status !== "inactive")}
+        <div class="admin-actions span-all">
+          <button class="btn btn-primary" type="submit" data-product-save>${editing.products ? "Änderungen speichern" : "Produkt speichern"}</button>
+          <button class="btn btn-glass" type="button" data-product-new>Neues Produkt</button>
+        </div>
+      </form>`)}
+      ${card("Produkte", `<div class="gallery-card-grid">${items.map(productAdminCard).join("") || `<div class="empty-state">Noch keine Produkte vorhanden.</div>`}</div>`)}
+    </div>`;
+    const form = $('[data-product-card-form]');
+    form.addEventListener("submit", saveProductCardItem);
+    form.upload?.addEventListener("change", () => previewAdminFile(form.upload, form.querySelector(".gallery-form-preview")));
+    $('[data-product-new]')?.addEventListener("click", () => {
+      editing.products = null;
+      renderProductManager();
+      setStatus("Neues Produkt bereit.");
+    });
+    $$("[data-product-edit]").forEach((button) => button.addEventListener("click", () => editProductCardItem(button.dataset.productEdit)));
+    $$("[data-product-delete]").forEach((button) => button.addEventListener("click", () => deleteProductCardItem(button.dataset.productDelete, button)));
+    $$("[data-product-move]").forEach((button) => button.addEventListener("click", () => moveManagedItem("products", button.dataset.productMove, Number(button.dataset.direction), button, "Produkte")));
+  }
+
+  function productAdminCard(item) {
+    return `<article class="gallery-admin-card">
+      <div class="gallery-admin-image">${galleryPreview({ url: item.images?.[0] || item.image_url, title: item.title })}</div>
+      <div class="gallery-admin-copy"><div><strong>${escape(item.title || "Produkt")}</strong><p>${escape(item.category || "")}</p></div><span class="status-pill ${item.status === "inactive" ? "is-muted" : ""}">${item.status === "inactive" ? "Inaktiv" : "Aktiv"}</span></div>
+      <div class="gallery-admin-actions">
+        <button class="mini-btn" type="button" data-product-edit="${escape(item.id)}">Bearbeiten</button>
+        <button class="mini-btn danger" type="button" data-product-delete="${escape(item.id)}">Löschen</button>
+        <button class="mini-btn" type="button" data-product-move="${escape(item.id)}" data-direction="-1">Nach oben</button>
+        <button class="mini-btn" type="button" data-product-move="${escape(item.id)}" data-direction="1">Nach unten</button>
+      </div>
+    </article>`;
+  }
+
+  function editProductCardItem(id) {
+    const item = (content.products || []).find((entry) => String(entry.id) === String(id));
+    if (!item) return setStatus("Produkt nicht gefunden.", "error");
+    editing.products = item;
+    renderProductManager();
+    setStatus("Produkt geladen.", "success");
+  }
+
+  async function saveProductCardItem(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-product-save]"), "Speichert...", async () => action("Produkt", async () => {
+      const item = editing.products || { id: uid("product"), sortOrder: (content.products || []).length + 1, images: [] };
+      item.title = form.title.value.trim();
+      item.description = form.description.value.trim();
+      item.price = form.price.value.trim();
+      item.category = form.category.value.trim();
+      item.featured = form.featured.checked;
+      item.status = form.active.checked ? "active" : "inactive";
+      await uploadInto(form.upload, "products", (url) => item.images = [url]);
+      content.products = content.products || [];
+      if (!editing.products) content.products.push(item);
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.products = content.translations.tr.products || {};
+      content.translations.tr.products[item.id] = {
+        ...(content.translations.tr.products[item.id] || {}),
+        title: form.trTitle.value.trim(),
+        description: form.trDescription.value.trim(),
+        category: form.category.value.trim(),
+        price: form.price.value.trim()
+      };
+      editing.products = null;
+      await saveSite("Produkt");
+      renderProductManager();
+    }));
+  }
+
+  async function deleteProductCardItem(id, button) {
+    if (!window.confirm("Dieses Produkt wirklich löschen?")) return;
+    await withButtonLoading(button, "Löscht...", async () => action("Produkt", async () => {
+      content.products = (content.products || []).filter((item) => String(item.id) !== String(id));
+      await saveSite("Produkt");
+      renderProductManager();
+    }));
+  }
+
+  function renderReviewManager() {
+    const current = editing.reviews || {};
+    const trReview = content.translations?.tr?.reviews?.[current.id] || {};
+    const items = sorted(content.reviews || []);
+    $('[data-panel="reviews"]').innerHTML = `<div class="gallery-editor">
+      ${card(editing.reviews ? "Bewertung bearbeiten" : "Bewertung hinzufügen", `<form data-review-card-form class="gallery-form">
+        <div class="gallery-form-preview">${galleryPreview({ url: current.photo, title: current.name })}</div>
+        ${file("upload", editing.reviews ? "Foto ersetzen" : "Foto hochladen")}
+        ${input("name", "Name", current.name || "")}
+        ${input("text", "Text Deutsch", current.text || "", "textarea")}
+        ${input("trText", "Text Türkisch", trReview.text || "", "textarea")}
+        ${input("rating", "Sterne", current.rating || 5, "number")}
+        ${checkbox("active", "Aktiv", current.active !== false)}
+        <div class="admin-actions span-all">
+          <button class="btn btn-primary" type="submit" data-review-save>${editing.reviews ? "Änderungen speichern" : "Bewertung speichern"}</button>
+          <button class="btn btn-glass" type="button" data-review-new>Neue Bewertung</button>
+        </div>
+      </form>`)}
+      ${card("Bewertungen", `<div class="gallery-card-grid">${items.map(reviewAdminCard).join("") || `<div class="empty-state">Noch keine Bewertungen vorhanden.</div>`}</div>`)}
+    </div>`;
+    const form = $('[data-review-card-form]');
+    form.addEventListener("submit", saveReviewCardItem);
+    form.upload?.addEventListener("change", () => previewAdminFile(form.upload, form.querySelector(".gallery-form-preview")));
+    $('[data-review-new]')?.addEventListener("click", () => {
+      editing.reviews = null;
+      renderReviewManager();
+      setStatus("Neue Bewertung bereit.");
+    });
+    $$("[data-review-edit]").forEach((button) => button.addEventListener("click", () => editReviewCardItem(button.dataset.reviewEdit)));
+    $$("[data-review-delete]").forEach((button) => button.addEventListener("click", () => deleteReviewCardItem(button.dataset.reviewDelete, button)));
+    $$("[data-review-move]").forEach((button) => button.addEventListener("click", () => moveManagedItem("reviews", button.dataset.reviewMove, Number(button.dataset.direction), button, "Bewertungen")));
+  }
+
+  function reviewAdminCard(item) {
+    return `<article class="gallery-admin-card">
+      <div class="gallery-admin-image">${galleryPreview({ url: item.photo, title: item.name })}</div>
+      <div class="gallery-admin-copy"><div><strong>${escape(item.name || "Bewertung")}</strong><p>${"★".repeat(Number(item.rating || 5))}</p></div><span class="status-pill ${item.active === false ? "is-muted" : ""}">${item.active === false ? "Inaktiv" : "Aktiv"}</span></div>
+      <p>${escape(item.text || "")}</p>
+      <div class="gallery-admin-actions">
+        <button class="mini-btn" type="button" data-review-edit="${escape(item.id)}">Bearbeiten</button>
+        <button class="mini-btn danger" type="button" data-review-delete="${escape(item.id)}">Löschen</button>
+        <button class="mini-btn" type="button" data-review-move="${escape(item.id)}" data-direction="-1">Nach oben</button>
+        <button class="mini-btn" type="button" data-review-move="${escape(item.id)}" data-direction="1">Nach unten</button>
+      </div>
+    </article>`;
+  }
+
+  function editReviewCardItem(id) {
+    const item = (content.reviews || []).find((entry) => String(entry.id) === String(id));
+    if (!item) return setStatus("Bewertung nicht gefunden.", "error");
+    editing.reviews = item;
+    renderReviewManager();
+    setStatus("Bewertung geladen.", "success");
+  }
+
+  async function saveReviewCardItem(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-review-save]"), "Speichert...", async () => action("Bewertung", async () => {
+      const item = editing.reviews || { id: uid("review"), sortOrder: (content.reviews || []).length + 1 };
+      item.name = form.name.value.trim();
+      item.text = form.text.value.trim();
+      item.rating = Number(form.rating.value || 5);
+      item.active = form.active.checked;
+      await uploadInto(form.upload, "reviews", (url) => item.photo = url);
+      content.reviews = content.reviews || [];
+      if (!editing.reviews) content.reviews.push(item);
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.reviews = content.translations.tr.reviews || {};
+      content.translations.tr.reviews[item.id] = { ...(content.translations.tr.reviews[item.id] || {}), text: form.trText.value.trim() };
+      editing.reviews = null;
+      await saveSite("Bewertung");
+      renderReviewManager();
+    }));
+  }
+
+  async function deleteReviewCardItem(id, button) {
+    if (!window.confirm("Diese Bewertung wirklich löschen?")) return;
+    await withButtonLoading(button, "Löscht...", async () => action("Bewertung", async () => {
+      content.reviews = (content.reviews || []).filter((item) => String(item.id) !== String(id));
+      await saveSite("Bewertung");
+      renderReviewManager();
+    }));
+  }
+
+  async function moveManagedItem(key, id, direction, button, label) {
+    await withButtonLoading(button, "Speichert...", async () => action(label, async () => {
+      const items = sorted(content[key] || []);
+      const index = items.findIndex((item) => String(item.id) === String(id));
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= items.length) return;
+      [items[index], items[target]] = [items[target], items[index]];
+      items.forEach((item, order) => item.sortOrder = order + 1);
+      content[key] = items;
+      await saveSite(label);
+      if (key === "products") renderProductManager();
+      if (key === "reviews") renderReviewManager();
+    }));
+  }
+
   function galleryPreview(item = {}) {
-    const image = item.url || item.image_url || "";
+    const image = item.url || item.image_url || item.image || item.images?.[0] || "";
     return image
       ? `<img src="${escape(assetUrl(image))}" alt="${escape(item.alt || item.title || "Galerie Bild")}" />`
       : `<span>Kein Bild ausgewählt</span>`;
+  }
+
+  function previewAdminFile(input, preview) {
+    const fileItem = input?.files?.[0];
+    if (!preview || !fileItem) return;
+    preview.innerHTML = `<img src="${escape(URL.createObjectURL(fileItem))}" alt="Ausgewähltes Bild" />`;
   }
 
   function renderGalleryEditor() {
@@ -606,6 +1197,7 @@
         if (!existing) content.gallery.push(item);
         editing.gallery = null;
         await saveSite("Galerie");
+        renderGalleryEditor();
       });
     });
   }
@@ -627,6 +1219,7 @@
         content.gallery = (content.gallery || []).filter((entry) => String(entry.id) !== String(id));
         if (editing.gallery && String(editing.gallery.id) === String(id)) editing.gallery = null;
         await saveSite("Galerie");
+        renderGalleryEditor();
         setStatus(cleanupWarnings.length ? `Galerie-Bild wurde gelöscht. Hinweis: ${cleanupWarnings.join(" ")}` : "Galerie-Bild wurde gelöscht.", cleanupWarnings.length ? "warning" : "success");
       });
     });
@@ -643,6 +1236,7 @@
         items.forEach((item, order) => item.sortOrder = order + 1);
         content.gallery = items;
         await saveSite("Galerie");
+        renderGalleryEditor();
       });
     });
   }
@@ -859,6 +1453,8 @@
         <span class="status-pill">${escape(order.status || "new")}</span>
       </header>
       <form data-order-form="${escape(order.id)}" class="order-admin-form">
+        ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(), wish.card_category)}
+        <label>Anlass<input name="occasion" value="${escape(wish.occasion || "")}" /></label>
         ${adminSelect("song_language", "Sprache des Liedes", songLanguageOptions, wish.song_language)}
         ${adminSelect("voice", "Stimme", voiceOptions, wish.voice)}
         ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, wish.music_style)}
@@ -870,6 +1466,11 @@
     </article>`;
   }
 
+  function categoryOrderOptions() {
+    const items = sorted(content.categories || []).filter((item) => item.active !== false);
+    return items.map((item) => item.id || item.title).filter(Boolean);
+  }
+
   function adminSelect(name, label, options, selected) {
     return `<label>${escape(label)}<select name="${escape(name)}" required>${options.map((option) => `<option value="${escape(option)}" ${option === selected ? "selected" : ""}>${escape(option)}</option>`).join("")}</select></label>`;
   }
@@ -879,6 +1480,8 @@
     try {
       const parsed = JSON.parse(value);
       return {
+        card_category: parsed.card_category || parsed.category || "",
+        occasion: parsed.occasion || "",
         song_language: parsed.song_language || parsed.language || "",
         voice: parsed.voice || "",
         music_style: parsed.music_style || parsed.style || ""
@@ -886,6 +1489,8 @@
     } catch {
       const text = String(value);
       return {
+        card_category: extractMusicWishLine(text, ["Kartentyp", "Kart türü"]),
+        occasion: extractMusicWishLine(text, ["Anlass", "Sebep"]),
         song_language: extractMusicWishLine(text, ["Sprache des Liedes", "Şarkının dili"]),
         voice: extractMusicWishLine(text, ["Stimme", "Ses"]),
         music_style: extractMusicWishLine(text, ["Musikrichtung", "Müzik tarzı"])
@@ -903,10 +1508,14 @@
 
   function serializeMusicWish(form) {
     return JSON.stringify({
+      card_category: form.elements.card_category.value,
+      occasion: form.elements.occasion.value,
       song_language: form.elements.song_language.value,
       voice: form.elements.voice.value,
       music_style: form.elements.music_style.value,
       labels: {
+        card_category: "Kartentyp",
+        occasion: "Anlass",
         song_language: "Sprache des Liedes",
         voice: "Stimme",
         music_style: "Musikrichtung"

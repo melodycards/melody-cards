@@ -21,9 +21,39 @@
       footer: { ...base.footer, ...(remote.footer || {}) },
       legalPages: { ...base.legalPages, ...(remote.legalPages || {}) },
       orderForm: { ...base.orderForm, ...(remote.orderForm || {}) },
-      translations: { ...base.translations, ...(remote.translations || {}) },
+      translations: mergeTranslations(base.translations || {}, remote.translations || {}),
       languages: remote.languages || base.languages || []
     };
+  }
+
+  function mergeTranslations(base = {}, remote = {}) {
+    const result = { ...base, ...remote };
+    Object.keys(result).forEach((language) => {
+      const baseLanguage = base[language] || {};
+      const remoteLanguage = remote[language] || {};
+      result[language] = {
+        ...baseLanguage,
+        ...remoteLanguage,
+        seo: { ...(baseLanguage.seo || {}), ...(remoteLanguage.seo || {}) },
+        brand: { ...(baseLanguage.brand || {}), ...(remoteLanguage.brand || {}) },
+        sections: { ...(baseLanguage.sections || {}), ...(remoteLanguage.sections || {}) },
+        products: { ...(baseLanguage.products || {}), ...(remoteLanguage.products || {}) },
+        categories: { ...(baseLanguage.categories || {}), ...(remoteLanguage.categories || {}) },
+        gallery: { ...(baseLanguage.gallery || {}), ...(remoteLanguage.gallery || {}) },
+        reviews: { ...(baseLanguage.reviews || {}), ...(remoteLanguage.reviews || {}) },
+        faqs: { ...(baseLanguage.faqs || {}), ...(remoteLanguage.faqs || {}) },
+        contact: { ...(baseLanguage.contact || {}), ...(remoteLanguage.contact || {}) },
+        legalPages: { ...(baseLanguage.legalPages || {}), ...(remoteLanguage.legalPages || {}) },
+        orderForm: { ...(baseLanguage.orderForm || {}), ...(remoteLanguage.orderForm || {}) },
+        footer: {
+          ...(baseLanguage.footer || {}),
+          ...(remoteLanguage.footer || {}),
+          links: remoteLanguage.footer?.links || baseLanguage.footer?.links || []
+        },
+        navigation: remoteLanguage.navigation || baseLanguage.navigation || []
+      };
+    });
+    return result;
   }
 
   function sanitizePublicContent(content) {
@@ -112,16 +142,25 @@
 
   function renderBrand() {
     const brand = { ...content.brand, ...(translation.brand || {}) };
+    $("[data-header]")?.setAttribute("data-edit-kind", "navigation");
+    $("[data-header]")?.setAttribute("data-edit-id", "navigation");
+    $("[data-nav-toggle]")?.setAttribute("data-edit-kind", "navigation");
+    $("[data-nav-toggle]")?.setAttribute("data-edit-id", "navigation");
     const logo = brand.logoImage
       ? `<img src="${escape(brand.logoImage)}" alt="${escape(brand.name)}" />`
       : `<span>${escape(content.brand.logoText || "MC")}</span>`;
-    $("[data-brand]").innerHTML = `${logo}<strong>${escape(brand.name || "Melody Cards")}</strong>`;
+    const brandNode = $("[data-brand]");
+    brandNode.setAttribute("data-edit-kind", "brand");
+    brandNode.setAttribute("data-edit-id", "brand");
+    brandNode.innerHTML = `${logo}<strong>${escape(brand.name || "Melody Cards")}</strong>`;
     $("[data-loader] span").textContent = brand.name || "Melody Cards";
   }
 
   function renderNavigation() {
     const nav = $("[data-nav]");
-    nav.innerHTML = sorted(translation.navigation || content.navigation).map((item) => `<a class="${item.style === "primary" ? "nav-primary" : ""}" href="${escape(item.href)}">${escape(item.label)}</a>`).join("");
+    nav.setAttribute("data-edit-kind", "navigation");
+    nav.setAttribute("data-edit-id", "navigation");
+    nav.innerHTML = sorted(translation.navigation || content.navigation).map((item, index) => `<a class="${item.style === "primary" ? "nav-primary" : ""}" href="${escape(item.href)}" data-edit-kind="nav-item" data-edit-id="${index}">${escape(item.label)}</a>`).join("");
   }
 
   function renderLanguageSwitcher() {
@@ -167,6 +206,10 @@
     return { ...item, ...(translation[bucket]?.[item.id] || {}) };
   }
 
+  function localizedCategory(category) {
+    return { ...category, ...(translation.categories?.[category.id] || {}) };
+  }
+
   function orderCopy() {
     return { ...(content.orderForm || {}), ...(translation.orderForm || {}) };
   }
@@ -202,10 +245,20 @@
 
   function products(section) {
     const copy = orderCopy();
+    const categories = sorted(content.categories || []).map(localizedCategory);
     return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       ${sectionHead(section)}
+      <div class="category-grid">${categories.map(categoryCard).join("")}</div>
       <div class="product-grid">${sorted(content.products).map((product) => productCard(localizedItem("products", product))).join("") || emptyState(copy.emptyProducts || "Noch keine Produkte veröffentlicht.")}</div>
     </section>`;
+  }
+
+  function categoryCard(category) {
+    return `<article class="category-card lux-card" data-edit-kind="category" data-edit-id="${escape(category.id)}">
+      <div class="category-image" ${imageStyle(category.image)}></div>
+      <div><h3>${escape(category.title)}</h3><p>${escape(category.description || "")}</p></div>
+      <a class="btn btn-secondary" href="#order" data-order-category="${escape(category.id)}">${escape(orderCopy().requestButton || "Anfragen")}</a>
+    </article>`;
   }
 
   function productCard(product) {
@@ -236,7 +289,7 @@
   function reviews(section) {
     const items = sorted(content.reviews).map((item) => localizedItem("reviews", item));
     if (!items.length) return "";
-    return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">${sectionHead(section)}<div class="review-grid">${items.map((review) => `<article class="lux-card review"><div class="stars">${"★".repeat(Number(review.rating || 5))}</div><p>${escape(review.text)}</p><strong>${escape(review.name)}</strong></article>`).join("")}</div></section>`;
+    return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">${sectionHead(section)}<div class="review-grid">${items.map((review) => `<article class="lux-card review" data-edit-kind="review" data-edit-id="${escape(review.id)}"><div class="stars">${"★".repeat(Number(review.rating || 5))}</div><p>${escape(review.text)}</p><strong>${escape(review.name)}</strong></article>`).join("")}</div></section>`;
   }
 
   function faq(section) {
@@ -252,20 +305,23 @@
 
   function order(section) {
     const copy = orderCopy();
-    const productOptions = sorted(content.products).map((product) => localizedItem("products", product)).map((product) => `<option>${escape(product.title)}</option>`).join("");
     const optionList = (options = []) => options.map((option) => `<option value="${escape(option)}">${escape(option)}</option>`).join("");
+    const categories = sorted(content.categories || []).map(localizedCategory);
+    const categoryOptions = categories.map((category) => `<option value="${escape(category.id)}" data-description="${escape(category.description || "")}">${escape(category.title)}</option>`).join("");
+    const firstCategory = categories[0] || {};
     return `<section class="section order-section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       ${sectionHead(section)}
       <form class="order-form lux-card" id="premium-order-form">
-        <label>${escape(copy.productLabel)}<select name="product">${productOptions || `<option>${escape(copy.productFallback || "Geburtstagskarte")}</option>`}</select></label>
+        <label class="span-all">${escape(copy.categoryLabel || "Kartentyp")}<select name="card_category" required>${categoryOptions}</select><small class="order-category-help" data-category-help>${escape(firstCategory.description || copy.categoryHelp || "")}</small></label>
         <label>${escape(copy.recipientLabel)}<input name="recipient" required placeholder="${escape(copy.recipientPlaceholder || "")}" /></label>
+        <label>${escape(copy.occasionLabel || "Anlass")}<input name="occasion" required placeholder="${escape(copy.occasionPlaceholder || "")}" /></label>
         <label>${escape(copy.nameLabel)}<input name="name" required /></label>
         <label>${escape(copy.emailLabel)}<input name="email" type="email" required /></label>
         <label>${escape(copy.phoneLabel)}<input name="phone" type="tel" /></label>
         <label>${escape(copy.songLanguageLabel)}<select name="song_language" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.songLanguageOptions)}</select></label>
         <label>${escape(copy.voiceLabel)}<select name="voice" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.voiceOptions)}</select></label>
         <label>${escape(copy.musicStyleLabel)}<select name="music_style" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.musicStyleOptions)}</select></label>
-        <label class="span-all">${escape(copy.messageLabel)}<textarea name="message" rows="5" placeholder="${escape(copy.messagePlaceholder || "")}"></textarea></label>
+        <label class="span-all">${escape(copy.storyLabel || copy.messageLabel)}<textarea name="message" rows="5" required placeholder="${escape(copy.storyPlaceholder || copy.messagePlaceholder || "")}"></textarea></label>
         <button class="btn btn-primary" type="submit">${escape(copy.submitLabel)}</button>
         <p class="form-status" id="premium-order-status" role="status" aria-live="polite"></p>
       </form>
@@ -303,7 +359,9 @@
       ["TikTok", content.contact.tiktok],
       ["YouTube", content.contact.youtube]
     ].filter(([, href]) => href);
-    $("[data-footer]").innerHTML = `<div><strong>${escape(brand.name)}</strong><p>${escape(brand.footerText || "")}</p></div><nav>${(footer.links || []).map((link) => `<a href="${escape(link.href)}">${escape(link.label)}</a>`).join("")}</nav><nav>${socials.map(([label, href]) => `<a href="${escape(href)}" target="_blank" rel="noreferrer">${escape(label)}</a>`).join("")}</nav>`;
+    $("[data-footer]").setAttribute("data-edit-kind", "footer");
+    $("[data-footer]").setAttribute("data-edit-id", "footer");
+    $("[data-footer]").innerHTML = `<div><strong>${escape(brand.name)}</strong><p>${escape(brand.footerText || "")}</p></div><nav>${(footer.links || []).map((link, index) => `<a href="${escape(link.href)}" data-edit-kind="footer-link" data-edit-id="${index}">${escape(link.label)}</a>`).join("")}</nav><nav>${socials.map(([label, href]) => `<a href="${escape(href)}" target="_blank" rel="noreferrer">${escape(label)}</a>`).join("")}</nav>`;
   }
 
   function bindInteractions() {
@@ -320,12 +378,27 @@
       if (event.target.matches("[data-lightbox-close]")) closeLightbox();
       const product = event.target.closest("[data-order-product]")?.dataset.orderProduct;
       if (product) setTimeout(() => {
-        const select = $("#premium-order-form select[name='product']");
-        if (select) select.value = product;
+        const input = $("#premium-order-form input[name='occasion']");
+        if (input) input.value = product;
+      }, 20);
+      const category = event.target.closest("[data-order-category]")?.dataset.orderCategory;
+      if (category) setTimeout(() => {
+        const select = $("#premium-order-form select[name='card_category']");
+        if (select) {
+          select.value = category;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
       }, 20);
     });
+    $("#premium-order-form select[name='card_category']")?.addEventListener("change", updateOrderCategoryHelp);
     $("#premium-order-form")?.addEventListener("submit", submitOrder);
     reveal();
+  }
+
+  function updateOrderCategoryHelp(event) {
+    const help = $("[data-category-help]");
+    const selected = event.currentTarget.selectedOptions?.[0];
+    if (help) help.textContent = selected?.dataset.description || "";
   }
 
   function openLightbox(opener) {
@@ -358,8 +431,10 @@
         email: values.email,
         phone: values.phone || "",
         address: "",
-        card_text: `${copy.cardTextProduct || "Geburtstagskarte"}: ${values.product}\n${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient}`,
+        card_text: `${copy.cardTextCategory || "Kartentyp"}: ${values.card_category}\n${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient}\n${copy.cardTextOccasion || "Anlass"}: ${values.occasion}`,
         music_wish: JSON.stringify({
+          card_category: values.card_category,
+          occasion: values.occasion,
           song_language: values.song_language,
           voice: values.voice,
           music_style: values.music_style,
