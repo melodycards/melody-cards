@@ -360,8 +360,10 @@
       ${input("trTitle", "Überschrift TR", trSection.title || "", "textarea")}
       ${input("trText", "Text TR", trSection.subtitle || trSection.text || "", "textarea")}
       ${section.primaryButton ? input("primaryLabel", "Buttontext DE", section.primaryButton.label || "") : ""}
+      ${section.primaryButton ? input("trPrimaryLabel", "Buttontext TR", trSection.primaryButton?.label || "") : ""}
       ${section.primaryButton ? input("primaryHref", "Buttonlink", section.primaryButton.href || "") : ""}
       ${section.secondaryButton ? input("secondaryLabel", "Zweiter Button DE", section.secondaryButton.label || "") : ""}
+      ${section.secondaryButton ? input("trSecondaryLabel", "Zweiter Button TR", trSection.secondaryButton?.label || "") : ""}
       ${section.secondaryButton ? input("secondaryHref", "Zweiter Button Link", section.secondaryButton.href || "") : ""}
       ${section.id === "contact" ? input("contactEmail", "Kontakt E-Mail", content.contact.email || "") + input("contactPhone", "Telefon", content.contact.phone || "") + input("contactAddress", "Adresse", content.contact.address || "", "textarea") : ""}
       ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.video || section.image, mediaType: section.video ? "video" : "" })}</div>${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", section.video || section.image || "")}${file("upload", "Medium auswählen")}${checkbox("controls", "Videosteuerung anzeigen", Boolean(section.controls))}<button class="mini-btn danger" type="button" data-clear-section-image>Medium löschen</button>` : ""}
@@ -386,36 +388,38 @@
   async function saveVisualSection(event, section, trSection) {
     event.preventDefault();
     const form = event.currentTarget;
+    const valueOf = (name) => form.elements[name]?.value || "";
+    const checked = (name) => Boolean(form.elements[name]?.checked);
     await withButtonLoading(form.querySelector("[data-visual-save]"), "Speichert...", async () => action("Visueller Editor", async () => {
-      section.active = form.active.checked;
-      section.eyebrow = form.eyebrow.value;
-      section.title = form.title.value;
-      if ("subtitle" in section) section.subtitle = form.subtitle.value;
-      else section.text = form.subtitle.value;
-      section.align = form.align.value;
+      section.active = checked("active");
+      section.eyebrow = valueOf("eyebrow");
+      section.title = valueOf("title");
+      if ("subtitle" in section) section.subtitle = valueOf("subtitle");
+      else section.text = valueOf("subtitle");
+      section.align = valueOf("align");
       if (section.primaryButton) {
-        section.primaryButton.label = form.primaryLabel.value;
-        section.primaryButton.href = form.primaryHref.value;
+        section.primaryButton.label = valueOf("primaryLabel");
+        section.primaryButton.href = valueOf("primaryHref");
       }
-      if (section.secondaryButton && form.secondaryLabel) {
-        section.secondaryButton.label = form.secondaryLabel.value;
-        section.secondaryButton.href = form.secondaryHref.value;
+      if (section.secondaryButton && form.elements.secondaryLabel) {
+        section.secondaryButton.label = valueOf("secondaryLabel");
+        section.secondaryButton.href = valueOf("secondaryHref");
       }
       if (section.id === "contact") {
-        content.contact.email = form.contactEmail.value;
-        content.contact.phone = form.contactPhone.value;
-        content.contact.address = form.contactAddress.value;
+        content.contact.email = valueOf("contactEmail");
+        content.contact.phone = valueOf("contactPhone");
+        content.contact.address = valueOf("contactAddress");
       }
       section.style = {
         ...(section.style || {}),
-        textColor: form.textColor.value,
-        titleSize: Number(form.titleSize.value || 0) || "",
-        mobileTitleSize: Number(form.mobileTitleSize.value || 0) || "",
-        overlayOpacity: form.overlayOpacity.value === "" ? "" : Number(form.overlayOpacity.value),
-        paddingTop: Number(form.paddingTop.value || 0) || "",
-        paddingBottom: Number(form.paddingBottom.value || 0) || ""
+        textColor: valueOf("textColor"),
+        titleSize: Number(valueOf("titleSize") || 0) || "",
+        mobileTitleSize: Number(valueOf("mobileTitleSize") || 0) || "",
+        overlayOpacity: valueOf("overlayOpacity") === "" ? "" : Number(valueOf("overlayOpacity")),
+        paddingTop: Number(valueOf("paddingTop") || 0) || "",
+        paddingBottom: Number(valueOf("paddingBottom") || 0) || ""
       };
-      section.controls = form.controls?.checked || false;
+      section.controls = checked("controls");
       applyMediaSelection(form.existingMedia, (url, type) => {
         if (isVideoMedia(url, type)) section.video = url;
         else {
@@ -433,12 +437,25 @@
       content.translations = content.translations || {};
       content.translations.tr = content.translations.tr || {};
       content.translations.tr.sections = content.translations.tr.sections || {};
-      content.translations.tr.sections[section.id] = {
+      const translatedSection = {
         ...trSection,
-        eyebrow: form.trEyebrow.value,
-        title: form.trTitle.value,
-        [section.subtitle !== undefined ? "subtitle" : "text"]: form.trText.value
+        eyebrow: valueOf("trEyebrow"),
+        title: valueOf("trTitle"),
+        [section.subtitle !== undefined ? "subtitle" : "text"]: valueOf("trText")
       };
+      if (section.primaryButton && form.elements.trPrimaryLabel) {
+        translatedSection.primaryButton = {
+          ...(trSection.primaryButton || {}),
+          label: valueOf("trPrimaryLabel")
+        };
+      }
+      if (section.secondaryButton && form.elements.trSecondaryLabel) {
+        translatedSection.secondaryButton = {
+          ...(trSection.secondaryButton || {}),
+          label: valueOf("trSecondaryLabel")
+        };
+      }
+      content.translations.tr.sections[section.id] = translatedSection;
       await saveSite("Visueller Editor");
       reloadVisualPreview();
     }));
