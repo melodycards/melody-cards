@@ -24,9 +24,17 @@ $$;
 create table if not exists public.premium_orders (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  customer_name text,
   email text not null,
   phone text,
   address text,
+  card_category text,
+  recipient_name text,
+  occasion text,
+  song_language text,
+  voice text,
+  music_style text,
+  story text,
   card_text text,
   music_wish text,
   message text,
@@ -34,9 +42,53 @@ create table if not exists public.premium_orders (
   image_url text,
   video_url text,
   audio_url text,
-  status text not null default 'new',
+  status text not null default 'neu',
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  customer_name text,
+  email text not null,
+  phone text,
+  address text,
+  card_category text,
+  recipient_name text,
+  occasion text,
+  song_language text,
+  voice text,
+  music_style text,
+  story text,
+  card_text text,
+  music_wish text,
+  message text,
+  file_url text,
+  image_url text,
+  video_url text,
+  audio_url text,
+  status text not null default 'neu',
+  created_at timestamptz not null default now()
+);
+
+alter table public.premium_orders add column if not exists customer_name text;
+alter table public.premium_orders add column if not exists card_category text;
+alter table public.premium_orders add column if not exists recipient_name text;
+alter table public.premium_orders add column if not exists occasion text;
+alter table public.premium_orders add column if not exists song_language text;
+alter table public.premium_orders add column if not exists voice text;
+alter table public.premium_orders add column if not exists music_style text;
+alter table public.premium_orders add column if not exists story text;
+alter table public.premium_orders alter column status set default 'neu';
+alter table public.orders add column if not exists customer_name text;
+alter table public.orders add column if not exists card_category text;
+alter table public.orders add column if not exists recipient_name text;
+alter table public.orders add column if not exists occasion text;
+alter table public.orders add column if not exists song_language text;
+alter table public.orders add column if not exists voice text;
+alter table public.orders add column if not exists music_style text;
+alter table public.orders add column if not exists story text;
+alter table public.orders alter column status set default 'neu';
 
 create index if not exists premium_orders_created_at_idx
 on public.premium_orders (created_at desc);
@@ -44,7 +96,14 @@ on public.premium_orders (created_at desc);
 create index if not exists premium_orders_status_idx
 on public.premium_orders (status);
 
+create index if not exists orders_created_at_idx
+on public.orders (created_at desc);
+
+create index if not exists orders_status_idx
+on public.orders (status);
+
 alter table public.premium_orders enable row level security;
+alter table public.orders enable row level security;
 
 drop policy if exists "Public can create premium orders" on public.premium_orders;
 create policy "Public can create premium orders"
@@ -66,6 +125,28 @@ with check (public.is_admin());
 drop policy if exists "Admins can delete premium orders" on public.premium_orders;
 create policy "Admins can delete premium orders"
 on public.premium_orders for delete
+using (public.is_admin());
+
+drop policy if exists "Public can create orders" on public.orders;
+create policy "Public can create orders"
+on public.orders for insert
+to anon, authenticated
+with check (true);
+
+drop policy if exists "Admins can read orders" on public.orders;
+create policy "Admins can read orders"
+on public.orders for select
+using (public.is_admin());
+
+drop policy if exists "Admins can update orders" on public.orders;
+create policy "Admins can update orders"
+on public.orders for update
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Admins can delete orders" on public.orders;
+create policy "Admins can delete orders"
+on public.orders for delete
 using (public.is_admin());
 
 insert into storage.buckets (id, name, public)

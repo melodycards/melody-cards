@@ -1856,7 +1856,7 @@
     await action("Bestellungen", async () => {
       await refreshClient();
       if (!client) throw new Error("Supabase nicht verbunden.");
-      const { data, error } = await client.from("premium_orders").select("*").order("created_at", { ascending: false }).limit(50);
+      const { data, error } = await loadOrderRows();
       if (error) throw error;
       $('[data-orders-list]').innerHTML = (data || []).map(orderAdminCard).join("") || "<p>Keine Bestellungen.</p>";
       $$("[data-order-form]").forEach((form) => form.addEventListener("submit", saveOrderEdits));
@@ -1864,33 +1864,66 @@
     });
   }
 
+  async function loadOrderRows() {
+    const tables = ["premium_orders", "orders"];
+    const rows = [];
+    const errors = [];
+    for (const table of tables) {
+      const { data, error } = await client.from(table).select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) {
+        if (isMissingOrderTable(error)) {
+          errors.push(`${table}: ${error.message}`);
+          continue;
+        }
+        return { data: rows, error };
+      }
+      rows.push(...(data || []).map((row) => ({ ...row, _order_table: table })));
+    }
+    if (!rows.length && errors.length === tables.length) {
+      return { data: [], error: new Error("Keine Bestelltabelle gefunden. Bitte premium_orders oder orders in Supabase anlegen.") };
+    }
+    rows.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    return { data: rows.slice(0, 50), error: null };
+  }
+
   function orderAdminCard(order) {
     const wish = parseMusicWish(order.music_wish);
+    const categoryValue = order.card_category || wish.card_category || "";
+    const recipientValue = order.recipient_name || wish.recipient_name || "";
+    const occasionValue = order.occasion || wish.occasion || "";
+    const languageValue = order.song_language || wish.song_language || "";
+    const voiceValue = order.voice || wish.voice || "";
+    const styleValue = order.music_style || wish.music_style || "";
+    const storyValue = order.story || wish.story || order.message || "";
     return `<article class="order-admin-card">
       <header>
         <div>
           <strong>${escape(order.name || "Ohne Name")}</strong>
           <p>${escape(order.email || "")}${order.phone ? ` · ${escape(order.phone)}` : ""}</p>
         </div>
-        <span class="status-pill">${escape(order.status || "new")}</span>
+        <span class="status-pill">${escape(order.status || "neu")}</span>
       </header>
-      <form data-order-form="${escape(order.id)}" class="order-admin-form">
-        ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(), wish.card_category)}
-        <label>Anlass<input name="occasion" value="${escape(wish.occasion || "")}" /></label>
-        ${adminSelect("song_language", "Sprache des Liedes", songLanguageOptions, wish.song_language)}
-        ${adminSelect("voice", "Stimme", voiceOptions, wish.voice)}
-        ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, wish.music_style)}
-        ${adminSelect("status", "Status", ["new", "in_progress", "done", "archived"], order.status || "new")}
+      <form data-order-form="${escape(order.id)}" data-order-table="${escape(order._order_table || "premium_orders")}" class="order-admin-form">
+        ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(categoryValue), categoryValue)}
+        <label>Name der Person<input name="recipient_name" value="${escape(recipientValue)}" /></label>
+        <label>Anlass<input name="occasion" value="${escape(occasionValue)}" /></label>
+        ${adminSelect("song_language", "Sprache des Liedes", songLanguageOptions, languageValue)}
+        ${adminSelect("voice", "Stimme", voiceOptions, voiceValue)}
+        ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, styleValue)}
+        ${adminSelect("status", "Status", ["neu", "in_bearbeitung", "fertig", "archiviert", "new", "in_progress", "done", "archived"], order.status || "neu")}
         <label class="span-all">Kartentext<textarea name="card_text" rows="3">${escape(order.card_text || "")}</textarea></label>
+        <label class="span-all">Persönliche Infos / Geschichte<textarea name="story" rows="3">${escape(storyValue)}</textarea></label>
         <label class="span-all">Nachricht<textarea name="message" rows="3">${escape(order.message || "")}</textarea></label>
         <button class="btn btn-primary span-all" type="submit" data-order-save>Bestellung speichern</button>
       </form>
     </article>`;
   }
 
-  function categoryOrderOptions() {
+  function categoryOrderOptions(current = "") {
     const items = sorted(content.categories || []).filter((item) => item.active !== false);
-    return items.map((item) => item.id || item.title).filter(Boolean);
+    const options = items.map((item) => item.title || item.id).filter(Boolean);
+    if (current && !options.includes(current)) options.unshift(current);
+    return options;
   }
 
   function adminSelect(name, label, options, selected) {
@@ -1903,19 +1936,23 @@
       const parsed = JSON.parse(value);
       return {
         card_category: parsed.card_category || parsed.category || "",
+        recipient_name: parsed.recipient_name || parsed.recipient || "",
         occasion: parsed.occasion || "",
         song_language: parsed.song_language || parsed.language || "",
         voice: parsed.voice || "",
-        music_style: parsed.music_style || parsed.style || ""
+        music_style: parsed.music_style || parsed.style || "",
+        story: parsed.story || parsed.message || ""
       };
     } catch {
       const text = String(value);
       return {
         card_category: extractMusicWishLine(text, ["Kartentyp", "Kart türü"]),
+        recipient_name: extractMusicWishLine(text, ["Beschenkte Person", "Alıcı"]),
         occasion: extractMusicWishLine(text, ["Anlass", "Sebep"]),
         song_language: extractMusicWishLine(text, ["Sprache des Liedes", "Şarkının dili"]),
         voice: extractMusicWishLine(text, ["Stimme", "Ses"]),
-        music_style: extractMusicWishLine(text, ["Musikrichtung", "Müzik tarzı"])
+        music_style: extractMusicWishLine(text, ["Musikrichtung", "Müzik tarzı"]),
+        story: ""
       };
     }
   }
@@ -1931,12 +1968,15 @@
   function serializeMusicWish(form) {
     return JSON.stringify({
       card_category: form.elements.card_category.value,
+      recipient_name: form.elements.recipient_name.value,
       occasion: form.elements.occasion.value,
       song_language: form.elements.song_language.value,
       voice: form.elements.voice.value,
       music_style: form.elements.music_style.value,
+      story: form.elements.story.value,
       labels: {
         card_category: "Kartentyp",
+        recipient_name: "Name der Person",
         occasion: "Anlass",
         song_language: "Sprache des Liedes",
         voice: "Stimme",
@@ -1950,20 +1990,50 @@
     const form = event.currentTarget;
     const button = form.querySelector("[data-order-save]");
     const id = form.dataset.orderForm;
+    const table = form.dataset.orderTable || "premium_orders";
     await withButtonLoading(button, "Speichert...", async () => {
       await action("Bestellung", async () => {
         await refreshClient();
         if (!client) throw new Error("Supabase nicht verbunden.");
-        const { error } = await client.from("premium_orders").update({
+        const payload = {
+          card_category: form.elements.card_category.value,
+          recipient_name: form.elements.recipient_name.value,
+          occasion: form.elements.occasion.value,
+          song_language: form.elements.song_language.value,
+          voice: form.elements.voice.value,
+          music_style: form.elements.music_style.value,
+          story: form.elements.story.value,
           music_wish: serializeMusicWish(form),
           status: form.elements.status.value,
           card_text: form.elements.card_text.value,
           message: form.elements.message.value
-        }).eq("id", id);
+        };
+        let { error } = await client.from(table).update(payload).eq("id", id);
+        if (error && isMissingOrderColumn(error)) {
+          const fallback = {
+            music_wish: payload.music_wish,
+            status: payload.status,
+            card_text: payload.card_text,
+            message: payload.message
+          };
+          const retry = await client.from(table).update(fallback).eq("id", id);
+          error = retry.error;
+        }
         if (error) throw error;
         setStatus("Bestellung wurde gespeichert.", "success");
       });
     });
+  }
+
+  function isMissingOrderColumn(error) {
+    const message = error?.message || "";
+    return error?.code === "PGRST204" || message.toLowerCase().includes("could not find");
+  }
+
+  function isMissingOrderTable(error) {
+    const message = (error?.message || "").toLowerCase();
+    const details = (error?.details || "").toLowerCase();
+    return error?.code === "PGRST205" || error?.code === "42P01" || message.includes("could not find the table") || (details.includes("relation") && details.includes("does not exist"));
   }
 
   function renderDatabase() {
@@ -1978,7 +2048,8 @@
       if (!client) throw new Error("Supabase nicht verbunden.");
       const checks = [
         ["site_settings", "id,content,design,updated_at"],
-        ["premium_orders", "id,name,email,phone,address,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"]
+        ["premium_orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"],
+        ["orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"]
       ];
       const results = [];
       for (const [table, select] of checks) {

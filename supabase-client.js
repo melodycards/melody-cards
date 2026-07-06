@@ -122,16 +122,51 @@
     return data.publicUrl;
   }
 
-  function readableOrderError(error) {
+  function readableOrderError(error, table = "premium_orders") {
     const message = error?.message || "Unbekannter Supabase-Fehler.";
     const code = error?.code || "";
-    if (code === "PGRST205" || code === "42P01" || message.toLowerCase().includes("premium_orders")) {
-      return "Die Supabase-Tabelle premium_orders fehlt. Bitte fuehre die SQL-Datei premium_orders.sql oder supabase.sql im Supabase SQL Editor aus.";
+    if (isMissingTableError(error)) {
+      return `Die Supabase-Tabelle ${table} fehlt oder ist nicht im API-Schema erreichbar. Bitte fuehre die aktuelle supabase.sql im Supabase SQL Editor aus.`;
+    }
+    if (code === "PGRST204" || message.toLowerCase().includes("could not find")) {
+      return `In ${table} fehlt eine Spalte: ${message}. Bitte fuehre die aktuelle supabase.sql aus. Die Bestellung wird automatisch mit den kompatiblen Basisfeldern erneut versucht.`;
     }
     if (code === "42501" || message.toLowerCase().includes("row-level security") || message.toLowerCase().includes("permission")) {
-      return "Supabase verweigert das Speichern. Bitte pruefe die RLS-Policy fuer premium_orders und die Storage-Policy fuer orders-Uploads.";
+      return `Supabase verweigert das Speichern in ${table}. Bitte pruefe die RLS-Policy fuer Bestellungen und die Storage-Policy fuer orders-Uploads.`;
     }
     return `Supabase-Fehler: ${message}`;
+  }
+
+  function isMissingTableError(error) {
+    const message = (error?.message || "").toLowerCase();
+    const details = (error?.details || "").toLowerCase();
+    return error?.code === "PGRST205" || error?.code === "42P01" || message.includes("could not find the table") || details.includes("relation") && details.includes("does not exist");
+  }
+
+  function isMissingColumnError(error) {
+    const message = error?.message || "";
+    return error?.code === "PGRST204" || message.toLowerCase().includes("could not find");
+  }
+
+  function legacyPremiumOrder(order) {
+    const allowed = [
+      "name",
+      "email",
+      "phone",
+      "address",
+      "card_text",
+      "music_wish",
+      "message",
+      "file_url",
+      "image_url",
+      "video_url",
+      "audio_url",
+      "status"
+    ];
+    return allowed.reduce((payload, key) => {
+      if (order[key] !== undefined) payload[key] = order[key];
+      return payload;
+    }, {});
   }
 
   async function uploadOrderFile(file, kind) {
@@ -151,9 +186,23 @@
     if (!client) {
       throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
     }
-    const { error } = await client.from("premium_orders").insert(order);
-    if (error) throw new Error(readableOrderError(error));
-    return true;
+    const preferredTables = ["premium_orders", "orders"];
+    const errors = [];
+    for (const table of preferredTables) {
+      const { error } = await client.from(table).insert(order);
+      if (!error) return { saved: true, table };
+      if (isMissingColumnError(error)) {
+        console.warn(`${table} schema fallback:`, error.message);
+        const retry = await client.from(table).insert(legacyPremiumOrder(order));
+        if (!retry.error) return { saved: true, table, fallback: true };
+        errors.push(`${table}: ${readableOrderError(retry.error, table)}`);
+        if (!isMissingTableError(retry.error)) break;
+      } else {
+        errors.push(`${table}: ${readableOrderError(error, table)}`);
+        if (!isMissingTableError(error)) break;
+      }
+    }
+    throw new Error(errors.join(" | "));
   }
 
   window.MelodySupabase = {

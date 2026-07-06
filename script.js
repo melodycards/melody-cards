@@ -502,37 +502,73 @@
     const submit = form.querySelector("button[type='submit']");
     const values = Object.fromEntries(new FormData(form));
     const copy = orderCopy();
-    status.textContent = copy.sending || "Anfrage wird gesendet...";
-    submit.disabled = true;
+    const selectedCategory = form.elements.card_category?.selectedOptions?.[0];
+    const categoryLabel = selectedCategory?.textContent?.trim() || values.card_category || "";
+    const setStatus = (message, state = "") => {
+      if (!status) return;
+      status.textContent = message;
+      status.dataset.state = state;
+    };
+    setStatus(copy.sending || "Anfrage wird gesendet...", "loading");
+    if (submit) submit.disabled = true;
     try {
+      if (!window.MelodySupabase?.createPremiumOrder) {
+        throw new Error("Supabase ist auf dieser Seite nicht geladen. Bitte config.js und supabase-client.js prüfen.");
+      }
+      const orderDetails = {
+        card_category: values.card_category || "",
+        card_category_label: categoryLabel,
+        recipient_name: values.recipient || "",
+        occasion: values.occasion || "",
+        song_language: values.song_language || "",
+        voice: values.voice || "",
+        music_style: values.music_style || "",
+        story: values.message || "",
+        customer_name: values.name || "",
+        email: values.email || "",
+        phone: values.phone || ""
+      };
+      const cardText = [
+        `${copy.cardTextCategory || "Kartentyp"}: ${categoryLabel}`,
+        `${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient || ""}`,
+        `${copy.cardTextOccasion || "Anlass"}: ${values.occasion || ""}`
+      ].join("\n");
       await window.MelodySupabase.createPremiumOrder({
-        name: values.name,
-        email: values.email,
-        phone: values.phone || "",
+        name: (values.name || "").trim(),
+        customer_name: (values.name || "").trim(),
+        email: (values.email || "").trim(),
+        phone: (values.phone || "").trim(),
         address: "",
-        card_text: `${copy.cardTextCategory || "Kartentyp"}: ${values.card_category}\n${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient}\n${copy.cardTextOccasion || "Anlass"}: ${values.occasion}`,
+        card_category: categoryLabel,
+        recipient_name: (values.recipient || "").trim(),
+        occasion: (values.occasion || "").trim(),
+        song_language: values.song_language || "",
+        voice: values.voice || "",
+        music_style: values.music_style || "",
+        story: values.message || "",
+        card_text: cardText,
         music_wish: JSON.stringify({
-          card_category: values.card_category,
-          occasion: values.occasion,
-          song_language: values.song_language,
-          voice: values.voice,
-          music_style: values.music_style,
+          ...orderDetails,
           labels: {
+            card_category: copy.cardTextCategory || "Kartentyp",
+            recipient_name: copy.cardTextRecipient || "Beschenkte Person",
+            occasion: copy.cardTextOccasion || "Anlass",
             song_language: copy.musicWishLanguage || "Sprache des Liedes",
             voice: copy.musicWishVoice || "Stimme",
             music_style: copy.musicWishStyle || "Musikrichtung"
           }
         }),
         message: values.message || "",
-        status: "new"
+        status: "neu"
       });
       form.reset();
-      status.textContent = copy.success || "Danke. Deine Anfrage wurde gesendet.";
+      updateOrderCategoryHelp({ currentTarget: form.elements.card_category });
+      setStatus(copy.success || "Danke. Deine Anfrage wurde gesendet.", "success");
     } catch (error) {
       console.error("Order submit failed:", error);
-      status.textContent = error.message || copy.error || "Die Anfrage konnte nicht gespeichert werden.";
+      setStatus(error.message || copy.error || "Die Anfrage konnte nicht gespeichert werden.", "error");
     } finally {
-      submit.disabled = false;
+      if (submit) submit.disabled = false;
     }
   }
 
