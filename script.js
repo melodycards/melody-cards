@@ -200,29 +200,29 @@
   }
 
   function mediaUrl(item = {}) {
-    return item.url || item.media || item.video || item.image_url || item.image || item.images?.[0] || "";
+    return item.url || item.media || item.video || item.photo || item.image_url || item.image || item.images?.[0] || "";
   }
 
   function isVideo(url = "", type = "") {
-    return String(type).startsWith("video") || /\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url));
+    return String(type).startsWith("video") || /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(String(url));
   }
 
   function mediaFrame(item = {}, className = "media-frame", alt = "") {
     const url = mediaUrl(item);
-    const type = item.mediaType || item.type || "";
+    const type = item.mediaType || item.media_type || item.type || "";
     if (!url) return `<div class="${escape(className)}"></div>`;
     if (isVideo(url, type)) {
-      return `<div class="${escape(className)} has-video"><video src="${escape(url)}" muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}"></video></div>`;
+      return `<div class="${escape(className)} has-video"><video src="${escape(url)}" autoplay muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}" ${item.controls ? "controls" : ""}></video></div>`;
     }
     return `<div class="${escape(className)}" ${imageStyle(url)} role="img" aria-label="${escape(alt || item.alt || item.title || "")}"></div>`;
   }
 
   function mediaThumb(item = {}, alt = "") {
     const url = mediaUrl(item);
-    const type = item.mediaType || item.type || "";
+    const type = item.mediaType || item.media_type || item.type || "";
     if (!url) return "";
     if (isVideo(url, type)) {
-      return `<video src="${escape(url)}" muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}"></video>`;
+      return `<video src="${escape(url)}" autoplay muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}" ${item.controls ? "controls" : ""}></video>`;
     }
     return `<img src="${escape(url)}" alt="${escape(alt || item.alt || item.title || "")}" loading="lazy" />`;
   }
@@ -333,7 +333,7 @@
       <div class="gallery-grid">${sorted(content.gallery).map((entry) => {
         const item = localizedItem("gallery", entry);
         const url = mediaUrl(item);
-        const type = item.mediaType || item.type || "";
+        const type = item.mediaType || item.media_type || item.type || "";
         return `<button class="gallery-item" type="button" data-edit-kind="gallery" data-edit-id="${escape(item.id)}" data-lightbox-open data-title="${escape(item.title)}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(url)}" data-media-type="${escape(isVideo(url, type) ? "video" : "image")}">${mediaThumb(item, item.title)}<span>${escape(item.title || "")}</span></button>`;
       }).join("") || emptyState(copy.emptyGallery || "Noch keine Galerie veröffentlicht.")}</div>
     </section>`;
@@ -342,14 +342,14 @@
   function mediaSection(section) {
     return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       ${sectionHead(section)}
-      <div class="gallery-grid">${(section.items || []).filter((item) => item.active !== false).map((item, index) => `<button class="gallery-item" type="button" data-edit-kind="media-item" data-edit-id="${escape(`${section.id}:${index}`)}" data-lightbox-open data-title="${escape(item.title || section.title || "")}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(mediaUrl(item))}" data-media-type="${escape(isVideo(mediaUrl(item), item.mediaType || item.type) ? "video" : "image")}">${mediaThumb(item, item.title)}<span>${escape(item.title || "")}</span></button>`).join("")}</div>
+      <div class="gallery-grid">${(section.items || []).filter((item) => item.active !== false).map((item, index) => `<button class="gallery-item" type="button" data-edit-kind="media-item" data-edit-id="${escape(`${section.id}:${index}`)}" data-lightbox-open data-title="${escape(item.title || section.title || "")}" data-text="${escape(item.alt || item.description || "")}" data-image="${escape(mediaUrl(item))}" data-media-type="${escape(isVideo(mediaUrl(item), item.mediaType || item.media_type || item.type) ? "video" : "image")}">${mediaThumb(item, item.title)}<span>${escape(item.title || "")}</span></button>`).join("")}</div>
     </section>`;
   }
 
   function reviews(section) {
     const items = sorted(content.reviews).map((item) => localizedItem("reviews", item));
     if (!items.length) return "";
-    return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">${sectionHead(section)}<div class="review-grid">${items.map((review) => `<article class="lux-card review" data-edit-kind="review" data-edit-id="${escape(review.id)}"><div class="stars">${"★".repeat(Number(review.rating || 5))}</div><p>${escape(review.text)}</p><strong>${escape(review.name)}</strong></article>`).join("")}</div></section>`;
+    return `<section class="section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">${sectionHead(section)}<div class="review-grid">${items.map((review) => `<article class="lux-card review" data-edit-kind="review" data-edit-id="${escape(review.id)}">${mediaUrl(review) ? mediaFrame(review, "review-media", review.name) : ""}<div class="stars">${"★".repeat(Number(review.rating || 5))}</div><p>${escape(review.text)}</p><strong>${escape(review.name)}</strong></article>`).join("")}</div></section>`;
   }
 
   function faq(section) {

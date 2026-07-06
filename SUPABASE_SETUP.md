@@ -63,7 +63,7 @@ on conflict (user_id) do update set role = 'admin';
 
 Die gleiche Anweisung liegt auch als `admin_koglu_profile.sql` im Projekt. Diese Datei setzt zusaetzlich eine sichere Bootstrap-Policy, damit sich `koglu@hotmail.de` beim ersten erfolgreichen Login selbst in `admin_profiles` eintragen kann, falls der Eintrag noch fehlt.
 
-Erst dadurch darf dieser eingeloggte Benutzer Inhalte bearbeiten und Bilder hochladen.
+Erst dadurch darf dieser eingeloggte Benutzer Inhalte bearbeiten und Medien hochladen.
 
 ## 5. Storage Bucket prüfen
 
@@ -73,6 +73,8 @@ Prüfe unter `Storage`:
 - Bucket `melody-assets` existiert
 - Bucket ist public
 - Policies für Lesen, Upload, Update und Löschen sind vorhanden
+- Erlaubte Medien sind JPG, PNG, WebP, GIF, MP4, WebM und MOV
+- Die maximale Dateigröße ist im SQL auf 80 MB gesetzt
 - Policy `Public can upload premium order files` ist vorhanden, wenn das Anfrageformular Datei-Uploads speichern soll
 
 ## 6. API Keys eintragen
@@ -88,7 +90,8 @@ Prüfe unter `Storage`:
 window.MELODY_SUPABASE_CONFIG = {
   url: "https://DEIN-PROJEKT.supabase.co",
   anonKey: "DEIN_ANON_PUBLIC_KEY",
-  storageBucket: "melody-assets"
+  storageBucket: "melody-assets",
+  maxUploadMB: 80
 };
 ```
 
@@ -113,9 +116,9 @@ Logge dich mit dem in Supabase Auth angelegten Admin-Benutzer ein.
 ## 8. Inhalte bearbeiten
 
 Im Admin-Bereich kannst du bearbeiten:
-- Startseite: Logo, Hero, Buttons, Texte, Hero-Bild
-- Produkte: hinzufügen, bearbeiten, löschen, Preise ändern, Bilder hochladen
-- Galerie: hinzufügen, bearbeiten, löschen, Bilder hochladen
+- Startseite: Logo, Hero, Buttons, Texte, Hero-Medium und Video-Clip
+- Produkte: hinzufügen, bearbeiten, löschen, Preise ändern, Medien hochladen
+- Galerie: hinzufügen, bearbeiten, löschen, Bilder, GIFs und Videos hochladen
 - Bewertungen: Namen, Texte, Sterne, Verifiziert-Status
 - FAQ: Fragen und Antworten
 - Kontakt: E-Mail, WhatsApp, Social Links, Footer

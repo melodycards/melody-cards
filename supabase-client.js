@@ -40,6 +40,30 @@
     return window.melodySupabaseClient;
   }
 
+  const allowedMediaTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "video/ogg"
+  ];
+
+  function validateMediaFile(file) {
+    if (!file) return;
+    const maxMb = Number(config.maxUploadMB || 80);
+    const type = file.type || "";
+    const extensionAllowed = /\.(jpe?g|png|webp|gif|mp4|webm|mov|ogg)$/i.test(file.name || "");
+    if (!allowedMediaTypes.includes(type) && !extensionAllowed) {
+      throw new Error("Dieses Dateiformat wird nicht unterstützt. Erlaubt sind JPG, PNG, WebP, GIF, MP4, WebM und MOV.");
+    }
+    if (file.size > maxMb * 1024 * 1024) {
+      throw new Error(`Die Datei ist zu groß. Maximal erlaubt sind ${maxMb} MB.`);
+    }
+  }
+
   async function getReadyClient() {
     await ensureSupabaseLoaded();
     return getClient();
@@ -88,6 +112,7 @@
   async function uploadFile(file, folder = "uploads") {
     const client = await getReadyClient();
     if (!client || !file) return null;
+    validateMediaFile(file);
     const bucket = config.storageBucket || "melody-assets";
     const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
     const path = `${folder}/${Date.now()}-${safeName}`;

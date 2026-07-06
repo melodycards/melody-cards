@@ -189,6 +189,14 @@
     selectPanel(button.dataset.section);
   });
 
+  document.addEventListener("change", (event) => {
+    const select = event.target.closest?.('select[name^="existing"]');
+    if (!select || !select.value) return;
+    const form = select.closest("form");
+    const preview = form?.querySelector(".visual-image-preview, .gallery-form-preview");
+    if (preview) preview.innerHTML = mediaPreview(select.value, select.selectedOptions?.[0]?.dataset.mediaType || mediaTypeForUrl(select.value), "Ausgewähltes Medium");
+  });
+
   function selectPanel(name) {
     $$("[data-section]").forEach((button) => button.classList.toggle("is-active", button.dataset.section === name));
     $$("[data-panel]").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.panel === name));
@@ -247,7 +255,7 @@
       <aside class="visual-editor-panel" data-visual-editor>
         <p class="eyebrow">Visueller Editor</p>
         <h3>Bereich anklicken</h3>
-        <p>Klicke links auf Logo, Navigation, Hero, Kategorie, Produkt, Galerie-Bild, FAQ, Kontakt oder Footer. Die passenden Felder erscheinen hier.</p>
+        <p>Klicke links auf Logo, Navigation, Hero, Kategorie, Produkt, Galerie-Medium, FAQ, Kontakt oder Footer. Die passenden Felder erscheinen hier.</p>
         <div class="visual-quick-actions">
           <button class="mini-btn" type="button" data-visual-new-product>Produkt hinzufügen</button>
           <button class="mini-btn" type="button" data-visual-open-gallery>Galerie bearbeiten</button>
@@ -302,6 +310,25 @@
     });
   }
 
+  function mediaSelect(name = "existingMedia", label = "Vorhandenes Medium auswählen", selected = "") {
+    const items = content.mediaLibrary || [];
+    return `<label>${escape(label)}<select name="${escape(name)}">
+      <option value="">Kein vorhandenes Medium</option>
+      ${items.map((item) => `<option value="${escape(item.url)}" data-media-type="${escape(item.mediaType || mediaTypeForUrl(item.url))}" ${item.url === selected ? "selected" : ""}>${escape(item.title || item.alt || item.category || item.url)}</option>`).join("")}
+    </select></label>`;
+  }
+
+  function selectedMedia(select) {
+    if (!select?.value) return null;
+    const option = select.selectedOptions?.[0];
+    return { url: select.value, mediaType: option?.dataset.mediaType || mediaTypeForUrl(select.value) };
+  }
+
+  function applyMediaSelection(select, setter) {
+    const item = selectedMedia(select);
+    if (item) setter(item.url, item.mediaType);
+  }
+
   function showVisualEditor(kind, id) {
     if (kind === "section") return renderSectionVisualEditor(id);
     if (kind === "step-item") return renderStepItemVisualEditor(id);
@@ -337,7 +364,7 @@
       ${section.secondaryButton ? input("secondaryLabel", "Zweiter Button DE", section.secondaryButton.label || "") : ""}
       ${section.secondaryButton ? input("secondaryHref", "Zweiter Button Link", section.secondaryButton.href || "") : ""}
       ${section.id === "contact" ? input("contactEmail", "Kontakt E-Mail", content.contact.email || "") + input("contactPhone", "Telefon", content.contact.phone || "") + input("contactAddress", "Adresse", content.contact.address || "", "textarea") : ""}
-      ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.video || section.image, mediaType: section.video ? "video" : "" })}</div>${file("upload", "Bild/GIF ersetzen")}${file("videoUpload", "Video/Startseiten-Clip ersetzen")}<button class="mini-btn danger" type="button" data-clear-section-image>Bild löschen</button><button class="mini-btn danger" type="button" data-clear-section-video>Video löschen</button>` : ""}
+      ${section.image !== undefined ? `<div class="visual-image-preview">${galleryPreview({ url: section.video || section.image, mediaType: section.video ? "video" : "" })}</div>${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", section.video || section.image || "")}${file("upload", "Medium auswählen")}${checkbox("controls", "Videosteuerung anzeigen", Boolean(section.controls))}<button class="mini-btn danger" type="button" data-clear-section-image>Medium löschen</button>` : ""}
       ${input("textColor", "Textfarbe", style.textColor || "#ffffff", "color")}
       ${input("titleSize", "Schriftgröße Desktop", style.titleSize || "", "number")}
       ${input("mobileTitleSize", "Schriftgröße Handy", style.mobileTitleSize || "", "number")}
@@ -349,12 +376,8 @@
     </form>`;
     $('[data-clear-section-image]')?.addEventListener("click", () => {
       section.image = "";
-      setStatus("Bild entfernt. Bitte speichern.", "warning");
-      renderSectionVisualEditor(id);
-    });
-    $('[data-clear-section-video]')?.addEventListener("click", () => {
       section.video = "";
-      setStatus("Video entfernt. Bitte speichern.", "warning");
+      setStatus("Medium entfernt. Bitte speichern.", "warning");
       renderSectionVisualEditor(id);
     });
     $('[data-visual-section-form]').addEventListener("submit", (event) => saveVisualSection(event, section, trSection));
@@ -392,11 +415,21 @@
         paddingTop: Number(form.paddingTop.value || 0) || "",
         paddingBottom: Number(form.paddingBottom.value || 0) || ""
       };
+      section.controls = form.controls?.checked || false;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        if (isVideoMedia(url, type)) section.video = url;
+        else {
+          section.image = url;
+          section.video = "";
+        }
+      });
       await uploadInto(form.upload, "sections", (url, fileItem) => {
         if (isVideoMedia(url, fileItem?.type)) section.video = url;
-        else section.image = url;
+        else {
+          section.image = url;
+          section.video = "";
+        }
       });
-      await uploadInto(form.videoUpload, "videos", (url) => section.video = url);
       content.translations = content.translations || {};
       content.translations.tr = content.translations.tr || {};
       content.translations.tr.sections = content.translations.tr.sections || {};
@@ -428,7 +461,9 @@
       ${input("trTitle", "Überschrift TR", trItem.title || "")}
       ${input("trText", "Text TR", trItem.text || "", "textarea")}
       <div class="visual-image-preview">${galleryPreview({ url: item.media, mediaType: item.mediaType })}</div>
-      ${file("upload", "Bild/GIF/Video hochladen")}
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", item.media || "")}
+      ${file("upload", "Medium auswählen")}
+      ${checkbox("controls", "Videosteuerung anzeigen", Boolean(item.controls))}
       <button class="mini-btn danger" type="button" data-clear-step-media>Medium löschen</button>
       ${input("color", "Textfarbe", style.color || "#090909", "color")}
       ${input("numberColor", "Nummernfarbe", style.numberColor || "#c8a96a", "color")}
@@ -466,6 +501,11 @@
         paddingTop: Number(form.paddingTop.value || 0) || "",
         paddingBottom: Number(form.paddingBottom.value || 0) || ""
       };
+      item.controls = form.controls.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.media = url;
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "steps", (url, fileItem) => {
         item.media = url;
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
@@ -498,8 +538,10 @@
       ${input("price", "Preis", item.price || "")}
       ${input("category", "Kategorie", item.category || "")}
       ${checkbox("active", "Aktiv", item.status !== "inactive")}
-      <div class="visual-image-preview">${galleryPreview({ url: item.images?.[0] })}</div>
-      ${file("upload", "Bild hochladen / ersetzen")}
+      <div class="visual-image-preview">${galleryPreview({ url: item.images?.[0], mediaType: item.mediaType })}</div>
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", item.images?.[0] || "")}
+      ${file("upload", "Medium auswählen")}
+      ${checkbox("controls", "Videosteuerung anzeigen", Boolean(item.controls))}
       <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
       ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Produkt löschen</button>`}
     </form>`;
@@ -516,6 +558,11 @@
       item.price = form.price.value;
       item.category = form.category.value;
       item.status = form.active.checked ? "active" : "inactive";
+      item.controls = form.controls.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.images = [url];
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "products", (url, fileItem) => {
         item.images = [url];
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
@@ -542,9 +589,11 @@
     const trCategory = content.translations?.tr?.categories?.[item.id] || {};
     $('[data-visual-editor]').innerHTML = `<form data-visual-category-form class="visual-form">
       <p class="eyebrow">Kategorie</p><h3>${isNew ? "Kategorie hinzufügen" : "Kategorie bearbeiten"}</h3>
-      <div class="visual-image-preview">${galleryPreview({ url: item.image })}</div>
-      ${file("upload", "Bild hochladen / ersetzen")}
-      <button class="mini-btn danger" type="button" data-visual-clear-category-image>Bild löschen</button>
+      <div class="visual-image-preview">${galleryPreview({ url: item.image, mediaType: item.mediaType })}</div>
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", item.image || "")}
+      ${file("upload", "Medium auswählen")}
+      ${checkbox("controls", "Videosteuerung anzeigen", Boolean(item.controls))}
+      <button class="mini-btn danger" type="button" data-visual-clear-category-image>Medium löschen</button>
       ${input("title", "Titel DE", item.title || "")}
       ${input("description", "Beschreibung DE", item.description || "", "textarea")}
       ${input("trTitle", "Titel TR", trCategory.title || "")}
@@ -555,7 +604,8 @@
     </form>`;
     $('[data-visual-clear-category-image]')?.addEventListener("click", () => {
       item.image = "";
-      setStatus("Bild entfernt. Bitte speichern.", "warning");
+      item.mediaType = "";
+      setStatus("Medium entfernt. Bitte speichern.", "warning");
       renderCategoryVisualEditor(item.id);
     });
     $('[data-visual-category-form]').addEventListener("submit", (event) => saveVisualCategory(event, item, isNew));
@@ -569,6 +619,11 @@
       item.title = form.title.value;
       item.description = form.description.value;
       item.active = form.active.checked;
+      item.controls = form.controls.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.image = url;
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "categories", (url, fileItem) => {
         item.image = url;
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
@@ -591,18 +646,20 @@
     const item = (content.gallery || []).find((entry) => String(entry.id) === String(id)) || { id: uid("gallery"), active: true, sortOrder: (content.gallery || []).length + 1 };
     const isNew = !(content.gallery || []).some((entry) => String(entry.id) === String(id));
     $('[data-visual-editor]').innerHTML = `<form data-visual-gallery-form class="visual-form">
-      <p class="eyebrow">Galerie</p><h3>${isNew ? "Bild hinzufügen" : "Bild bearbeiten"}</h3>
+      <p class="eyebrow">Galerie</p><h3>${isNew ? "Medium hinzufügen" : "Medium bearbeiten"}</h3>
       <div class="visual-image-preview">${galleryPreview(item)}</div>
-      ${file("upload", "Bild hochladen / ersetzen")}
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", item.url || item.image_url || "")}
+      ${file("upload", "Medium auswählen")}
+      ${checkbox("controls", "Videosteuerung anzeigen", Boolean(item.controls))}
       ${input("title", "Titel", item.title || "")}
       ${input("description", "Beschreibung", item.description || item.alt || "", "textarea")}
       ${input("category", "Kategorie", item.category || "")}
       ${checkbox("active", "Aktiv", item.active !== false)}
       <button class="btn btn-primary" type="submit" data-visual-save>Speichern</button>
-      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Bild löschen</button>`}
+      ${isNew ? "" : `<button class="mini-btn danger" type="button" data-visual-delete>Medium löschen</button>`}
     </form>`;
     $('[data-visual-gallery-form]').addEventListener("submit", (event) => saveVisualGallery(event, item, isNew));
-    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("gallery", item.id, "Galerie-Bild"));
+    $('[data-visual-delete]')?.addEventListener("click", () => deleteVisualItem("gallery", item.id, "Galerie-Medium"));
   }
 
   async function saveVisualGallery(event, item, isNew) {
@@ -614,12 +671,18 @@
       item.alt = form.description.value;
       item.category = form.category.value;
       item.active = form.active.checked;
+      item.controls = form.controls.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.url = url;
+        item.image_url = url;
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "gallery", (url, fileItem) => {
         item.url = url;
         item.image_url = url;
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
       });
-      if (isNew && !item.url && !item.image_url) throw new Error("Bitte ein Bild hochladen.");
+      if (isNew && !item.url && !item.image_url) throw new Error("Bitte ein Medium auswählen.");
       if (isNew) content.gallery = [...(content.gallery || []), item];
       await saveSite("Galerie");
       reloadVisualPreview();
@@ -635,7 +698,9 @@
     $('[data-visual-editor]').innerHTML = `<form data-visual-media-item-form class="visual-form">
       <p class="eyebrow">Mediensektion</p><h3>Medium bearbeiten</h3>
       <div class="visual-image-preview">${galleryPreview(item)}</div>
-      ${file("upload", "Bild/GIF/Video ersetzen")}
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", item.url || "")}
+      ${file("upload", "Medium auswählen")}
+      ${checkbox("controls", "Videosteuerung anzeigen", Boolean(item.controls))}
       ${input("title", "Titel", item.title || "")}
       ${input("description", "Beschreibung", item.description || item.alt || "", "textarea")}
       ${checkbox("active", "Sichtbar", item.active !== false)}
@@ -662,6 +727,11 @@
       item.description = form.description.value;
       item.alt = form.description.value;
       item.active = form.active.checked;
+      item.controls = form.controls.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.url = url;
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "media-sections", (url, fileItem) => {
         item.url = url;
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
@@ -712,8 +782,10 @@
     const trReview = content.translations?.tr?.reviews?.[item.id] || {};
     $('[data-visual-editor]').innerHTML = `<form data-visual-review-form class="visual-form">
       <p class="eyebrow">Bewertung</p><h3>${isNew ? "Bewertung hinzufügen" : "Bewertung bearbeiten"}</h3>
-      <div class="visual-image-preview">${galleryPreview({ url: item.photo })}</div>
-      ${file("upload", "Foto hochladen / ersetzen")}
+      <div class="visual-image-preview">${galleryPreview({ url: item.photo || item.image_url, mediaType: item.mediaType })}</div>
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", item.photo || item.image_url || "")}
+      ${file("upload", "Medium auswählen")}
+      ${checkbox("controls", "Videosteuerung anzeigen", Boolean(item.controls))}
       ${input("name", "Name", item.name || "")}
       ${input("text", "Text DE", item.text || "", "textarea")}
       ${input("trText", "Text TR", trReview.text || "", "textarea")}
@@ -734,7 +806,17 @@
       item.text = form.text.value;
       item.rating = Number(form.rating.value || 5);
       item.active = form.active.checked;
-      await uploadInto(form.upload, "reviews", (url) => item.photo = url);
+      item.controls = form.controls.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.photo = url;
+        item.image_url = url;
+        item.mediaType = type;
+      });
+      await uploadInto(form.upload, "reviews", (url, fileItem) => {
+        item.photo = url;
+        item.image_url = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
       if (isNew) content.reviews = [...(content.reviews || []), item];
       content.translations = content.translations || {};
       content.translations.tr = content.translations.tr || {};
@@ -797,7 +879,8 @@
     $('[data-visual-editor]').innerHTML = `<form data-visual-brand-form class="visual-form">
       <p class="eyebrow">Logo & Marke</p><h3>Logo bearbeiten</h3>
       <div class="visual-image-preview">${galleryPreview({ url: content.brand.logoImage, title: content.brand.name })}</div>
-      ${file("logoUpload", "Logo hochladen / ersetzen")}
+      ${mediaSelect("existingLogo", "Vorhandenes Medium auswählen", content.brand.logoImage || "")}
+      ${file("logoUpload", "Logo-Medium auswählen")}
       ${input("name", "Markenname", content.brand.name || "")}
       ${input("logoText", "Logo Text", content.brand.logoText || "")}
       ${input("footerText", "Footer Text", content.brand.footerText || "", "textarea")}
@@ -811,6 +894,7 @@
         content.brand.name = form.name.value;
         content.brand.logoText = form.logoText.value;
         content.brand.footerText = form.footerText.value;
+        applyMediaSelection(form.existingLogo, (url) => content.brand.logoImage = url);
         await uploadInto(form.logoUpload, "brand", (url) => content.brand.logoImage = url);
         await uploadInto(form.faviconUpload, "favicons", (url) => content.seo.favicon = url);
         await saveSite("Logo & Marke");
@@ -848,12 +932,14 @@
     $('[data-panel="brand"]').innerHTML = card("Logo & Brand", `<form data-brand-form class="admin-grid">
       ${input("brand.name", "Markenname", content.brand.name)}
       ${input("brand.logoText", "Logo Text", content.brand.logoText)}
-      ${input("brand.logoImage", "Logo Bild URL", content.brand.logoImage)}
-      ${file("logoUpload", "Logo hochladen")}
+      <div class="gallery-form-preview span-all">${galleryPreview({ url: content.brand.logoImage, title: content.brand.name })}</div>
+      ${mediaSelect("existingLogo", "Vorhandenes Logo-Medium auswählen", content.brand.logoImage || "")}
+      ${file("logoUpload", "Logo-Medium auswählen")}
       ${input("brand.footerText", "Footer Text", content.brand.footerText, "textarea")}
       <button class="btn btn-primary span-all" type="submit">Brand speichern</button>
     </form>`);
     $('[data-brand-form]').addEventListener("submit", (event) => saveForm(event, "Brand", async (form) => {
+      applyMediaSelection(form.existingLogo, (url) => content.brand.logoImage = url);
       await uploadInto(form.logoUpload, "brand", (url) => content.brand.logoImage = url);
       readPathForm(form);
     }));
@@ -889,13 +975,16 @@
       ${input("seo.description", "Meta Beschreibung", content.seo.description, "textarea")}
       ${input("seo.ogTitle", "Open Graph Titel", content.seo.ogTitle)}
       ${input("seo.ogDescription", "Open Graph Beschreibung", content.seo.ogDescription, "textarea")}
-      ${input("seo.ogImage", "Open Graph Bild URL", content.seo.ogImage)}
-      ${file("ogUpload", "OG Bild hochladen")}
-      ${input("seo.favicon", "Favicon URL", content.seo.favicon)}
-      ${file("faviconUpload", "Favicon hochladen")}
+      <div class="gallery-form-preview span-all">${galleryPreview({ url: content.seo.ogImage, title: content.seo.ogTitle })}</div>
+      ${mediaSelect("existingOg", "Vorhandenes Open-Graph-Medium auswählen", content.seo.ogImage || "")}
+      ${file("ogUpload", "Open-Graph-Medium auswählen")}
+      ${mediaSelect("existingFavicon", "Vorhandenes Favicon-Medium auswählen", content.seo.favicon || "")}
+      ${file("faviconUpload", "Favicon-Medium auswählen")}
       <button class="btn btn-primary span-all" type="submit">SEO speichern</button>
     </form>`);
     $('[data-seo-form]').addEventListener("submit", (event) => saveForm(event, "SEO", async (form) => {
+      applyMediaSelection(form.existingOg, (url) => content.seo.ogImage = url);
+      applyMediaSelection(form.existingFavicon, (url) => content.seo.favicon = url);
       await uploadInto(form.ogUpload, "seo", (url) => content.seo.ogImage = url);
       await uploadInto(form.faviconUpload, "favicons", (url) => content.seo.favicon = url);
       readPathForm(form);
@@ -936,7 +1025,8 @@
     $('[data-panel="categories"]').innerHTML = `<div class="gallery-editor">
       ${card(editing.categories ? "Kategorie bearbeiten" : "Kategorie hinzufügen", `<form data-category-form class="gallery-form">
         <div class="gallery-form-preview" data-category-preview>${galleryPreview(current)}</div>
-      ${file("upload", editing.categories ? "Bild ersetzen" : "Bild hochladen")}
+      ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", current.image || "")}
+      ${file("upload", editing.categories ? "Medium ersetzen" : "Medium auswählen")}
       ${input("title", "Titel", current.title || "")}
       ${input("description", "Beschreibung", current.description || "", "textarea")}
       ${input("trTitle", "Titel Türkisch", content.translations?.tr?.categories?.[current.id]?.title || "")}
@@ -998,6 +1088,10 @@
       item.title = form.title.value.trim();
       item.description = form.description.value.trim();
       item.active = form.active.checked;
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.image = url;
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "categories", (url, fileItem) => {
         item.image = url;
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
@@ -1047,8 +1141,9 @@
     const items = sorted(content.products || []);
     $('[data-panel="products"]').innerHTML = `<div class="gallery-editor">
       ${card(editing.products ? "Produkt bearbeiten" : "Produkt hinzufügen", `<form data-product-card-form class="gallery-form">
-        <div class="gallery-form-preview">${galleryPreview({ url: current.images?.[0] || current.image_url })}</div>
-        ${file("upload", editing.products ? "Bild ersetzen" : "Bild hochladen")}
+        <div class="gallery-form-preview">${galleryPreview({ url: current.images?.[0] || current.image_url, mediaType: current.mediaType })}</div>
+        ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", current.images?.[0] || current.image_url || "")}
+        ${file("upload", editing.products ? "Medium ersetzen" : "Medium auswählen")}
         ${input("title", "Titel Deutsch", current.title || "")}
         ${input("description", "Beschreibung Deutsch", current.description || "", "textarea")}
         ${input("trTitle", "Titel Türkisch", trProduct.title || "")}
@@ -1109,6 +1204,10 @@
       item.category = form.category.value.trim();
       item.featured = form.featured.checked;
       item.status = form.active.checked ? "active" : "inactive";
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.images = [url];
+        item.mediaType = type;
+      });
       await uploadInto(form.upload, "products", (url, fileItem) => {
         item.images = [url];
         item.mediaType = fileItem?.type || mediaTypeForUrl(url);
@@ -1146,8 +1245,9 @@
     const items = sorted(content.reviews || []);
     $('[data-panel="reviews"]').innerHTML = `<div class="gallery-editor">
       ${card(editing.reviews ? "Bewertung bearbeiten" : "Bewertung hinzufügen", `<form data-review-card-form class="gallery-form">
-        <div class="gallery-form-preview">${galleryPreview({ url: current.photo, title: current.name })}</div>
-        ${file("upload", editing.reviews ? "Foto ersetzen" : "Foto hochladen")}
+        <div class="gallery-form-preview">${galleryPreview({ url: current.photo || current.image_url, mediaType: current.mediaType, title: current.name })}</div>
+        ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", current.photo || current.image_url || "")}
+        ${file("upload", editing.reviews ? "Medium ersetzen" : "Medium auswählen")}
         ${input("name", "Name", current.name || "")}
         ${input("text", "Text Deutsch", current.text || "", "textarea")}
         ${input("trText", "Text Türkisch", trReview.text || "", "textarea")}
@@ -1175,7 +1275,7 @@
 
   function reviewAdminCard(item) {
     return `<article class="gallery-admin-card">
-      <div class="gallery-admin-image">${galleryPreview({ url: item.photo, title: item.name })}</div>
+      <div class="gallery-admin-image">${galleryPreview({ url: item.photo || item.image_url, mediaType: item.mediaType, title: item.name })}</div>
       <div class="gallery-admin-copy"><div><strong>${escape(item.name || "Bewertung")}</strong><p>${"★".repeat(Number(item.rating || 5))}</p></div><span class="status-pill ${item.active === false ? "is-muted" : ""}">${item.active === false ? "Inaktiv" : "Aktiv"}</span></div>
       <p>${escape(item.text || "")}</p>
       <div class="gallery-admin-actions">
@@ -1204,7 +1304,16 @@
       item.text = form.text.value.trim();
       item.rating = Number(form.rating.value || 5);
       item.active = form.active.checked;
-      await uploadInto(form.upload, "reviews", (url) => item.photo = url);
+      applyMediaSelection(form.existingMedia, (url, type) => {
+        item.photo = url;
+        item.image_url = url;
+        item.mediaType = type;
+      });
+      await uploadInto(form.upload, "reviews", (url, fileItem) => {
+        item.photo = url;
+        item.image_url = url;
+        item.mediaType = fileItem?.type || mediaTypeForUrl(url);
+      });
       content.reviews = content.reviews || [];
       if (!editing.reviews) content.reviews.push(item);
       content.translations = content.translations || {};
@@ -1242,20 +1351,27 @@
   }
 
   function galleryPreview(item = {}) {
-    const media = item.url || item.media || item.video || item.image_url || item.image || item.images?.[0] || "";
+    const media = item.url || item.media || item.video || item.photo || item.image_url || item.image || item.images?.[0] || "";
     return media
       ? mediaPreview(media, item.mediaType || item.type, item.alt || item.title || "Medium")
-      : `<span>Kein Bild ausgewählt</span>`;
+      : `<span>Kein Medium ausgewählt</span>`;
   }
 
   function mediaTypeForUrl(url = "") {
-    if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(String(url))) return "video";
-    if (/\.gif(\?.*)?$/i.test(String(url))) return "image/gif";
+    if (/\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(String(url))) return "video";
+    if (/\.gif(\?.*)?$/i.test(String(url))) return "gif";
     return "image";
   }
 
   function isVideoMedia(url = "", type = "") {
     return String(type).startsWith("video") || mediaTypeForUrl(url) === "video";
+  }
+
+  function normalizedMediaType(fileItem, url = "") {
+    const type = fileItem?.type || "";
+    if (type.startsWith("video/") || /\.(mp4|webm|mov|ogg)$/i.test(fileItem?.name || "") || mediaTypeForUrl(url) === "video") return "video";
+    if (type === "image/gif" || /\.gif$/i.test(fileItem?.name || "") || mediaTypeForUrl(url) === "gif") return "gif";
+    return "image";
   }
 
   function mediaPreview(url, type = "", alt = "Medium") {
@@ -1275,19 +1391,20 @@
     const current = editing.gallery || {};
     const items = sorted(content.gallery || []);
     $('[data-panel="gallery"]').innerHTML = `<div class="gallery-editor">
-      ${card(editing.gallery ? "Galerie-Bild bearbeiten" : "Neues Galerie-Bild", `<form data-gallery-form class="gallery-form">
+      ${card(editing.gallery ? "Galerie-Medium bearbeiten" : "Neues Galerie-Medium", `<form data-gallery-form class="gallery-form">
         <div class="gallery-form-preview" data-gallery-form-preview>${galleryPreview(current)}</div>
-        ${file("upload", editing.gallery ? "Bild ersetzen" : "Bild hochladen")}
+        ${mediaSelect("existingMedia", "Vorhandenes Medium auswählen", current.url || current.image_url || "")}
+        ${file("upload", editing.gallery ? "Medium ersetzen" : "Medium auswählen")}
         ${input("title", "Titel", current.title || "")}
         ${input("description", "Beschreibung", current.description || current.alt || "", "textarea")}
         ${input("category", "Kategorie", current.category || "")}
         ${checkbox("active", "Aktiv anzeigen", current.active !== false)}
         <div class="admin-actions span-all">
-          <button class="btn btn-primary" type="submit" data-gallery-save>${editing.gallery ? "Änderungen speichern" : "Bild speichern"}</button>
-          <button class="btn btn-glass" type="button" data-gallery-new>Neues Bild</button>
+          <button class="btn btn-primary" type="submit" data-gallery-save>${editing.gallery ? "Änderungen speichern" : "Medium speichern"}</button>
+          <button class="btn btn-glass" type="button" data-gallery-new>Neues Medium</button>
         </div>
       </form>`)}
-      ${card("Galerie-Bilder", `<div class="gallery-card-grid">${items.map(galleryAdminCard).join("") || `<div class="empty-state">Noch keine Galerie-Bilder vorhanden.</div>`}</div>`)}
+      ${card("Galerie-Medien", `<div class="gallery-card-grid">${items.map(galleryAdminCard).join("") || `<div class="empty-state">Noch keine Galerie-Medien vorhanden.</div>`}</div>`)}
     </div>`;
 
     const form = $('[data-gallery-form]');
@@ -1296,7 +1413,7 @@
     $('[data-gallery-new]')?.addEventListener("click", () => {
       editing.gallery = null;
       renderGalleryEditor();
-      setStatus("Neues Galerie-Bild bereit.");
+      setStatus("Neues Galerie-Medium bereit.");
     });
     $$("[data-gallery-edit]").forEach((button) => button.addEventListener("click", () => editGalleryItem(button.dataset.galleryEdit)));
     $$("[data-gallery-delete]").forEach((button) => button.addEventListener("click", () => deleteGalleryItem(button.dataset.galleryDelete, button)));
@@ -1333,12 +1450,12 @@
   function editGalleryItem(id) {
     const item = (content.gallery || []).find((entry) => String(entry.id) === String(id));
     if (!item) {
-      setStatus("Galerie-Bild nicht gefunden.", "error");
+      setStatus("Galerie-Medium nicht gefunden.", "error");
       return;
     }
     editing.gallery = item;
     renderGalleryEditor();
-    setStatus("Galerie-Bild geladen.", "success");
+    setStatus("Galerie-Medium geladen.", "success");
   }
 
   async function saveGalleryItem(event) {
@@ -1355,12 +1472,17 @@
         item.alt = form.description.value.trim();
         item.category = form.category.value.trim();
         item.active = form.active.checked;
+        applyMediaSelection(form.existingMedia, (url, type) => {
+          item.url = url;
+          item.image_url = url;
+          item.mediaType = type;
+        });
         await uploadInto(form.upload, "gallery", async (url, fileItem) => {
           item.url = url;
           item.image_url = url;
           item.mediaType = fileItem?.type || mediaTypeForUrl(url);
         });
-        if (!item.url && !item.image_url) throw new Error("Bitte ein Bild hochladen.");
+        if (!item.url && !item.image_url) throw new Error("Bitte ein Medium auswählen.");
         content.gallery = content.gallery || [];
         if (!existing) content.gallery.push(item);
         editing.gallery = null;
@@ -1373,13 +1495,13 @@
   async function deleteGalleryItem(id, button) {
     const item = (content.gallery || []).find((entry) => String(entry.id) === String(id));
     if (!item) {
-      setStatus("Galerie-Bild nicht gefunden.", "error");
+      setStatus("Galerie-Medium nicht gefunden.", "error");
       return;
     }
-    if (!window.confirm("Dieses Bild wirklich löschen?")) return;
+    if (!window.confirm("Dieses Medium wirklich löschen?")) return;
     await withButtonLoading(button, "Löscht...", async () => {
       await action("Galerie löschen", async () => {
-        setStatus("Galerie-Bild wird gelöscht...");
+        setStatus("Galerie-Medium wird gelöscht...");
         const cleanupWarnings = [
           await deleteGalleryTableRow(id),
           await deleteStorageFile(item.url || item.image_url)
@@ -1388,7 +1510,7 @@
         if (editing.gallery && String(editing.gallery.id) === String(id)) editing.gallery = null;
         await saveSite("Galerie");
         renderGalleryEditor();
-        setStatus(cleanupWarnings.length ? `Galerie-Bild wurde gelöscht. Hinweis: ${cleanupWarnings.join(" ")}` : "Galerie-Bild wurde gelöscht.", cleanupWarnings.length ? "warning" : "success");
+        setStatus(cleanupWarnings.length ? `Galerie-Medium wurde gelöscht. Hinweis: ${cleanupWarnings.join(" ")}` : "Galerie-Medium wurde gelöscht.", cleanupWarnings.length ? "warning" : "success");
       });
     });
   }
@@ -1493,13 +1615,13 @@
   }
 
   function productFields() {
-    return [["title","Titel"],["description","Beschreibung","textarea"],["price","Preis"],["discount","Rabatt"],["category","Kategorie"],["status","Status"],["featured","Empfohlen","checkbox"],["sortOrder","Reihenfolge","number"],["imagesText","Bild-URLs, eine pro Zeile","textarea"],["upload","Bild hochladen","file"]];
+    return [["title","Titel"],["description","Beschreibung","textarea"],["price","Preis"],["discount","Rabatt"],["category","Kategorie"],["status","Status"],["featured","Empfohlen","checkbox"],["sortOrder","Reihenfolge","number"],["upload","Medium auswählen","file"]];
   }
   function galleryFields() {
-    return [["title","Titel"],["alt","Alt Text"],["category","Kategorie"],["sortOrder","Reihenfolge","number"],["active","Aktiv","checkbox"],["url","Bild URL"],["upload","Bild hochladen","file"]];
+    return [["title","Titel"],["alt","Alt Text"],["category","Kategorie"],["sortOrder","Reihenfolge","number"],["active","Aktiv","checkbox"],["upload","Medium auswählen","file"]];
   }
   function reviewFields() {
-    return [["name","Name"],["text","Text","textarea"],["rating","Sterne","number"],["sortOrder","Reihenfolge","number"],["active","Aktiv","checkbox"],["photo","Foto URL"],["upload","Foto hochladen","file"]];
+    return [["name","Name"],["text","Text","textarea"],["rating","Sterne","number"],["sortOrder","Reihenfolge","number"],["active","Aktiv","checkbox"],["upload","Medium auswählen","file"]];
   }
   function faqFields() {
     return [["question","Frage"],["answer","Antwort","textarea"],["sortOrder","Reihenfolge","number"],["active","Aktiv","checkbox"]];
@@ -1580,14 +1702,14 @@
         <label>Zuweisen zu<select name="target">
           <option value="">Nur in Medien speichern</option>
           <option value="hero-video">Hero-Video / Startseiten-Clip</option>
-          <option value="hero-image">Hero-Fallback-Bild</option>
+          <option value="hero-image">Hero-Fallback-Medium</option>
           <option value="gallery">Galerie</option>
           <option value="products">Produktbereich</option>
           <option value="process">Ablauf-Bereich</option>
           <option value="about">Über-uns-Bereich</option>
           <option value="media-section">Neue Mediensektion</option>
         </select></label>
-        ${file("upload","Bild, GIF oder Video")}
+        ${file("upload","Medium auswählen")}
         <button class="btn btn-primary span-all" type="submit" data-media-save>Medium speichern</button>
       </form>`)}
       ${card("Medien", `<div class="gallery-card-grid">${content.mediaLibrary.map(mediaLibraryCard).join("") || `<div class="empty-state">Noch keine Medien vorhanden.</div>`}</div>`)}
@@ -1620,10 +1742,10 @@
   function mediaLibraryCard(item) {
     return `<article class="gallery-admin-card">
       <div class="gallery-admin-image">${galleryPreview(item)}</div>
-      <div class="gallery-admin-copy"><div><strong>${escape(item.title || "Medium")}</strong><p>${escape(item.category || item.mediaType || "")}</p></div><span class="status-pill">${isVideoMedia(item.url, item.mediaType) ? "Video" : /\.gif(\?.*)?$/i.test(item.url || "") ? "GIF" : "Bild"}</span></div>
+      <div class="gallery-admin-copy"><div><strong>${escape(item.title || "Medium")}</strong><p>${escape(item.category || item.mediaType || "")}</p></div><span class="status-pill">${isVideoMedia(item.url, item.mediaType) ? "Video" : (item.mediaType === "gif" || /\.gif(\?.*)?$/i.test(item.url || "")) ? "GIF" : "Bild"}</span></div>
       <label>Zuweisen zu<select data-media-target="${escape(item.id)}">
         <option value="hero-video">Hero-Video</option>
-        <option value="hero-image">Hero-Bild</option>
+        <option value="hero-image">Hero-Fallback-Medium</option>
         <option value="gallery">Galerie</option>
         <option value="products">Produktbereich</option>
         <option value="process">Ablauf-Bereich</option>
@@ -1879,7 +2001,7 @@
     return `<label>${escape(label)}<input name="${name}" type="checkbox" ${checked ? "checked" : ""} /></label>`;
   }
   function file(name, label) {
-    return `<label>${escape(label)}<input name="${name}" type="file" accept="image/*,image/gif,video/mp4,video/webm,video/ogg" /></label>`;
+    return `<label>${escape(label)}<input name="${name}" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/ogg,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov" /></label>`;
   }
   function fieldInput([name, label, type = "text"]) {
     if (type === "checkbox") return checkbox(name, label, false);
@@ -1917,7 +2039,7 @@
     const fileItem = input.files[0];
     const url = await api.uploadFile(fileItem, folder);
     if (!url) throw new Error("Upload fehlgeschlagen.");
-    setter(url, fileItem);
+    setter(url, { file: fileItem, type: normalizedMediaType(fileItem, url) });
   }
   async function withButtonLoading(button, text, fn) {
     if (!button) return fn();

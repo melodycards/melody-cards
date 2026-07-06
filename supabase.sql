@@ -36,6 +36,7 @@ create table if not exists public.products (
   price text,
   discount text,
   image_url text,
+  media_type text,
   images jsonb not null default '[]'::jsonb,
   tags jsonb not null default '[]'::jsonb,
   status text not null default 'active',
@@ -52,6 +53,7 @@ create table if not exists public.gallery_items (
   description text,
   category text,
   image_url text,
+  media_type text,
   sort_order int not null default 0,
   active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -64,6 +66,7 @@ create table if not exists public.reviews (
   text text not null,
   rating int not null default 5 check (rating between 1 and 5),
   image_url text,
+  media_type text,
   verified boolean not null default true,
   sort_order int not null default 0,
   active boolean not null default true,
@@ -85,6 +88,7 @@ create table if not exists public.blog_posts (
   excerpt text,
   body text,
   image_url text,
+  media_type text,
   published_at timestamptz not null default now(),
   active boolean not null default true,
   created_at timestamptz not null default now()
@@ -120,8 +124,12 @@ alter table public.products add column if not exists discount text;
 alter table public.products add column if not exists images jsonb not null default '[]'::jsonb;
 alter table public.products add column if not exists status text not null default 'active';
 alter table public.products add column if not exists featured boolean not null default false;
+alter table public.products add column if not exists media_type text;
 alter table public.gallery_items add column if not exists alt_text text;
+alter table public.gallery_items add column if not exists media_type text;
 alter table public.reviews add column if not exists photo text;
+alter table public.reviews add column if not exists media_type text;
+alter table public.blog_posts add column if not exists media_type text;
 
 alter table public.admin_profiles enable row level security;
 alter table public.site_settings enable row level security;
@@ -247,9 +255,18 @@ create policy "Admins can delete premium orders"
 on public.premium_orders for delete
 using (public.is_admin());
 
-insert into storage.buckets (id, name, public)
-values ('melody-assets', 'melody-assets', true)
-on conflict (id) do update set public = excluded.public;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'melody-assets',
+  'melody-assets',
+  true,
+  83886080,
+  array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','video/quicktime','video/ogg']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Public can read melody assets" on storage.objects;
 create policy "Public can read melody assets"
