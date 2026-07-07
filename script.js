@@ -432,29 +432,29 @@
             </div>
             <div class="fold-card-preview is-outside" data-card-preview>
               <div class="card-cover" data-card-cover>
-                <div class="cover-photo" data-cover-photo>${escape(c.noPhoto || "")}</div>
                 <div class="cover-copy position-middle font-elegant" data-cover-copy>
                   <strong data-preview-cover-text>${escape(templateText(copy, firstCategory.id))}</strong>
                   <span data-preview-cover-name></span>
+                  <em data-preview-cover-extra></em>
                 </div>
               </div>
               <div class="card-inside" data-card-inside hidden>
                 <div class="inside-page inside-left">
                   <small>${escape(c.leftPage || "")}</small>
                   <p data-preview-left-text></p>
+                  <div class="qr-reserved">${escape(c.qrText || "")}</div>
                 </div>
                 <div class="inside-fold" aria-hidden="true"></div>
                 <div class="inside-page inside-right">
                   <small>${escape(c.rightPage || "")}</small>
                   <div class="inside-right-content">
-                    <div class="cover-photo small" data-inside-photo>${escape(c.noPhoto || "")}</div>
+                    <div class="inside-photo" data-inside-photo hidden></div>
                     <p data-preview-right-text></p>
                   </div>
-                  <div class="qr-reserved">${escape(c.qrText || "")}</div>
                 </div>
               </div>
             </div>
-            <p class="live-price" data-live-price>${escape(c.priceLabel || "")}: ${formatPrice(Number(pricing.base || 0), pricing.currency || "€")}</p>
+            <p class="live-price" data-live-price>${escape(c.priceBaseText || "")}</p>
           </div>
           <div class="card-config-panel">
             <h3>${escape(c.title || "")}</h3>
@@ -462,25 +462,26 @@
               <option value="template">${escape(c.templateModeTemplate || "")}</option>
               <option value="custom">${escape(c.templateModeCustom || "")}</option>
             </select></label>
-            <label>${escape(c.templateLabel || "")}<select name="cover_template">${templateOptions(copy, firstCategory.id)}</select></label>
-            <label>${escape(c.coverTextLabel || "")}<input name="cover_text" value="${escape(templateText(copy, firstCategory.id))}" /></label>
-            <label>${escape(c.coverNameLabel || "")}<input name="cover_name" /></label>
-            <label>${escape(c.coverFontSizeLabel || "")}<input name="cover_font_size" type="range" min="26" max="72" value="44" /></label>
-            <label>${escape(c.coverFontStyleLabel || "")}<select name="cover_font_style">
+            <label class="cover-template-field">${escape(c.templateLabel || "")}<select name="cover_template">${templateOptions(copy, firstCategory.id)}</select></label>
+            <label class="cover-custom-field" hidden>${escape(c.coverTextLabel || "")}<input name="cover_text" value="${escape(templateText(copy, firstCategory.id))}" /></label>
+            <label class="cover-custom-field" hidden>${escape(c.coverNameLabel || "")}<input name="cover_name" /></label>
+            <label class="cover-custom-field" hidden>${escape(c.coverExtraLabel || "")}<input name="cover_extra" /></label>
+            <label class="cover-custom-field" hidden>${escape(c.coverFontSizeLabel || "")}<input name="cover_font_size" type="range" min="26" max="72" value="44" /></label>
+            <label class="cover-custom-field" hidden>${escape(c.coverFontStyleLabel || "")}<select name="cover_font_style">
               <option value="elegant">${escape(c.fontElegant || "")}</option>
               <option value="modern">${escape(c.fontModern || "")}</option>
               <option value="classic">${escape(c.fontClassic || "")}</option>
             </select></label>
-            <label>${escape(c.coverPositionLabel || "")}<select name="cover_position">
+            <label class="cover-custom-field" hidden>${escape(c.coverPositionLabel || "")}<select name="cover_position">
               <option value="top">${escape(c.positionTop || "")}</option>
               <option value="middle" selected>${escape(c.positionMiddle || "")}</option>
               <option value="bottom">${escape(c.positionBottom || "")}</option>
             </select></label>
             <label>${escape(c.coverPhotoLabel || "")}<input name="customer_photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /></label>
             <label>${escape(c.textModeLabel || "")}<select name="inside_text_mode">
+              <option value="empty">${escape(c.textModeEmpty || "")}</option>
               <option value="self">${escape(c.textModeSelf || "")}</option>
               <option value="melody">${escape(c.textModeMelody || "")}</option>
-              <option value="empty">${escape(c.textModeEmpty || "")}</option>
             </select></label>
             <label class="inside-left-field">${escape(c.insideLeftTextLabel || "")}<textarea name="inside_left_text" rows="4"></textarea></label>
             <label class="text-brief-field" hidden>${escape(c.textBriefLabel || "")}<textarea name="text_brief" rows="3" placeholder="${escape(c.textBriefPlaceholder || "")}"></textarea></label>
@@ -656,9 +657,23 @@
     if (!form) return;
     const copy = orderCopy();
     const c = copy.configurator || {};
-    const pricing = copy.pricing || {};
-    if (form.elements.design_mode?.value === "template" && form.elements.cover_template?.value) {
+    const isCustomCover = form.elements.design_mode?.value === "custom";
+    form.querySelectorAll(".cover-custom-field").forEach((field) => {
+      field.hidden = !isCustomCover;
+      field.querySelectorAll("input, textarea, select").forEach((input) => {
+        input.disabled = !isCustomCover;
+      });
+    });
+    form.querySelectorAll(".cover-template-field").forEach((field) => {
+      field.hidden = isCustomCover;
+      field.querySelectorAll("input, textarea, select").forEach((input) => {
+        input.disabled = isCustomCover;
+      });
+    });
+    if (!isCustomCover && form.elements.cover_template?.value) {
       form.elements.cover_text.value = form.elements.cover_template.value;
+      if (form.elements.cover_name) form.elements.cover_name.value = "";
+      if (form.elements.cover_extra) form.elements.cover_extra.value = "";
     }
     const coverCopy = $("[data-cover-copy]");
     if (coverCopy) {
@@ -667,28 +682,25 @@
     }
     $("[data-preview-cover-text]").textContent = form.elements.cover_text?.value || "";
     $("[data-preview-cover-name]").textContent = form.elements.cover_name?.value || "";
-    const textMode = form.elements.inside_text_mode?.value || "self";
+    $("[data-preview-cover-extra]").textContent = form.elements.cover_extra?.value || "";
+    const textMode = form.elements.inside_text_mode?.value || "empty";
     form.querySelector(".inside-left-field").hidden = textMode !== "self";
     form.querySelector(".text-brief-field").hidden = textMode !== "melody";
     const leftText = textMode === "empty" ? "" : textMode === "melody" ? (form.elements.text_brief?.value || c.textModeMelody || "") : (form.elements.inside_left_text?.value || "");
     $("[data-preview-left-text]").textContent = leftText;
     $("[data-preview-right-text]").textContent = form.elements.inside_right_text?.value || "";
     if (!form.elements.customer_photo?.files?.length) {
-      document.querySelectorAll("[data-cover-photo], [data-inside-photo]").forEach((node) => {
-        node.textContent = c.noPhoto || "";
+      document.querySelectorAll("[data-inside-photo]").forEach((node) => {
+        node.hidden = true;
+        node.innerHTML = "";
       });
     }
-    const price = calculateConfiguratorPrice(form, pricing);
-    $("[data-live-price]").textContent = `${c.priceLabel || ""}: ${formatPrice(price, pricing.currency || "€")}`;
+    $("[data-live-price]").textContent = hasPersonalization(form) ? (c.priceCustomText || "") : (c.priceBaseText || "");
   }
 
-  function calculateConfiguratorPrice(form, pricing) {
-    let price = Number(pricing.base || 0);
-    if (form.elements.design_mode?.value === "custom") price += Number(pricing.personalizedCover || 0);
-    if (form.elements.inside_text_mode?.value === "melody") price += Number(pricing.melodyText || 0);
-    if (form.elements.customer_photo?.files?.length) price += Number(pricing.photo || 0);
-    if (form.elements.complex_design?.checked) price += Number(pricing.complexDesign || 0);
-    return price;
+  function hasPersonalization(form) {
+    const textMode = form.elements.inside_text_mode?.value || "empty";
+    return form.elements.design_mode?.value === "custom" || textMode === "self" || textMode === "melody" || Boolean(form.elements.customer_photo?.files?.length) || Boolean(form.elements.complex_design?.checked);
   }
 
   function previewCustomerPhoto(event) {
@@ -696,7 +708,8 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      document.querySelectorAll("[data-cover-photo], [data-inside-photo]").forEach((node) => {
+      document.querySelectorAll("[data-inside-photo]").forEach((node) => {
+        node.hidden = false;
         node.innerHTML = `<img src="${escape(reader.result)}" alt="" />`;
       });
       updateCardConfigurator();
@@ -806,11 +819,13 @@
         `${copy.cardTextOccasion || ""}: ${occasionName(values, categoryLabel)}`,
         `${copy.configurator?.templateModeLabel || ""}: ${configuratorDetails.design_mode_label}`,
         `${copy.configurator?.coverTextLabel || ""}: ${configuratorDetails.cover_text}`,
+        `${copy.configurator?.coverNameLabel || ""}: ${configuratorDetails.cover_name}`,
+        `${copy.configurator?.coverExtraLabel || ""}: ${configuratorDetails.cover_extra}`,
         `${copy.configurator?.insideLeftTitle || ""}: ${configuratorDetails.inside_left_text || configuratorDetails.text_brief || ""}`,
         `${copy.configurator?.insideRightTitle || ""}: ${configuratorDetails.inside_right_text || ""}`,
-        `${copy.configurator?.priceLabel || ""}: ${formatPrice(configuratorDetails.price, configuratorDetails.currency)}`,
+        `${copy.configurator?.priceLabel || ""}: ${configuratorDetails.price_note}`,
         ...dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`)
-      ].join("\n");
+      ].filter((line) => !line.endsWith(": ")).join("\n");
       await window.MelodySupabase.createPremiumOrder({
         name: (values.name || "").trim(),
         customer_name: (values.name || "").trim(),
@@ -827,7 +842,6 @@
         card_text: cardText,
         image_url: uploadedPhotoUrl || "",
         card_photo_url: uploadedPhotoUrl || "",
-        calculated_price: configuratorDetails.price,
         configurator: configuratorDetails,
         music_wish: JSON.stringify({
           ...orderDetails,
@@ -862,30 +876,32 @@
 
   function collectConfiguratorDetails(form, copy, uploadedPhotoUrl = "") {
     const c = copy.configurator || {};
-    const pricing = copy.pricing || {};
     const designMode = form.elements.design_mode?.value || "template";
     const textMode = form.elements.inside_text_mode?.value || "self";
+    const personalized = hasPersonalization(form);
     return {
       design_mode: designMode,
       design_mode_label: designMode === "custom" ? c.templateModeCustom : c.templateModeTemplate,
-      template: form.elements.cover_template?.value || "",
-      cover_text: form.elements.cover_text?.value || "",
-      cover_name: form.elements.cover_name?.value || "",
+      template: designMode === "template" ? (form.elements.cover_template?.value || "") : "",
+      cover_text: designMode === "custom" ? (form.elements.cover_text?.value || "") : (form.elements.cover_template?.value || ""),
+      cover_name: designMode === "custom" ? (form.elements.cover_name?.value || "") : "",
+      cover_extra: designMode === "custom" ? (form.elements.cover_extra?.value || "") : "",
       cover_font_size: form.elements.cover_font_size?.value || "",
       cover_font_style: form.elements.cover_font_style?.value || "",
       cover_position: form.elements.cover_position?.value || "",
       inside_text_mode: textMode,
       inside_text_mode_label: textMode === "melody" ? c.textModeMelody : textMode === "empty" ? c.textModeEmpty : c.textModeSelf,
-      inside_left_text: form.elements.inside_left_text?.value || "",
-      text_brief: form.elements.text_brief?.value || "",
+      inside_left_text: textMode === "self" ? (form.elements.inside_left_text?.value || "") : "",
+      text_brief: textMode === "melody" ? (form.elements.text_brief?.value || "") : "",
       inside_right_text: form.elements.inside_right_text?.value || "",
       relationship: form.elements.relationship?.value || "",
       personal_story: form.elements.personal_story?.value || "",
       complex_design: Boolean(form.elements.complex_design?.checked),
       photo_url: uploadedPhotoUrl,
-      price: calculateConfiguratorPrice(form, pricing),
-      currency: pricing.currency || "€",
-      qr_position: "inside_right_bottom"
+      price: null,
+      price_note: personalized ? (c.priceCustomText || "") : (c.priceBaseText || ""),
+      currency: "€",
+      qr_position: "inside_left_bottom_center"
     };
   }
 

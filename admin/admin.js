@@ -2080,7 +2080,6 @@
     const styleValue = order.music_style || wish.music_style || "";
     const storyValue = order.story || wish.story || order.message || "";
     const cardConfig = order.configurator || wish.configurator || {};
-    const priceValue = order.calculated_price || cardConfig.price || "";
     const photoValue = order.card_photo_url || cardConfig.photo_url || order.image_url || "";
     return `<article class="order-admin-card">
       <header>
@@ -2110,11 +2109,12 @@
           <label>Vorlage<input name="config_template" value="${escape(cardConfig.template || "")}" /></label>
           <label>Cover-Text<input name="config_cover_text" value="${escape(cardConfig.cover_text || "")}" /></label>
           <label>Cover-Name<input name="config_cover_name" value="${escape(cardConfig.cover_name || "")}" /></label>
+          <label>Kurzer Zusatztext<input name="config_cover_extra" value="${escape(cardConfig.cover_extra || "")}" /></label>
           <label class="span-all">Innen links<textarea name="config_inside_left_text" rows="3">${escape(cardConfig.inside_left_text || "")}</textarea></label>
           <label class="span-all">Melody-Textwunsch<textarea name="config_text_brief" rows="3">${escape(cardConfig.text_brief || "")}</textarea></label>
           <label class="span-all">Innen rechts<textarea name="config_inside_right_text" rows="3">${escape(cardConfig.inside_right_text || "")}</textarea></label>
           <label>Beziehung<input name="config_relationship" value="${escape(cardConfig.relationship || "")}" /></label>
-          <label>Preis in Euro<input name="calculated_price" type="number" min="0" step="0.01" value="${escape(priceValue)}" /></label>
+          <label class="span-all">Preis-Hinweis<input name="price_note" value="${escape(cardConfig.price_note || "")}" /></label>
           <input name="card_photo_url" type="hidden" value="${escape(photoValue)}" />
         </div>
         <label class="span-all">Persönliche Infos / Geschichte<textarea name="story" rows="3">${escape(storyValue)}</textarea></label>
@@ -2133,12 +2133,13 @@
         ${summaryRow("Vorlage", config.template)}
         ${summaryRow("Cover-Text", config.cover_text)}
         ${summaryRow("Cover-Name", config.cover_name)}
+        ${summaryRow("Zusatztext", config.cover_extra)}
         ${summaryRow("Innen links", config.inside_left_text || config.text_brief)}
         ${summaryRow("Innen rechts", config.inside_right_text)}
         ${summaryRow("Textmodus", config.inside_text_mode_label)}
         ${summaryRow("Beziehung", config.relationship)}
-        ${summaryRow("Preis", config.price ? `${config.price} ${config.currency || "€"}` : "")}
-        ${summaryRow("QR-Code", config.qr_position === "inside_right_bottom" ? "Innen rechts unten" : config.qr_position)}
+        ${summaryRow("Preis", config.price_note || (config.price ? `${config.price} ${config.currency || "€"}` : ""))}
+        ${summaryRow("QR-Code", config.qr_position === "inside_left_bottom_center" ? "Innen links unten mittig" : config.qr_position)}
       </dl>
     </div>`;
   }
@@ -2220,13 +2221,13 @@
   }
 
   function collectOrderConfiguratorFromAdmin(form) {
-    const price = Number(form.elements.calculated_price?.value || 0);
     const mode = form.elements.inside_text_mode?.value || "self";
     return {
       design_mode: "template",
       template: form.elements.config_template?.value || "",
       cover_text: form.elements.config_cover_text?.value || "",
       cover_name: form.elements.config_cover_name?.value || "",
+      cover_extra: form.elements.config_cover_extra?.value || "",
       inside_text_mode: mode,
       inside_text_mode_label: mode === "melody" ? "Melody Cards schreibt" : mode === "empty" ? "Innen leer lassen" : "Kunde schreibt selbst",
       inside_left_text: form.elements.config_inside_left_text?.value || "",
@@ -2234,9 +2235,10 @@
       inside_right_text: form.elements.config_inside_right_text?.value || "",
       relationship: form.elements.config_relationship?.value || "",
       photo_url: form.elements.card_photo_url?.value || "",
-      price,
+      price: null,
+      price_note: form.elements.price_note?.value || "",
       currency: "€",
-      qr_position: "inside_right_bottom"
+      qr_position: "inside_left_bottom_center"
     };
   }
 
@@ -2260,7 +2262,7 @@
           music_style: form.elements.music_style.value,
           story: form.elements.story.value,
           music_wish: serializeMusicWish(form),
-          calculated_price: Number(form.elements.calculated_price?.value || 0),
+          calculated_price: null,
           card_photo_url: form.elements.card_photo_url?.value || "",
           status: form.elements.status.value,
           card_text: form.elements.card_text.value,

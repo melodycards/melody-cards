@@ -192,7 +192,6 @@
       const { error } = await client.from(table).insert(order);
       if (!error) return { saved: true, table };
       if (isMissingColumnError(error)) {
-        console.warn(`${table} schema fallback:`, error.message);
         const retry = await client.from(table).insert(legacyPremiumOrder(order));
         if (!retry.error) return { saved: true, table, fallback: true };
         errors.push(`${table}: ${readableOrderError(retry.error, table)}`);
