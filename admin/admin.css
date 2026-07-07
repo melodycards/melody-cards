@@ -299,6 +299,43 @@
 }
 .order-admin-card header strong { font-size: 18px; }
 .order-admin-card header p { margin: 4px 0 0; color: var(--muted); }
+.order-config-summary {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f8f6f0;
+  border: 1px solid var(--border);
+}
+.order-config-summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.order-config-summary dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.order-config-summary dd {
+  margin: 2px 0 0;
+  color: var(--ink);
+}
+.order-config-edit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.order-config-edit > strong {
+  grid-column: 1 / -1;
+  font-size: 16px;
+}
 .order-admin-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -339,5 +376,6 @@
   .admin-top { position: relative; flex-direction: column; align-items: flex-start; }
   .admin-row { grid-template-columns: 64px minmax(0, 1fr); }
   .admin-actions { grid-column: 1 / -1; }
-  .order-admin-form { grid-template-columns: 1fr; }
+  .order-config-summary, .order-config-summary dl { grid-template-columns: 1fr; }
+  .order-admin-form, .order-config-edit { grid-template-columns: 1fr; }
 }

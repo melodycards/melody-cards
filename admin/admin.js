@@ -1625,6 +1625,7 @@
   function renderOrderFormEditor() {
     const deOrder = content.orderForm || {};
     const trOrder = content.translations?.tr?.orderForm || {};
+    const pricing = deOrder.pricing || {};
     const textKeys = [
       ["categoryLabel", "Kartentyp Label"],
       ["categoryHelp", "Kartentyp Hilfetext"],
@@ -1649,10 +1650,21 @@
       ["voiceOptions", "Stimme Optionen"],
       ["musicStyleOptions", "Musikrichtung Optionen"]
     ];
+    const priceFields = [
+      ["base", "Basispreis"],
+      ["personalizedCover", "Aufpreis personalisiertes Cover"],
+      ["melodyText", "Aufpreis Text von Melody Cards"],
+      ["photo", "Aufpreis Foto"],
+      ["complexDesign", "Aufpreis aufwendiges Design"]
+    ];
     const fieldEditor = Object.entries(deOrder.categoryFields || {}).map(([categoryId, fields]) => {
       const trFields = trOrder.categoryFields?.[categoryId] || [];
       const category = (content.categories || []).find((item) => item.id === categoryId);
+      const deTemplates = deOrder.coverTemplates?.[categoryId] || [];
+      const trTemplates = trOrder.coverTemplates?.[categoryId] || [];
       return `<div class="admin-card span-all"><h3>${escape(category?.title || categoryId)}</h3><div class="admin-grid">
+        ${input(`templates.${categoryId}.de`, "Cover-Vorlagen DE", deTemplates.join("\n"), "textarea")}
+        ${input(`templates.${categoryId}.tr`, "Cover-Vorlagen TR", trTemplates.join("\n"), "textarea")}
         ${(fields || []).map((field, index) => {
           const trField = trFields[index] || {};
           return `
@@ -1667,6 +1679,10 @@
     $('[data-panel="orderform"]').innerHTML = `<form data-orderform-editor class="admin-grid">
       ${textKeys.map(([key, label]) => `${input(`order.${key}.de`, `${label} DE`, deOrder[key] || "", key.includes("Placeholder") || key.includes("Message") || key === "categoryHelp" ? "textarea" : "text")}${input(`order.${key}.tr`, `${label} TR`, trOrder[key] || "", key.includes("Placeholder") || key.includes("Message") || key === "categoryHelp" ? "textarea" : "text")}`).join("")}
       ${optionKeys.map(([key, label]) => `${input(`order.${key}.de`, `${label} DE`, (deOrder[key] || []).join("\n"), "textarea")}${input(`order.${key}.tr`, `${label} TR`, (trOrder[key] || []).join("\n"), "textarea")}`).join("")}
+      <div class="admin-card span-all"><h3>Preise</h3><div class="admin-grid">
+        ${priceFields.map(([key, label]) => input(`pricing.${key}`, label, pricing[key] ?? "", "number")).join("")}
+        ${input("pricing.currency", "Währung", pricing.currency || "€")}
+      </div></div>
       ${fieldEditor}
       <button class="btn btn-primary span-all" type="submit" data-orderform-save>Bestellformular speichern</button>
     </form>`;
@@ -1694,7 +1710,17 @@
         content.orderForm[key] = splitLines(form.elements[`order.${key}.de`]?.value || "");
         content.translations.tr.orderForm[key] = splitLines(form.elements[`order.${key}.tr`]?.value || "");
       });
+      content.orderForm.pricing = content.orderForm.pricing || {};
+      ["base", "personalizedCover", "melodyText", "photo", "complexDesign"].forEach((key) => {
+        content.orderForm.pricing[key] = Number(form.elements[`pricing.${key}`]?.value || 0);
+      });
+      content.orderForm.pricing.currency = form.elements["pricing.currency"]?.value || "€";
+      content.translations.tr.orderForm.pricing = { ...content.orderForm.pricing };
       Object.entries(content.orderForm.categoryFields || {}).forEach(([categoryId, fields]) => {
+        content.orderForm.coverTemplates = content.orderForm.coverTemplates || {};
+        content.translations.tr.orderForm.coverTemplates = content.translations.tr.orderForm.coverTemplates || {};
+        content.orderForm.coverTemplates[categoryId] = splitLines(form.elements[`templates.${categoryId}.de`]?.value || "");
+        content.translations.tr.orderForm.coverTemplates[categoryId] = splitLines(form.elements[`templates.${categoryId}.tr`]?.value || "");
         content.translations.tr.orderForm.categoryFields = content.translations.tr.orderForm.categoryFields || {};
         content.translations.tr.orderForm.categoryFields[categoryId] = content.translations.tr.orderForm.categoryFields[categoryId] || [];
         fields.forEach((field, index) => {
@@ -2053,6 +2079,9 @@
     const voiceValue = order.voice || wish.voice || "";
     const styleValue = order.music_style || wish.music_style || "";
     const storyValue = order.story || wish.story || order.message || "";
+    const cardConfig = order.configurator || wish.configurator || {};
+    const priceValue = order.calculated_price || cardConfig.price || "";
+    const photoValue = order.card_photo_url || cardConfig.photo_url || order.image_url || "";
     return `<article class="order-admin-card">
       <header>
         <div>
@@ -2061,6 +2090,7 @@
         </div>
         <span class="status-pill">${escape(order.status || "neu")}</span>
       </header>
+      ${orderConfiguratorSummary(cardConfig, order)}
       <form data-order-form="${escape(order.id)}" data-order-table="${escape(order._order_table || "premium_orders")}" class="order-admin-form">
         ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(categoryValue), categoryValue)}
         <label>Name der Person<input name="recipient_name" value="${escape(recipientValue)}" /></label>
@@ -2070,11 +2100,51 @@
         ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, styleValue)}
         ${adminSelect("status", "Status", ["neu", "in_bearbeitung", "fertig", "archiviert", "new", "in_progress", "done", "archived"], order.status || "neu")}
         <label class="span-all">Kartentext<textarea name="card_text" rows="3">${escape(order.card_text || "")}</textarea></label>
+        <div class="order-config-edit span-all">
+          <strong>Karten-Konfiguration</strong>
+          ${adminSelectWithLabels("inside_text_mode", "Textmodus", [
+            ["self", "Kunde schreibt selbst"],
+            ["melody", "Melody Cards schreibt"],
+            ["empty", "Innen leer lassen"]
+          ], cardConfig.inside_text_mode || "self")}
+          <label>Vorlage<input name="config_template" value="${escape(cardConfig.template || "")}" /></label>
+          <label>Cover-Text<input name="config_cover_text" value="${escape(cardConfig.cover_text || "")}" /></label>
+          <label>Cover-Name<input name="config_cover_name" value="${escape(cardConfig.cover_name || "")}" /></label>
+          <label class="span-all">Innen links<textarea name="config_inside_left_text" rows="3">${escape(cardConfig.inside_left_text || "")}</textarea></label>
+          <label class="span-all">Melody-Textwunsch<textarea name="config_text_brief" rows="3">${escape(cardConfig.text_brief || "")}</textarea></label>
+          <label class="span-all">Innen rechts<textarea name="config_inside_right_text" rows="3">${escape(cardConfig.inside_right_text || "")}</textarea></label>
+          <label>Beziehung<input name="config_relationship" value="${escape(cardConfig.relationship || "")}" /></label>
+          <label>Preis in Euro<input name="calculated_price" type="number" min="0" step="0.01" value="${escape(priceValue)}" /></label>
+          <input name="card_photo_url" type="hidden" value="${escape(photoValue)}" />
+        </div>
         <label class="span-all">Persönliche Infos / Geschichte<textarea name="story" rows="3">${escape(storyValue)}</textarea></label>
         <label class="span-all">Nachricht<textarea name="message" rows="3">${escape(order.message || "")}</textarea></label>
         <button class="btn btn-primary span-all" type="submit" data-order-save>Bestellung speichern</button>
       </form>
     </article>`;
+  }
+
+  function orderConfiguratorSummary(config = {}, order = {}) {
+    if (!Object.keys(config || {}).length && !order.image_url && !order.card_photo_url) return "";
+    const photo = config.photo_url || order.card_photo_url || order.image_url || "";
+    return `<div class="order-config-summary">
+      ${photo ? `<img class="admin-thumb" src="${escape(photo)}" alt="" />` : ""}
+      <dl>
+        ${summaryRow("Vorlage", config.template)}
+        ${summaryRow("Cover-Text", config.cover_text)}
+        ${summaryRow("Cover-Name", config.cover_name)}
+        ${summaryRow("Innen links", config.inside_left_text || config.text_brief)}
+        ${summaryRow("Innen rechts", config.inside_right_text)}
+        ${summaryRow("Textmodus", config.inside_text_mode_label)}
+        ${summaryRow("Beziehung", config.relationship)}
+        ${summaryRow("Preis", config.price ? `${config.price} ${config.currency || "€"}` : "")}
+        ${summaryRow("QR-Code", config.qr_position === "inside_right_bottom" ? "Innen rechts unten" : config.qr_position)}
+      </dl>
+    </div>`;
+  }
+
+  function summaryRow(label, value) {
+    return value ? `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>` : "";
   }
 
   function categoryOrderOptions(current = "") {
@@ -2088,6 +2158,10 @@
     return `<label>${escape(label)}<select name="${escape(name)}" required>${options.map((option) => `<option value="${escape(option)}" ${option === selected ? "selected" : ""}>${escape(option)}</option>`).join("")}</select></label>`;
   }
 
+  function adminSelectWithLabels(name, label, options, selected) {
+    return `<label>${escape(label)}<select name="${escape(name)}">${options.map(([value, title]) => `<option value="${escape(value)}" ${value === selected ? "selected" : ""}>${escape(title)}</option>`).join("")}</select></label>`;
+  }
+
   function parseMusicWish(value = "") {
     if (!value) return {};
     try {
@@ -2099,7 +2173,8 @@
         song_language: parsed.song_language || parsed.language || "",
         voice: parsed.voice || "",
         music_style: parsed.music_style || parsed.style || "",
-        story: parsed.story || parsed.message || ""
+        story: parsed.story || parsed.message || "",
+        configurator: parsed.configurator || {}
       };
     } catch {
       const text = String(value);
@@ -2132,6 +2207,7 @@
       voice: form.elements.voice.value,
       music_style: form.elements.music_style.value,
       story: form.elements.story.value,
+      configurator: collectOrderConfiguratorFromAdmin(form),
       labels: {
         card_category: "Kartentyp",
         recipient_name: "Name der Person",
@@ -2141,6 +2217,27 @@
         music_style: "Musikrichtung"
       }
     });
+  }
+
+  function collectOrderConfiguratorFromAdmin(form) {
+    const price = Number(form.elements.calculated_price?.value || 0);
+    const mode = form.elements.inside_text_mode?.value || "self";
+    return {
+      design_mode: "template",
+      template: form.elements.config_template?.value || "",
+      cover_text: form.elements.config_cover_text?.value || "",
+      cover_name: form.elements.config_cover_name?.value || "",
+      inside_text_mode: mode,
+      inside_text_mode_label: mode === "melody" ? "Melody Cards schreibt" : mode === "empty" ? "Innen leer lassen" : "Kunde schreibt selbst",
+      inside_left_text: form.elements.config_inside_left_text?.value || "",
+      text_brief: form.elements.config_text_brief?.value || "",
+      inside_right_text: form.elements.config_inside_right_text?.value || "",
+      relationship: form.elements.config_relationship?.value || "",
+      photo_url: form.elements.card_photo_url?.value || "",
+      price,
+      currency: "€",
+      qr_position: "inside_right_bottom"
+    };
   }
 
   async function saveOrderEdits(event) {
@@ -2154,6 +2251,7 @@
         await refreshClient();
         if (!client) throw new Error("Supabase nicht verbunden.");
         const payload = {
+          configurator: collectOrderConfiguratorFromAdmin(form),
           card_category: form.elements.card_category.value,
           recipient_name: form.elements.recipient_name.value,
           occasion: form.elements.occasion.value,
@@ -2162,6 +2260,8 @@
           music_style: form.elements.music_style.value,
           story: form.elements.story.value,
           music_wish: serializeMusicWish(form),
+          calculated_price: Number(form.elements.calculated_price?.value || 0),
+          card_photo_url: form.elements.card_photo_url?.value || "",
           status: form.elements.status.value,
           card_text: form.elements.card_text.value,
           message: form.elements.message.value
@@ -2206,8 +2306,8 @@
       if (!client) throw new Error("Supabase nicht verbunden.");
       const checks = [
         ["site_settings", "id,content,design,updated_at"],
-        ["premium_orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"],
-        ["orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"]
+        ["premium_orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,configurator,calculated_price,card_photo_url,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"],
+        ["orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,configurator,calculated_price,card_photo_url,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"]
       ];
       const results = [];
       for (const [table, select] of checks) {

@@ -35,6 +35,9 @@ create table if not exists public.premium_orders (
   voice text,
   music_style text,
   story text,
+  configurator jsonb,
+  calculated_price numeric,
+  card_photo_url text,
   card_text text,
   music_wish text,
   message text,
@@ -60,6 +63,9 @@ create table if not exists public.orders (
   voice text,
   music_style text,
   story text,
+  configurator jsonb,
+  calculated_price numeric,
+  card_photo_url text,
   card_text text,
   music_wish text,
   message text,
@@ -79,6 +85,9 @@ alter table public.premium_orders add column if not exists song_language text;
 alter table public.premium_orders add column if not exists voice text;
 alter table public.premium_orders add column if not exists music_style text;
 alter table public.premium_orders add column if not exists story text;
+alter table public.premium_orders add column if not exists configurator jsonb;
+alter table public.premium_orders add column if not exists calculated_price numeric;
+alter table public.premium_orders add column if not exists card_photo_url text;
 alter table public.premium_orders alter column status set default 'neu';
 alter table public.orders add column if not exists customer_name text;
 alter table public.orders add column if not exists card_category text;
@@ -88,6 +97,9 @@ alter table public.orders add column if not exists song_language text;
 alter table public.orders add column if not exists voice text;
 alter table public.orders add column if not exists music_style text;
 alter table public.orders add column if not exists story text;
+alter table public.orders add column if not exists configurator jsonb;
+alter table public.orders add column if not exists calculated_price numeric;
+alter table public.orders add column if not exists card_photo_url text;
 alter table public.orders alter column status set default 'neu';
 
 create index if not exists premium_orders_created_at_idx
