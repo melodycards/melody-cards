@@ -471,10 +471,46 @@ details p { color: var(--muted); }
 }
 .card-config-panel { display: grid; gap: 16px; min-width: 0; position: relative; z-index: 2; }
 .card-config-panel h3 { margin: 0; }
+.config-group {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(221, 211, 194, .9);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .72);
+}
+.config-group h4 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0;
+}
 .inline-check { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .inline-check input { width: auto; min-height: auto; }
 .live-price { margin: 0; font-size: clamp(24px, 3vw, 36px); font-weight: 800; color: var(--ink); }
 label { display: grid; gap: 8px; font-weight: 700; }
+.song-brief-field {
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(221, 211, 194, .95);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(250,247,241,.88));
+  box-shadow: 0 18px 44px rgba(47, 39, 28, .08);
+}
+.song-brief-field small {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.song-brief-field textarea {
+  min-height: 260px;
+  border-radius: 20px;
+  line-height: 1.58;
+  background: #fffdf9;
+}
+.song-brief-field textarea::placeholder {
+  color: rgba(47, 43, 37, .58);
+}
 .order-category-help {
   display: block;
   margin-top: 2px;
@@ -605,15 +641,23 @@ textarea { resize: vertical; min-height: 140px; }
   .hero-actions .btn { min-height: 46px; padding: 0 18px; }
   .section { width: min(100% - 32px, var(--max-width)); padding: 78px 0; }
   .editorial, .site-footer, .order-form, .order-dynamic-fields, .category-field-group, .card-configurator { grid-template-columns: 1fr; }
+  .card-configurator { gap: 20px; }
   .card-preview-panel { position: relative; top: auto; }
   .card-inside { grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); }
   .inside-fold { height: auto; }
-  .fold-card-preview { min-height: 0; padding: 12px; }
-  .card-cover, .card-inside { min-height: 292px; }
-  .inside-page { min-height: 292px; padding: 14px; gap: 10px; }
-  .inside-left { padding-bottom: 118px; }
-  .inside-photo { width: min(118px, 88%); border-radius: 12px; }
-  .qr-reserved { width: min(96px, 78%); bottom: 14px; font-size: 9px; padding: 7px; }
+  .card-view-toggle { width: 100%; justify-content: center; }
+  .mini-toggle { padding: 9px 12px; font-size: 13px; }
+  .fold-card-preview { min-height: 0; padding: 10px; border-radius: 20px; }
+  .card-cover, .card-inside { min-height: clamp(218px, 62vw, 274px); border-radius: 14px; }
+  .cover-copy { left: 8%; right: 8%; font-size: clamp(24px, 7.2vw, 38px); }
+  .inside-page { min-height: clamp(218px, 62vw, 274px); padding: 12px 10px; gap: 8px; }
+  .inside-page small { font-size: 9px; }
+  .inside-page p { font-size: 12px; line-height: 1.35; }
+  .inside-left { padding-bottom: 104px; }
+  .inside-photo { width: min(104px, 88%); border-radius: 12px; }
+  .qr-reserved { width: min(84px, 76%); bottom: 12px; font-size: 8px; padding: 6px; border-radius: 10px; }
+  .song-brief-field { padding: 14px; border-radius: 20px; }
+  .song-brief-field textarea { min-height: 220px; }
   .editorial-image { min-height: 360px; }
   .step-grid, .product-grid, .review-grid, .category-grid { grid-template-columns: 1fr; }
   .category-image { min-height: 230px; }

@@ -49,6 +49,11 @@
     const merged = {
       ...baseOrder,
       ...remoteOrder,
+      configurator: mergeConfigurator(baseOrder.configurator || {}, remoteOrder.configurator || {}, language),
+      coverTemplates: {
+        ...(baseOrder.coverTemplates || {}),
+        ...(remoteOrder.coverTemplates || {})
+      },
       categoryFields: {
         ...(baseOrder.categoryFields || {}),
         ...(remoteOrder.categoryFields || {})
@@ -62,6 +67,32 @@
       if ((merged.songLanguageOptions || []).some((option) => (legacy.songLanguageOptions || []).includes(option))) merged.songLanguageOptions = defaults.songLanguageOptions || merged.songLanguageOptions;
       if ((merged.musicStyleOptions || []).some((option) => (legacy.musicStyleOptions || []).includes(option))) merged.musicStyleOptions = defaults.musicStyleOptions || merged.musicStyleOptions;
     }
+    const defaults = window.MELODY_LANGUAGE_PACK?.[language]?.orderForm || baseOrder;
+    const staleMessageLabels = ["Wünsche zur Karte", "Kartenvorgaben", "Kartenwünsche"];
+    if (staleMessageLabels.includes(merged.messageLabel || "")) merged.messageLabel = defaults.messageLabel || "Nachricht";
+    return merged;
+  }
+
+  function mergeConfigurator(baseConfigurator = {}, remoteConfigurator = {}, language = "de") {
+    const defaults = window.MELODY_LANGUAGE_PACK?.[language]?.orderForm?.configurator || baseConfigurator;
+    const merged = {
+      ...baseConfigurator,
+      ...remoteConfigurator,
+      storyPlaceholders: {
+        ...(baseConfigurator.storyPlaceholders || {}),
+        ...(remoteConfigurator.storyPlaceholders || {})
+      }
+    };
+    const staleStoryLabels = ["Persönliche Geschichte / Infos", "Kişisel hikaye / bilgiler", "Wünsche zur Karte"];
+    if (!merged.storyLabel || staleStoryLabels.includes(merged.storyLabel)) merged.storyLabel = defaults.storyLabel || merged.storyLabel;
+    if (!merged.storyHelp) merged.storyHelp = defaults.storyHelp || "";
+    if (!merged.storyPlaceholder || merged.storyPlaceholder.includes("Was macht diese Person") || merged.storyPlaceholder.includes("Bu kişiyi özel yapan")) {
+      merged.storyPlaceholder = defaults.storyPlaceholder || merged.storyPlaceholder;
+    }
+    merged.storyPlaceholders = {
+      ...(defaults.storyPlaceholders || {}),
+      ...(merged.storyPlaceholders || {})
+    };
     return merged;
   }
 
@@ -201,7 +232,7 @@
     $("[data-nav-toggle]")?.setAttribute("data-edit-kind", "navigation");
     $("[data-nav-toggle]")?.setAttribute("data-edit-id", "navigation");
     const logo = brand.logoImage
-      ? `<img src="${escape(brand.logoImage)}" alt="${escape(brand.name)}" />`
+      ? `<img src="${escape(brand.logoImage)}" alt="${escape(brand.name)}" loading="eager" decoding="async" />`
       : `<span>${escape(content.brand.logoText || "MC")}</span>`;
     const brandNode = $("[data-brand]");
     brandNode.setAttribute("data-edit-kind", "brand");
@@ -267,9 +298,9 @@
     const type = item.mediaType || item.media_type || item.type || "";
     if (!url) return "";
     if (isVideo(url, type)) {
-      return `<video src="${escape(url)}" autoplay muted loop playsinline preload="metadata" poster="${escape(item.poster || item.image || "")}" ${item.controls ? "controls" : ""}></video>`;
+      return `<video src="${escape(url)}" muted loop playsinline preload="none" poster="${escape(item.poster || item.image || "")}" ${item.controls ? "controls" : ""}></video>`;
     }
-    return `<img src="${escape(url)}" alt="${escape(alt || item.alt || item.title || "")}" loading="lazy" />`;
+    return `<img src="${escape(url)}" alt="${escape(alt || item.alt || item.title || "")}" loading="lazy" decoding="async" />`;
   }
 
   function itemStyle(item = {}) {
@@ -458,37 +489,47 @@
           </div>
           <div class="card-config-panel">
             <h3>${escape(c.title || "")}</h3>
-            <label>${escape(c.templateModeLabel || "")}<select name="design_mode">
-              <option value="template">${escape(c.templateModeTemplate || "")}</option>
-              <option value="custom">${escape(c.templateModeCustom || "")}</option>
-            </select></label>
-            <label class="cover-template-field">${escape(c.templateLabel || "")}<select name="cover_template">${templateOptions(copy, firstCategory.id)}</select></label>
-            <label class="cover-custom-field" hidden>${escape(c.coverTextLabel || "")}<input name="cover_text" value="${escape(templateText(copy, firstCategory.id))}" /></label>
-            <label class="cover-custom-field" hidden>${escape(c.coverNameLabel || "")}<input name="cover_name" /></label>
-            <label class="cover-custom-field" hidden>${escape(c.coverExtraLabel || "")}<input name="cover_extra" /></label>
-            <label class="cover-custom-field" hidden>${escape(c.coverFontSizeLabel || "")}<input name="cover_font_size" type="range" min="26" max="72" value="44" /></label>
-            <label class="cover-custom-field" hidden>${escape(c.coverFontStyleLabel || "")}<select name="cover_font_style">
-              <option value="elegant">${escape(c.fontElegant || "")}</option>
-              <option value="modern">${escape(c.fontModern || "")}</option>
-              <option value="classic">${escape(c.fontClassic || "")}</option>
-            </select></label>
-            <label class="cover-custom-field" hidden>${escape(c.coverPositionLabel || "")}<select name="cover_position">
-              <option value="top">${escape(c.positionTop || "")}</option>
-              <option value="middle" selected>${escape(c.positionMiddle || "")}</option>
-              <option value="bottom">${escape(c.positionBottom || "")}</option>
-            </select></label>
-            <label>${escape(c.coverPhotoLabel || "")}<input name="customer_photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /></label>
-            <label>${escape(c.textModeLabel || "")}<select name="inside_text_mode">
-              <option value="empty">${escape(c.textModeEmpty || "")}</option>
-              <option value="self">${escape(c.textModeSelf || "")}</option>
-              <option value="melody">${escape(c.textModeMelody || "")}</option>
-            </select></label>
-            <label class="inside-left-field">${escape(c.insideLeftTextLabel || "")}<textarea name="inside_left_text" rows="4"></textarea></label>
-            <label class="text-brief-field" hidden>${escape(c.textBriefLabel || "")}<textarea name="text_brief" rows="3" placeholder="${escape(c.textBriefPlaceholder || "")}"></textarea></label>
-            <label>${escape(c.rightTextLabel || "")}<textarea name="inside_right_text" rows="3"></textarea></label>
+            <div class="config-group">
+              <h4>${escape(c.coverSectionTitle || "")}</h4>
+              <label>${escape(c.templateModeLabel || "")}<select name="design_mode">
+                <option value="template">${escape(c.templateModeTemplate || "")}</option>
+                <option value="custom">${escape(c.templateModeCustom || "")}</option>
+              </select></label>
+              <label class="cover-template-field">${escape(c.templateLabel || "")}<select name="cover_template">${templateOptions(copy, firstCategory.id)}</select></label>
+              <label class="cover-custom-field" hidden>${escape(c.coverTextLabel || "")}<input name="cover_text" value="${escape(templateText(copy, firstCategory.id))}" /></label>
+              <label class="cover-custom-field" hidden>${escape(c.coverNameLabel || "")}<input name="cover_name" /></label>
+              <label class="cover-custom-field" hidden>${escape(c.coverExtraLabel || "")}<input name="cover_extra" /></label>
+            </div>
+            <div class="config-group">
+              <h4>${escape(c.insideLeftSectionTitle || "")}</h4>
+              <label>${escape(c.textModeLabel || "")}<select name="inside_text_mode">
+                <option value="empty">${escape(c.textModeEmpty || "")}</option>
+                <option value="melody">${escape(c.textModeMelody || "")}</option>
+                <option value="self">${escape(c.textModeSelf || "")}</option>
+              </select></label>
+              <label class="inside-left-field" hidden>${escape(c.insideLeftTextLabel || "")}<textarea name="inside_left_text" rows="4"></textarea></label>
+              <label class="text-brief-field" hidden>${escape(c.textBriefLabel || "")}<textarea name="text_brief" rows="3" placeholder="${escape(c.textBriefPlaceholder || "")}"></textarea></label>
+            </div>
+            <div class="config-group">
+              <h4>${escape(c.insideRightSectionTitle || "")}</h4>
+              <label>${escape(c.rightPhotoToggleLabel || "")}<select name="right_photo_enabled">
+                <option value="no">${escape(c.noLabel || "")}</option>
+                <option value="yes">${escape(c.yesLabel || "")}</option>
+              </select></label>
+              <label class="right-photo-field" hidden>${escape(c.coverPhotoLabel || "")}<input name="customer_photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /></label>
+              <label>${escape(c.rightTextToggleLabel || "")}<select name="right_text_enabled">
+                <option value="no">${escape(c.noLabel || "")}</option>
+                <option value="yes">${escape(c.yesLabel || "")}</option>
+              </select></label>
+              <label class="right-text-mode-field" hidden>${escape(c.rightTextModeLabel || "")}<select name="right_text_mode">
+                <option value="empty">${escape(c.textModeEmpty || "")}</option>
+                <option value="melody">${escape(c.textModeMelody || "")}</option>
+                <option value="self">${escape(c.textModeSelf || "")}</option>
+              </select></label>
+              <label class="right-text-field" hidden>${escape(c.rightTextLabel || "")}<textarea name="inside_right_text" rows="3"></textarea></label>
+            </div>
             <label>${escape(c.relationshipLabel || "")}<input name="relationship" /></label>
-            <label>${escape(c.storyLabel || "")}<textarea name="personal_story" rows="4" required placeholder="${escape(c.storyPlaceholder || "")}"></textarea></label>
-            <label class="inline-check">${escape(c.complexDesignLabel || "")}<input name="complex_design" type="checkbox" /></label>
+            <label class="song-brief-field">${escape(c.storyLabel || "")}<small>${escape(c.storyHelp || "")}</small><textarea name="personal_story" rows="8" required placeholder="${escape(storyPlaceholder(copy, firstCategory.id))}"></textarea></label>
           </div>
         </div>
         <div class="order-dynamic-fields span-all" data-category-fields-root>
@@ -515,8 +556,8 @@
     return copy.coverTemplates?.[categoryId]?.[0] || "";
   }
 
-  function formatPrice(value, currency) {
-    return `${Number(value || 0).toFixed(0)} ${currency}`;
+  function storyPlaceholder(copy, categoryId) {
+    return copy.configurator?.storyPlaceholders?.[categoryId] || copy.configurator?.storyPlaceholder || "";
   }
 
   function renderCategoryFieldGroup(copy, categoryId, isActive) {
@@ -616,10 +657,19 @@
       button.addEventListener("click", () => {
         form.querySelectorAll("[data-card-view]").forEach((item) => item.classList.toggle("is-active", item === button));
         const outside = button.dataset.cardView === "outside";
-        $("[data-card-preview]")?.classList.toggle("is-outside", outside);
-        $("[data-card-preview]")?.classList.toggle("is-inside", !outside);
-        $("[data-card-cover]").hidden = !outside;
-        $("[data-card-inside]").hidden = outside;
+        const preview = form.querySelector("[data-card-preview]");
+        const cover = form.querySelector("[data-card-cover]");
+        const inside = form.querySelector("[data-card-inside]");
+        preview?.classList.toggle("is-outside", outside);
+        preview?.classList.toggle("is-inside", !outside);
+        if (cover) {
+          cover.hidden = !outside;
+          cover.style.display = outside ? "grid" : "none";
+        }
+        if (inside) {
+          inside.hidden = outside;
+          inside.style.display = outside ? "none" : "grid";
+        }
       });
     });
     ["input", "change"].forEach((eventName) => form.addEventListener(eventName, updateCardConfigurator));
@@ -632,6 +682,7 @@
     const selected = event.currentTarget.selectedOptions?.[0];
     if (help) help.textContent = selected?.dataset.description || "";
     updateTemplateOptions(event.currentTarget.value);
+    updateStoryPlaceholder(event.currentTarget.value);
     document.querySelectorAll("[data-category-fields]").forEach((group) => {
       const active = group.dataset.categoryFields === event.currentTarget.value;
       group.hidden = !active;
@@ -641,6 +692,12 @@
       });
     });
     updateCardConfigurator();
+  }
+
+  function updateStoryPlaceholder(categoryId) {
+    const form = $("#premium-order-form");
+    if (!form?.elements.personal_story) return;
+    form.elements.personal_story.placeholder = storyPlaceholder(orderCopy(), categoryId);
   }
 
   function updateTemplateOptions(categoryId) {
@@ -677,8 +734,8 @@
     }
     const coverCopy = $("[data-cover-copy]");
     if (coverCopy) {
-      coverCopy.className = `cover-copy position-${form.elements.cover_position?.value || "middle"} font-${form.elements.cover_font_style?.value || "elegant"}`;
-      coverCopy.style.fontSize = `${Number(form.elements.cover_font_size?.value || 44)}px`;
+      coverCopy.className = "cover-copy position-middle font-elegant";
+      coverCopy.style.fontSize = "";
     }
     $("[data-preview-cover-text]").textContent = form.elements.cover_text?.value || "";
     $("[data-preview-cover-name]").textContent = form.elements.cover_name?.value || "";
@@ -686,10 +743,30 @@
     const textMode = form.elements.inside_text_mode?.value || "empty";
     form.querySelector(".inside-left-field").hidden = textMode !== "self";
     form.querySelector(".text-brief-field").hidden = textMode !== "melody";
+    form.querySelectorAll(".inside-left-field, .text-brief-field").forEach((field) => {
+      field.querySelectorAll("input, textarea, select").forEach((input) => {
+        input.disabled = field.hidden;
+      });
+    });
     const leftText = textMode === "empty" ? "" : textMode === "melody" ? (form.elements.text_brief?.value || c.textModeMelody || "") : (form.elements.inside_left_text?.value || "");
     $("[data-preview-left-text]").textContent = leftText;
-    $("[data-preview-right-text]").textContent = form.elements.inside_right_text?.value || "";
-    if (!form.elements.customer_photo?.files?.length) {
+    const photoEnabled = form.elements.right_photo_enabled?.value === "yes";
+    const rightTextEnabled = form.elements.right_text_enabled?.value === "yes";
+    const rightTextMode = form.elements.right_text_mode?.value || "empty";
+    const rightPhotoField = form.querySelector(".right-photo-field");
+    const rightTextModeField = form.querySelector(".right-text-mode-field");
+    const rightTextField = form.querySelector(".right-text-field");
+    if (rightPhotoField) rightPhotoField.hidden = !photoEnabled;
+    if (rightTextModeField) rightTextModeField.hidden = !rightTextEnabled;
+    if (rightTextField) rightTextField.hidden = !(rightTextEnabled && rightTextMode === "self");
+    [rightPhotoField, rightTextModeField, rightTextField].filter(Boolean).forEach((field) => {
+      field.querySelectorAll("input, textarea, select").forEach((input) => {
+        input.disabled = field.hidden;
+      });
+    });
+    const rightText = !rightTextEnabled || rightTextMode === "empty" ? "" : rightTextMode === "melody" ? (c.textModeMelody || "") : (form.elements.inside_right_text?.value || "");
+    $("[data-preview-right-text]").textContent = rightText;
+    if (!photoEnabled || !form.elements.customer_photo?.files?.length) {
       document.querySelectorAll("[data-inside-photo]").forEach((node) => {
         node.hidden = true;
         node.innerHTML = "";
@@ -700,7 +777,13 @@
 
   function hasPersonalization(form) {
     const textMode = form.elements.inside_text_mode?.value || "empty";
-    return form.elements.design_mode?.value === "custom" || textMode === "self" || textMode === "melody" || Boolean(form.elements.customer_photo?.files?.length) || Boolean(form.elements.complex_design?.checked);
+    const rightTextMode = form.elements.right_text_enabled?.value === "yes" ? form.elements.right_text_mode?.value : "empty";
+    return form.elements.design_mode?.value === "custom"
+      || textMode === "self"
+      || textMode === "melody"
+      || (form.elements.right_photo_enabled?.value === "yes" && Boolean(form.elements.customer_photo?.files?.length))
+      || rightTextMode === "self"
+      || rightTextMode === "melody";
   }
 
   function previewCustomerPhoto(event) {
@@ -792,7 +875,7 @@
         throw new Error(copy.error || "");
       }
       let uploadedPhotoUrl = "";
-      const photoFile = form.elements.customer_photo?.files?.[0];
+      const photoFile = form.elements.right_photo_enabled?.value === "yes" ? form.elements.customer_photo?.files?.[0] : null;
       if (photoFile) {
         if (!window.MelodySupabase?.uploadOrderFile) throw new Error(copy.error || "");
         uploadedPhotoUrl = await window.MelodySupabase.uploadOrderFile(photoFile, "customer-photos");
@@ -822,7 +905,9 @@
         `${copy.configurator?.coverNameLabel || ""}: ${configuratorDetails.cover_name}`,
         `${copy.configurator?.coverExtraLabel || ""}: ${configuratorDetails.cover_extra}`,
         `${copy.configurator?.insideLeftTitle || ""}: ${configuratorDetails.inside_left_text || configuratorDetails.text_brief || ""}`,
-        `${copy.configurator?.insideRightTitle || ""}: ${configuratorDetails.inside_right_text || ""}`,
+        `${copy.configurator?.insideRightTitle || ""}: ${configuratorDetails.inside_right_text || configuratorDetails.inside_right_text_mode_label || ""}`,
+        `${copy.configurator?.rightPhotoToggleLabel || ""}: ${configuratorDetails.right_photo_enabled ? copy.configurator?.yesLabel || "Ja" : copy.configurator?.noLabel || "Nein"}`,
+        `${copy.configurator?.rightTextToggleLabel || ""}: ${configuratorDetails.right_text_enabled ? copy.configurator?.yesLabel || "Ja" : copy.configurator?.noLabel || "Nein"}`,
         `${copy.configurator?.priceLabel || ""}: ${configuratorDetails.price_note}`,
         ...dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`)
       ].filter((line) => !line.endsWith(": ")).join("\n");
@@ -840,8 +925,8 @@
         music_style: values.music_style || "",
         story: [dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`).join("\n"), configuratorDetails.personal_story, values.message || ""].filter(Boolean).join("\n\n"),
         card_text: cardText,
-        image_url: uploadedPhotoUrl || "",
-        card_photo_url: uploadedPhotoUrl || "",
+        image_url: configuratorDetails.photo_url || "",
+        card_photo_url: configuratorDetails.photo_url || "",
         configurator: configuratorDetails,
         music_wish: JSON.stringify({
           ...orderDetails,
@@ -877,7 +962,10 @@
   function collectConfiguratorDetails(form, copy, uploadedPhotoUrl = "") {
     const c = copy.configurator || {};
     const designMode = form.elements.design_mode?.value || "template";
-    const textMode = form.elements.inside_text_mode?.value || "self";
+    const textMode = form.elements.inside_text_mode?.value || "empty";
+    const rightPhotoEnabled = form.elements.right_photo_enabled?.value === "yes";
+    const rightTextEnabled = form.elements.right_text_enabled?.value === "yes";
+    const rightTextMode = rightTextEnabled ? (form.elements.right_text_mode?.value || "empty") : "empty";
     const personalized = hasPersonalization(form);
     return {
       design_mode: designMode,
@@ -886,18 +974,19 @@
       cover_text: designMode === "custom" ? (form.elements.cover_text?.value || "") : (form.elements.cover_template?.value || ""),
       cover_name: designMode === "custom" ? (form.elements.cover_name?.value || "") : "",
       cover_extra: designMode === "custom" ? (form.elements.cover_extra?.value || "") : "",
-      cover_font_size: form.elements.cover_font_size?.value || "",
-      cover_font_style: form.elements.cover_font_style?.value || "",
-      cover_position: form.elements.cover_position?.value || "",
       inside_text_mode: textMode,
       inside_text_mode_label: textMode === "melody" ? c.textModeMelody : textMode === "empty" ? c.textModeEmpty : c.textModeSelf,
       inside_left_text: textMode === "self" ? (form.elements.inside_left_text?.value || "") : "",
       text_brief: textMode === "melody" ? (form.elements.text_brief?.value || "") : "",
-      inside_right_text: form.elements.inside_right_text?.value || "",
+      right_photo_enabled: rightPhotoEnabled,
+      right_text_enabled: rightTextEnabled,
+      inside_right_text_mode: rightTextMode,
+      inside_right_text_mode_label: rightTextMode === "melody" ? c.textModeMelody : rightTextMode === "empty" ? c.textModeEmpty : c.textModeSelf,
+      inside_right_text: rightTextMode === "self" ? (form.elements.inside_right_text?.value || "") : "",
       relationship: form.elements.relationship?.value || "",
       personal_story: form.elements.personal_story?.value || "",
-      complex_design: Boolean(form.elements.complex_design?.checked),
-      photo_url: uploadedPhotoUrl,
+      complex_design: false,
+      photo_url: rightPhotoEnabled ? uploadedPhotoUrl : "",
       price: null,
       price_note: personalized ? (c.priceCustomText || "") : (c.priceBaseText || ""),
       currency: "€",

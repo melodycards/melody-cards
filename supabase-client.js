@@ -3,7 +3,7 @@
   const SUPABASE_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
   let supabaseLoadPromise = null;
 
-  function ensureSupabaseLoaded() {
+  function ensureSupabaseLoaded(timeoutMs) {
     if (window.supabase) return Promise.resolve(true);
     if (!config.url || !config.anonKey || !document?.head) return Promise.resolve(false);
     if (supabaseLoadPromise) return supabaseLoadPromise;
@@ -14,11 +14,13 @@
       const finish = () => {
         if (settled) return;
         settled = true;
-        resolve(Boolean(window.supabase));
+        const loaded = Boolean(window.supabase);
+        if (!loaded) supabaseLoadPromise = null;
+        resolve(loaded);
       };
       script.addEventListener("load", finish, { once: true });
       script.addEventListener("error", finish, { once: true });
-      window.setTimeout(finish, 8000);
+      window.setTimeout(finish, timeoutMs ?? (document.body?.dataset.admin === "true" ? 8000 : 1600));
       if (!existing) {
         script.src = SUPABASE_CDN;
         script.async = true;
@@ -64,8 +66,8 @@
     }
   }
 
-  async function getReadyClient() {
-    await ensureSupabaseLoaded();
+  async function getReadyClient(timeoutMs) {
+    await ensureSupabaseLoaded(timeoutMs);
     return getClient();
   }
 
@@ -80,27 +82,15 @@
 
   async function fetchContent() {
     const fallback = window.MELODY_DEMO_CONTENT;
-    const client = await getReadyClient();
+    const client = await getReadyClient(1600);
     if (!client) return { ...fallback, source: "demo" };
 
     try {
-      const [{ data: settings, error: settingsError }, products, gallery, reviews, faqs, blog] = await Promise.all([
-        client.from("site_settings").select("*").eq("id", 1).maybeSingle(),
-        selectTable(client, "products", { activeOnly: true, order: "sort_order" }),
-        selectTable(client, "gallery_items", { activeOnly: true, order: "sort_order" }),
-        selectTable(client, "reviews", { activeOnly: true, order: "sort_order" }),
-        selectTable(client, "faqs", { activeOnly: true, order: "sort_order" }),
-        selectTable(client, "blog_posts", { activeOnly: true, order: "published_at" })
-      ]);
+      const { data: settings, error: settingsError } = await client.from("site_settings").select("*").eq("id", 1).maybeSingle();
       if (settingsError) throw settingsError;
       return {
         ...fallback,
         settings: settings || fallback.settings,
-        products: products.length ? products : fallback.products,
-        gallery: gallery.length ? gallery : fallback.gallery,
-        reviews: reviews.length ? reviews : fallback.reviews,
-        faqs: faqs.length ? faqs : fallback.faqs,
-        blog: blog.length ? blog : fallback.blog,
         source: "supabase"
       };
     } catch (error) {
@@ -171,7 +161,7 @@
 
   async function uploadOrderFile(file, kind) {
     if (!file) return null;
-    if (!(await getReadyClient())) {
+    if (!(await getReadyClient(8000))) {
       throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
     }
     try {
@@ -182,7 +172,7 @@
   }
 
   async function createPremiumOrder(order) {
-    const client = await getReadyClient();
+    const client = await getReadyClient(8000);
     if (!client) {
       throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
     }

@@ -80,6 +80,11 @@
     const merged = {
       ...baseOrder,
       ...remoteOrder,
+      configurator: mergeConfigurator(baseOrder.configurator || {}, remoteOrder.configurator || {}, language),
+      coverTemplates: {
+        ...(baseOrder.coverTemplates || {}),
+        ...(remoteOrder.coverTemplates || {})
+      },
       categoryFields: {
         ...(baseOrder.categoryFields || {}),
         ...(remoteOrder.categoryFields || {})
@@ -93,6 +98,32 @@
       if ((merged.songLanguageOptions || []).some((option) => (legacy.songLanguageOptions || []).includes(option))) merged.songLanguageOptions = defaults.songLanguageOptions || merged.songLanguageOptions;
       if ((merged.musicStyleOptions || []).some((option) => (legacy.musicStyleOptions || []).includes(option))) merged.musicStyleOptions = defaults.musicStyleOptions || merged.musicStyleOptions;
     }
+    const defaults = window.MELODY_LANGUAGE_PACK?.[language]?.orderForm || baseOrder;
+    const staleMessageLabels = ["Wünsche zur Karte", "Kartenvorgaben", "Kartenwünsche"];
+    if (staleMessageLabels.includes(merged.messageLabel || "")) merged.messageLabel = defaults.messageLabel || "Nachricht";
+    return merged;
+  }
+
+  function mergeConfigurator(baseConfigurator = {}, remoteConfigurator = {}, language = "de") {
+    const defaults = window.MELODY_LANGUAGE_PACK?.[language]?.orderForm?.configurator || baseConfigurator;
+    const merged = {
+      ...baseConfigurator,
+      ...remoteConfigurator,
+      storyPlaceholders: {
+        ...(baseConfigurator.storyPlaceholders || {}),
+        ...(remoteConfigurator.storyPlaceholders || {})
+      }
+    };
+    const staleStoryLabels = ["Persönliche Geschichte / Infos", "Kişisel hikaye / bilgiler", "Wünsche zur Karte"];
+    if (!merged.storyLabel || staleStoryLabels.includes(merged.storyLabel)) merged.storyLabel = defaults.storyLabel || merged.storyLabel;
+    if (!merged.storyHelp) merged.storyHelp = defaults.storyHelp || "";
+    if (!merged.storyPlaceholder || merged.storyPlaceholder.includes("Was macht diese Person") || merged.storyPlaceholder.includes("Bu kişiyi özel yapan")) {
+      merged.storyPlaceholder = defaults.storyPlaceholder || merged.storyPlaceholder;
+    }
+    merged.storyPlaceholders = {
+      ...(defaults.storyPlaceholders || {}),
+      ...(merged.storyPlaceholders || {})
+    };
     return merged;
   }
 
@@ -2135,6 +2166,9 @@
         ${summaryRow("Cover-Name", config.cover_name)}
         ${summaryRow("Zusatztext", config.cover_extra)}
         ${summaryRow("Innen links", config.inside_left_text || config.text_brief)}
+        ${summaryRow("Foto rechts", config.right_photo_enabled ? "Ja" : "")}
+        ${summaryRow("Text rechts aktiv", config.right_text_enabled ? "Ja" : "")}
+        ${summaryRow("Textmodus rechts", config.inside_right_text_mode_label)}
         ${summaryRow("Innen rechts", config.inside_right_text)}
         ${summaryRow("Textmodus", config.inside_text_mode_label)}
         ${summaryRow("Beziehung", config.relationship)}
