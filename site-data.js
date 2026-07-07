@@ -1,5 +1,8 @@
 (function () {
   const image = (name) => `assets/images/${name}`;
+  const languagePack = window.MELODY_LANGUAGE_PACK || {};
+  const de = languagePack.de || {};
+  const tr = languagePack.tr || {};
 
   window.MELODY_DEFAULT_SITE = {
     settings: {
@@ -69,19 +72,43 @@
         categories: [
           {
             id: "birthday",
-            title: "Geburtstagskarte",
-            description: "Hochwertige Geburtstagskarten mit persönlichem QR-Code und einem Lied, das nur für diesen besonderen Menschen gestaltet wird.",
+            title: de.categories?.birthday?.title || "Geburtstagskarte",
+            description: de.categories?.birthday?.description || "",
             image: image("premium-card-detail.png"),
             active: true,
             sortOrder: 1
           },
           {
             id: "apology",
-            title: "Entschuldigungskarte",
-            description: "Persönliche Entschuldigungskarten mit QR-Code und einem emotionalen Entschuldigungssong.",
+            title: de.categories?.apology?.title || "Entschuldigungskarte",
+            description: de.categories?.apology?.description || "",
             image: image("gift-moment.png"),
             active: true,
             sortOrder: 2
+          },
+          {
+            id: "valentine",
+            title: de.categories?.valentine?.title || "Valentinstagskarte",
+            description: de.categories?.valentine?.description || "",
+            image: image("melody-cards-premium-hero.png"),
+            active: true,
+            sortOrder: 3
+          },
+          {
+            id: "mothers_day",
+            title: de.categories?.mothers_day?.title || "Muttertagskarte",
+            description: de.categories?.mothers_day?.description || "",
+            image: image("premium-card-detail.png"),
+            active: true,
+            sortOrder: 4
+          },
+          {
+            id: "fathers_day",
+            title: de.categories?.fathers_day?.title || "Vatertagskarte",
+            description: de.categories?.fathers_day?.description || "",
+            image: image("gift-moment.png"),
+            active: true,
+            sortOrder: 5
           }
         ],
         sections: [
@@ -233,44 +260,7 @@
           widerruf: "",
           versand: ""
         },
-        orderForm: {
-          categoryLabel: "Kartentyp",
-          categoryHelp: "Wähle zuerst, welche Karte du gestalten möchtest.",
-          productLabel: "Geburtstagskarte",
-          occasionLabel: "Anlass",
-          occasionPlaceholder: "z. B. Geburtstag, Entschuldigung, Versöhnung",
-          recipientLabel: "Name der beschenkten Person",
-          recipientPlaceholder: "z. B. Mama, Sarah, mein Schatz",
-          nameLabel: "Dein Name",
-          emailLabel: "E-Mail",
-          phoneLabel: "Telefon optional",
-          songLanguageLabel: "Sprache des Liedes",
-          selectPlaceholder: "Bitte auswählen",
-          songLanguageOptions: ["Deutsch", "Türkisch"],
-          voiceLabel: "Stimme",
-          voiceOptions: ["Männlich", "Weiblich"],
-          musicStyleLabel: "Musikrichtung",
-          musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
-          storyLabel: "Persönliche Infos / Geschichte",
-          storyPlaceholder: "Erzähle kurz, was diese Person besonders macht oder was du sagen möchtest.",
-          messageLabel: "Persönliche Infos / Geschichte",
-          messagePlaceholder: "Erzähle kurz, was diese Person besonders macht oder was du sagen möchtest.",
-          submitLabel: "Geburtstagskarte anfragen",
-          productFallback: "Geburtstagskarte",
-          emptyProducts: "Noch keine Produkte veröffentlicht.",
-          emptyGallery: "Noch keine Galerie veröffentlicht.",
-          sending: "Anfrage wird gesendet...",
-          success: "Danke. Deine Anfrage wurde gesendet.",
-          error: "Die Anfrage konnte nicht gespeichert werden.",
-          cardTextProduct: "Geburtstagskarte",
-          cardTextCategory: "Kartentyp",
-          cardTextRecipient: "Beschenkte Person",
-          cardTextOccasion: "Anlass",
-          musicWishLanguage: "Sprache des Liedes",
-          musicWishVoice: "Stimme",
-          musicWishStyle: "Musikrichtung",
-          requestButton: "Anfragen"
-        },
+        orderForm: { ...(de.orderForm || {}) },
         translations: {
           tr: {
             seo: {
@@ -359,14 +349,7 @@
               }
             },
             categories: {
-              birthday: {
-                title: "Doğum günü kartı",
-                description: "Kişisel QR kodu ve yalnızca o özel kişi için hazırlanan şarkıyla tasarlanan yüksek kaliteli doğum günü kartları."
-              },
-              apology: {
-                title: "Özür kartı",
-                description: "QR kodlu ve duygusal bir özür şarkısıyla kişiselleştirilen özel özür kartları."
-              }
+              ...(tr.categories || {})
             },
             faqs: {
               "faq-1": { question: "Şarkıyı ben mi hazırlıyorum?", answer: "Hayır. Sen doğum günü kartını sipariş edersin. Kişiye özel şarkı ve QR kod daha sonra Melody Cards tarafından hazırlanır." },
@@ -394,44 +377,7 @@
               widerruf: "<h1>Cayma Hakkı</h1><p>Cayma hakkı ve kişiselleştirilmiş ürünlere ilişkin bilgiler.</p>",
               versand: "<h1>Kargo & Ödeme</h1><p>Kargo, ödeme ve sipariş süreci hakkında bilgiler.</p>"
             },
-            orderForm: {
-              categoryLabel: "Kart türü",
-              categoryHelp: "Önce hangi kartı tasarlamak istediğini seç.",
-              productLabel: "Doğum günü kartı",
-              occasionLabel: "Sebep",
-              occasionPlaceholder: "örn. doğum günü, özür, barışma",
-              recipientLabel: "Hediye edilecek kişinin adı",
-              recipientPlaceholder: "örn. Anne, Sarah, sevgilim",
-              nameLabel: "Adın",
-              emailLabel: "E-posta",
-              phoneLabel: "Telefon isteğe bağlı",
-              songLanguageLabel: "Şarkının dili",
-              selectPlaceholder: "Lütfen seç",
-              songLanguageOptions: ["Deutsch", "Türkisch"],
-              voiceLabel: "Ses",
-              voiceOptions: ["Männlich", "Weiblich"],
-              musicStyleLabel: "Müzik tarzı",
-              musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
-              storyLabel: "Kişisel bilgiler / hikaye",
-              storyPlaceholder: "Bu kişiyi özel yapan şeyi veya söylemek istediğin duyguyu kısaca anlat.",
-              messageLabel: "Kişisel bilgiler / hikaye",
-              messagePlaceholder: "Bu kişiyi özel yapan şeyi veya söylemek istediğin duyguyu kısaca anlat.",
-              submitLabel: "Doğum günü kartı talep et",
-              productFallback: "Doğum günü kartı",
-              emptyProducts: "Henüz yayınlanmış ürün yok.",
-              emptyGallery: "Henüz yayınlanmış galeri yok.",
-              sending: "Talebin gönderiliyor...",
-              success: "Teşekkürler. Talebin gönderildi.",
-              error: "Talep kaydedilemedi.",
-              cardTextProduct: "Doğum günü kartı",
-              cardTextCategory: "Kart türü",
-              cardTextRecipient: "Hediye edilen kişi",
-              cardTextOccasion: "Sebep",
-              musicWishLanguage: "Şarkının dili",
-              musicWishVoice: "Ses",
-              musicWishStyle: "Müzik tarzı",
-              requestButton: "Talep et"
-            }
+            orderForm: { ...(tr.orderForm || {}) }
           }
         },
         mediaLibrary: []

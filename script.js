@@ -29,10 +29,55 @@
       contact: { ...base.contact, ...(remote.contact || {}) },
       footer: { ...base.footer, ...(remote.footer || {}) },
       legalPages: { ...base.legalPages, ...(remote.legalPages || {}) },
-      orderForm: { ...base.orderForm, ...(remote.orderForm || {}) },
+      orderForm: mergeOrderForm(base.orderForm || {}, remote.orderForm || {}, "de"),
       translations: mergeTranslations(base.translations || {}, remote.translations || {}),
-      languages: remote.languages || base.languages || []
+      languages: remote.languages || base.languages || [],
+      categories: mergeCollectionById(base.categories || [], remote.categories || [])
     };
+  }
+
+  function mergeCollectionById(baseItems = [], remoteItems = []) {
+    const byId = new Map();
+    [...baseItems, ...remoteItems].forEach((item) => {
+      if (!item?.id) return;
+      byId.set(String(item.id), { ...(byId.get(String(item.id)) || {}), ...item });
+    });
+    return Array.from(byId.values()).sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+  }
+
+  function mergeOrderForm(baseOrder = {}, remoteOrder = {}, language = "de") {
+    const merged = {
+      ...baseOrder,
+      ...remoteOrder,
+      categoryFields: {
+        ...(baseOrder.categoryFields || {}),
+        ...(remoteOrder.categoryFields || {})
+      }
+    };
+    if (language === "tr") {
+      const defaults = window.MELODY_LANGUAGE_PACK?.tr?.orderForm || {};
+      const legacy = window.MELODY_LANGUAGE_PACK?.tr?.legacyOrderOptions || {};
+      if ((merged.selectPlaceholder || "").includes("seç") && merged.selectPlaceholder !== defaults.selectPlaceholder) merged.selectPlaceholder = defaults.selectPlaceholder;
+      if ((merged.voiceOptions || []).some((option) => (legacy.voiceOptions || []).includes(option))) merged.voiceOptions = defaults.voiceOptions || merged.voiceOptions;
+      if ((merged.songLanguageOptions || []).some((option) => (legacy.songLanguageOptions || []).includes(option))) merged.songLanguageOptions = defaults.songLanguageOptions || merged.songLanguageOptions;
+      if ((merged.musicStyleOptions || []).some((option) => (legacy.musicStyleOptions || []).includes(option))) merged.musicStyleOptions = defaults.musicStyleOptions || merged.musicStyleOptions;
+    }
+    return merged;
+  }
+
+  function mergeCategoryTranslations(baseCategories = {}, remoteCategories = {}, language = "de") {
+    const merged = { ...baseCategories, ...remoteCategories };
+    if (language === "tr") {
+      const defaults = window.MELODY_LANGUAGE_PACK?.tr?.categories || {};
+      const legacy = window.MELODY_LANGUAGE_PACK?.tr?.legacyCategoryTitles || {};
+      Object.entries(defaults).forEach(([id, category]) => {
+        const title = merged[id]?.title || "";
+        if (!merged[id] || (legacy[id] || []).includes(title)) {
+          merged[id] = { ...(merged[id] || {}), ...category };
+        }
+      });
+    }
+    return merged;
   }
 
   function mergeTranslations(base = {}, remote = {}) {
@@ -47,13 +92,13 @@
         brand: { ...(baseLanguage.brand || {}), ...(remoteLanguage.brand || {}) },
         sections: { ...(baseLanguage.sections || {}), ...(remoteLanguage.sections || {}) },
         products: { ...(baseLanguage.products || {}), ...(remoteLanguage.products || {}) },
-        categories: { ...(baseLanguage.categories || {}), ...(remoteLanguage.categories || {}) },
+        categories: mergeCategoryTranslations(baseLanguage.categories || {}, remoteLanguage.categories || {}, language),
         gallery: { ...(baseLanguage.gallery || {}), ...(remoteLanguage.gallery || {}) },
         reviews: { ...(baseLanguage.reviews || {}), ...(remoteLanguage.reviews || {}) },
         faqs: { ...(baseLanguage.faqs || {}), ...(remoteLanguage.faqs || {}) },
         contact: { ...(baseLanguage.contact || {}), ...(remoteLanguage.contact || {}) },
         legalPages: { ...(baseLanguage.legalPages || {}), ...(remoteLanguage.legalPages || {}) },
-        orderForm: { ...(baseLanguage.orderForm || {}), ...(remoteLanguage.orderForm || {}) },
+        orderForm: mergeOrderForm(baseLanguage.orderForm || {}, remoteLanguage.orderForm || {}, language),
         footer: {
           ...(baseLanguage.footer || {}),
           ...(remoteLanguage.footer || {}),
@@ -365,27 +410,51 @@
 
   function order(section) {
     const copy = orderCopy();
-    const optionList = (options = []) => options.map((option) => `<option value="${escape(option)}">${escape(option)}</option>`).join("");
+    const optionList = (options = []) => options.map((option) => {
+      const value = typeof option === "object" ? option.value : option;
+      const label = typeof option === "object" ? option.label : option;
+      return `<option value="${escape(value)}">${escape(label)}</option>`;
+    }).join("");
     const categories = sorted(content.categories || []).map(localizedCategory);
     const categoryOptions = categories.map((category) => `<option value="${escape(category.id)}" data-description="${escape(category.description || "")}">${escape(category.title)}</option>`).join("");
     const firstCategory = categories[0] || {};
     return `<section class="section order-section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       ${sectionHead(section)}
       <form class="order-form lux-card" id="premium-order-form">
-        <label class="span-all">${escape(copy.categoryLabel || "Kartentyp")}<select name="card_category" required>${categoryOptions}</select><small class="order-category-help" data-category-help>${escape(firstCategory.description || copy.categoryHelp || "")}</small></label>
-        <label>${escape(copy.recipientLabel)}<input name="recipient" required placeholder="${escape(copy.recipientPlaceholder || "")}" /></label>
-        <label>${escape(copy.occasionLabel || "Anlass")}<input name="occasion" required placeholder="${escape(copy.occasionPlaceholder || "")}" /></label>
+        <label class="span-all">${escape(copy.categoryLabel || "")}<select name="card_category" required>${categoryOptions}</select><small class="order-category-help" data-category-help>${escape(firstCategory.description || copy.categoryHelp || "")}</small></label>
+        <div class="order-dynamic-fields span-all" data-category-fields-root>
+          ${categories.map((category, index) => renderCategoryFieldGroup(copy, category.id, index === 0)).join("")}
+        </div>
         <label>${escape(copy.nameLabel)}<input name="name" required /></label>
         <label>${escape(copy.emailLabel)}<input name="email" type="email" required /></label>
         <label>${escape(copy.phoneLabel)}<input name="phone" type="tel" /></label>
-        <label>${escape(copy.songLanguageLabel)}<select name="song_language" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.songLanguageOptions)}</select></label>
-        <label>${escape(copy.voiceLabel)}<select name="voice" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.voiceOptions)}</select></label>
-        <label>${escape(copy.musicStyleLabel)}<select name="music_style" required><option value="">${escape(copy.selectPlaceholder || "Bitte auswählen")}</option>${optionList(copy.musicStyleOptions)}</select></label>
-        <label class="span-all">${escape(copy.storyLabel || copy.messageLabel)}<textarea name="message" rows="5" required placeholder="${escape(copy.storyPlaceholder || copy.messagePlaceholder || "")}"></textarea></label>
+        <label>${escape(copy.songLanguageLabel)}<select name="song_language" required><option value="">${escape(copy.selectPlaceholder || "")}</option>${optionList(copy.songLanguageOptions)}</select></label>
+        <label>${escape(copy.voiceLabel)}<select name="voice" required><option value="">${escape(copy.selectPlaceholder || "")}</option>${optionList(copy.voiceOptions)}</select></label>
+        <label>${escape(copy.musicStyleLabel)}<select name="music_style" required><option value="">${escape(copy.selectPlaceholder || "")}</option>${optionList(copy.musicStyleOptions)}</select></label>
+        <label class="span-all">${escape(copy.messageLabel)}<textarea name="message" rows="5" placeholder="${escape(copy.messagePlaceholder || "")}"></textarea></label>
         <button class="btn btn-primary" type="submit">${escape(copy.submitLabel)}</button>
         <p class="form-status" id="premium-order-status" role="status" aria-live="polite"></p>
       </form>
     </section>`;
+  }
+
+  function renderCategoryFieldGroup(copy, categoryId, isActive) {
+    const fields = copy.categoryFields?.[categoryId] || [];
+    return `<div class="category-field-group" data-category-fields="${escape(categoryId)}" ${isActive ? "" : "hidden"}>${fields.map((field) => renderOrderField(field, !isActive)).join("")}</div>`;
+  }
+
+  function renderOrderField(field, disabled) {
+    const required = field.required ? "required" : "";
+    const disabledAttr = disabled ? "disabled" : "";
+    const placeholder = field.placeholder ? `placeholder="${escape(field.placeholder)}"` : "";
+    const value = field.defaultValue ? `value="${escape(field.defaultValue)}"` : "";
+    if (field.type === "textarea") {
+      return `<label>${escape(field.label)}<textarea name="${escape(field.name)}" rows="4" ${required} ${disabledAttr} ${placeholder}></textarea></label>`;
+    }
+    if (field.options?.length) {
+      return `<label>${escape(field.label)}<select name="${escape(field.name)}" ${required} ${disabledAttr}><option value=""></option>${field.options.map((option) => `<option value="${escape(option)}">${escape(option)}</option>`).join("")}</select></label>`;
+    }
+    return `<label>${escape(field.label)}<input name="${escape(field.name)}" type="${escape(field.type || "text")}" ${required} ${disabledAttr} ${placeholder} ${value} /></label>`;
   }
 
   function contact(section) {
@@ -451,6 +520,9 @@
       }, 20);
     });
     $("#premium-order-form select[name='card_category']")?.addEventListener("change", updateOrderCategoryHelp);
+    $("#premium-order-form")?.addEventListener("invalid", handleOrderInvalid, true);
+    $("#premium-order-form")?.addEventListener("input", clearOrderInvalid);
+    $("#premium-order-form")?.addEventListener("change", clearOrderInvalid);
     $("#premium-order-form")?.addEventListener("submit", submitOrder);
     reveal();
   }
@@ -459,6 +531,29 @@
     const help = $("[data-category-help]");
     const selected = event.currentTarget.selectedOptions?.[0];
     if (help) help.textContent = selected?.dataset.description || "";
+    document.querySelectorAll("[data-category-fields]").forEach((group) => {
+      const active = group.dataset.categoryFields === event.currentTarget.value;
+      group.hidden = !active;
+      group.querySelectorAll("input, textarea, select").forEach((field) => {
+        field.disabled = !active;
+        field.setCustomValidity("");
+      });
+    });
+  }
+
+  function handleOrderInvalid(event) {
+    const copy = orderCopy();
+    const message = copy.requiredMessage || "";
+    if (message) event.target.setCustomValidity(message);
+    const status = $("#premium-order-status");
+    if (status) {
+      status.textContent = message;
+      status.dataset.state = "error";
+    }
+  }
+
+  function clearOrderInvalid(event) {
+    if (event.target?.setCustomValidity) event.target.setCustomValidity("");
   }
 
   function openLightbox(opener) {
@@ -509,17 +604,23 @@
       status.textContent = message;
       status.dataset.state = state;
     };
-    setStatus(copy.sending || "Anfrage wird gesendet...", "loading");
+    if (!form.checkValidity()) {
+      setStatus(copy.requiredMessage || copy.error || "", "error");
+      form.reportValidity();
+      return;
+    }
+    setStatus(copy.sending || "", "loading");
     if (submit) submit.disabled = true;
     try {
       if (!window.MelodySupabase?.createPremiumOrder) {
-        throw new Error("Supabase ist auf dieser Seite nicht geladen. Bitte config.js und supabase-client.js prüfen.");
+        throw new Error(copy.error || "");
       }
       const orderDetails = {
         card_category: values.card_category || "",
         card_category_label: categoryLabel,
-        recipient_name: values.recipient || "",
-        occasion: values.occasion || "",
+        recipient_name: recipientName(values),
+        occasion: occasionName(values, categoryLabel),
+        category_fields: dynamicOrderFields(copy, values.card_category, values),
         song_language: values.song_language || "",
         voice: values.voice || "",
         music_style: values.music_style || "",
@@ -529,9 +630,10 @@
         phone: values.phone || ""
       };
       const cardText = [
-        `${copy.cardTextCategory || "Kartentyp"}: ${categoryLabel}`,
-        `${copy.cardTextRecipient || "Beschenkte Person"}: ${values.recipient || ""}`,
-        `${copy.cardTextOccasion || "Anlass"}: ${values.occasion || ""}`
+        `${copy.cardTextCategory || ""}: ${categoryLabel}`,
+        `${copy.cardTextRecipient || ""}: ${recipientName(values)}`,
+        `${copy.cardTextOccasion || ""}: ${occasionName(values, categoryLabel)}`,
+        ...dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`)
       ].join("\n");
       await window.MelodySupabase.createPremiumOrder({
         name: (values.name || "").trim(),
@@ -540,22 +642,22 @@
         phone: (values.phone || "").trim(),
         address: "",
         card_category: categoryLabel,
-        recipient_name: (values.recipient || "").trim(),
-        occasion: (values.occasion || "").trim(),
+        recipient_name: recipientName(values),
+        occasion: occasionName(values, categoryLabel),
         song_language: values.song_language || "",
         voice: values.voice || "",
         music_style: values.music_style || "",
-        story: values.message || "",
+        story: [dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`).join("\n"), values.message || ""].filter(Boolean).join("\n\n"),
         card_text: cardText,
         music_wish: JSON.stringify({
           ...orderDetails,
           labels: {
-            card_category: copy.cardTextCategory || "Kartentyp",
-            recipient_name: copy.cardTextRecipient || "Beschenkte Person",
-            occasion: copy.cardTextOccasion || "Anlass",
-            song_language: copy.musicWishLanguage || "Sprache des Liedes",
-            voice: copy.musicWishVoice || "Stimme",
-            music_style: copy.musicWishStyle || "Musikrichtung"
+            card_category: copy.cardTextCategory || "",
+            recipient_name: copy.cardTextRecipient || "",
+            occasion: copy.cardTextOccasion || "",
+            song_language: copy.musicWishLanguage || "",
+            voice: copy.musicWishVoice || "",
+            music_style: copy.musicWishStyle || ""
           }
         }),
         message: values.message || "",
@@ -563,13 +665,27 @@
       });
       form.reset();
       updateOrderCategoryHelp({ currentTarget: form.elements.card_category });
-      setStatus(copy.success || "Danke. Deine Anfrage wurde gesendet.", "success");
+      setStatus(copy.success || "", "success");
     } catch (error) {
       console.error("Order submit failed:", error);
-      setStatus(error.message || copy.error || "Die Anfrage konnte nicht gespeichert werden.", "error");
+      setStatus(error.message || copy.error || "", "error");
     } finally {
       if (submit) submit.disabled = false;
     }
+  }
+
+  function dynamicOrderFields(copy, categoryId, values) {
+    return (copy.categoryFields?.[categoryId] || [])
+      .map((field) => ({ name: field.name, label: field.label || field.name, value: values[field.name] || "" }))
+      .filter((field) => field.value);
+  }
+
+  function recipientName(values) {
+    return (values.recipient || values.partner_name || values.mother_name || values.father_name || "").trim();
+  }
+
+  function occasionName(values, categoryLabel) {
+    return (values.occasion || values.apology_for || values.romantic_style || categoryLabel || "").trim();
   }
 
   function reveal() {

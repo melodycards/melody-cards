@@ -369,6 +369,14 @@ label { display: grid; gap: 8px; font-weight: 700; }
   font-weight: 500;
   line-height: 1.45;
 }
+.order-dynamic-fields,
+.category-field-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.category-field-group[hidden] { display: none; }
+.category-field-group { grid-column: 1 / -1; }
 .span-all { grid-column: 1 / -1; }
 input, textarea, select {
   width: 100%;
@@ -483,7 +491,7 @@ textarea { resize: vertical; min-height: 140px; }
   .hero-actions { margin-top: 26px; gap: 10px; }
   .hero-actions .btn { min-height: 46px; padding: 0 18px; }
   .section { width: min(100% - 32px, var(--max-width)); padding: 78px 0; }
-  .editorial, .site-footer, .order-form { grid-template-columns: 1fr; }
+  .editorial, .site-footer, .order-form, .order-dynamic-fields, .category-field-group { grid-template-columns: 1fr; }
   .editorial-image { min-height: 360px; }
   .step-grid, .product-grid, .review-grid, .category-grid { grid-template-columns: 1fr; }
   .category-image { min-height: 230px; }

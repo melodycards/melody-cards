@@ -59,11 +59,56 @@
       contact: { ...base.contact, ...(remote?.contact || {}) },
       footer: { ...base.footer, ...(remote?.footer || {}) },
       legalPages: { ...base.legalPages, ...(remote?.legalPages || {}) },
-      orderForm: { ...base.orderForm, ...(remote?.orderForm || {}) },
+      orderForm: mergeOrderForm(base.orderForm || {}, remote?.orderForm || {}, "de"),
       translations: mergeTranslations(base.translations || {}, remote?.translations || {}),
       languages: remote?.languages || base.languages || [],
+      categories: mergeCollectionById(base.categories || [], remote?.categories || []),
       defaultLanguage: remote?.defaultLanguage || base.defaultLanguage || "de"
     };
+  }
+
+  function mergeCollectionById(baseItems = [], remoteItems = []) {
+    const byId = new Map();
+    [...clone(baseItems), ...clone(remoteItems || [])].forEach((item) => {
+      if (!item?.id) return;
+      byId.set(String(item.id), { ...(byId.get(String(item.id)) || {}), ...item });
+    });
+    return Array.from(byId.values()).sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
+  }
+
+  function mergeOrderForm(baseOrder = {}, remoteOrder = {}, language = "de") {
+    const merged = {
+      ...baseOrder,
+      ...remoteOrder,
+      categoryFields: {
+        ...(baseOrder.categoryFields || {}),
+        ...(remoteOrder.categoryFields || {})
+      }
+    };
+    if (language === "tr") {
+      const defaults = window.MELODY_LANGUAGE_PACK?.tr?.orderForm || {};
+      const legacy = window.MELODY_LANGUAGE_PACK?.tr?.legacyOrderOptions || {};
+      if ((merged.selectPlaceholder || "").includes("seç") && merged.selectPlaceholder !== defaults.selectPlaceholder) merged.selectPlaceholder = defaults.selectPlaceholder;
+      if ((merged.voiceOptions || []).some((option) => (legacy.voiceOptions || []).includes(option))) merged.voiceOptions = defaults.voiceOptions || merged.voiceOptions;
+      if ((merged.songLanguageOptions || []).some((option) => (legacy.songLanguageOptions || []).includes(option))) merged.songLanguageOptions = defaults.songLanguageOptions || merged.songLanguageOptions;
+      if ((merged.musicStyleOptions || []).some((option) => (legacy.musicStyleOptions || []).includes(option))) merged.musicStyleOptions = defaults.musicStyleOptions || merged.musicStyleOptions;
+    }
+    return merged;
+  }
+
+  function mergeCategoryTranslations(baseCategories = {}, remoteCategories = {}, language = "de") {
+    const merged = { ...baseCategories, ...remoteCategories };
+    if (language === "tr") {
+      const defaults = window.MELODY_LANGUAGE_PACK?.tr?.categories || {};
+      const legacy = window.MELODY_LANGUAGE_PACK?.tr?.legacyCategoryTitles || {};
+      Object.entries(defaults).forEach(([id, category]) => {
+        const title = merged[id]?.title || "";
+        if (!merged[id] || (legacy[id] || []).includes(title)) {
+          merged[id] = { ...(merged[id] || {}), ...category };
+        }
+      });
+    }
+    return merged;
   }
 
   function mergeTranslations(base = {}, remote = {}) {
@@ -78,13 +123,13 @@
         brand: { ...(baseLanguage.brand || {}), ...(remoteLanguage.brand || {}) },
         sections: { ...(baseLanguage.sections || {}), ...(remoteLanguage.sections || {}) },
         products: { ...(baseLanguage.products || {}), ...(remoteLanguage.products || {}) },
-        categories: { ...(baseLanguage.categories || {}), ...(remoteLanguage.categories || {}) },
+        categories: mergeCategoryTranslations(baseLanguage.categories || {}, remoteLanguage.categories || {}, language),
         gallery: { ...(baseLanguage.gallery || {}), ...(remoteLanguage.gallery || {}) },
         reviews: { ...(baseLanguage.reviews || {}), ...(remoteLanguage.reviews || {}) },
         faqs: { ...(baseLanguage.faqs || {}), ...(remoteLanguage.faqs || {}) },
         contact: { ...(baseLanguage.contact || {}), ...(remoteLanguage.contact || {}) },
         legalPages: { ...(baseLanguage.legalPages || {}), ...(remoteLanguage.legalPages || {}) },
-        orderForm: { ...(baseLanguage.orderForm || {}), ...(remoteLanguage.orderForm || {}) },
+        orderForm: mergeOrderForm(baseLanguage.orderForm || {}, remoteLanguage.orderForm || {}, language),
         footer: {
           ...(baseLanguage.footer || {}),
           ...(remoteLanguage.footer || {}),
@@ -217,6 +262,7 @@
     renderGalleryEditor();
     renderReviewManager();
     renderCollection("faqs", faqFields());
+    renderOrderFormEditor();
     renderContact();
     renderLegal();
     renderMedia();
@@ -1574,6 +1620,101 @@
     const index = url.indexOf(marker);
     if (index === -1) return "";
     return decodeURIComponent(url.slice(index + marker.length).split("?")[0]);
+  }
+
+  function renderOrderFormEditor() {
+    const deOrder = content.orderForm || {};
+    const trOrder = content.translations?.tr?.orderForm || {};
+    const textKeys = [
+      ["categoryLabel", "Kartentyp Label"],
+      ["categoryHelp", "Kartentyp Hilfetext"],
+      ["nameLabel", "Kundenname Label"],
+      ["emailLabel", "E-Mail Label"],
+      ["phoneLabel", "Telefon Label"],
+      ["songLanguageLabel", "Sprache Label"],
+      ["voiceLabel", "Stimme Label"],
+      ["musicStyleLabel", "Musikrichtung Label"],
+      ["messageLabel", "Nachricht Label"],
+      ["messagePlaceholder", "Nachricht Platzhalter"],
+      ["selectPlaceholder", "Auswahl Platzhalter"],
+      ["submitLabel", "Buttontext"],
+      ["sending", "Meldung beim Senden"],
+      ["success", "Erfolgsmeldung"],
+      ["error", "Fehlermeldung"],
+      ["requiredMessage", "Pflichtfeld-Meldung"],
+      ["requestButton", "Karten-Button"]
+    ];
+    const optionKeys = [
+      ["songLanguageOptions", "Sprache des Liedes Optionen"],
+      ["voiceOptions", "Stimme Optionen"],
+      ["musicStyleOptions", "Musikrichtung Optionen"]
+    ];
+    const fieldEditor = Object.entries(deOrder.categoryFields || {}).map(([categoryId, fields]) => {
+      const trFields = trOrder.categoryFields?.[categoryId] || [];
+      const category = (content.categories || []).find((item) => item.id === categoryId);
+      return `<div class="admin-card span-all"><h3>${escape(category?.title || categoryId)}</h3><div class="admin-grid">
+        ${(fields || []).map((field, index) => {
+          const trField = trFields[index] || {};
+          return `
+            ${input(`field.${categoryId}.${index}.label.de`, `${field.name} Label DE`, field.label || "")}
+            ${input(`field.${categoryId}.${index}.label.tr`, `${field.name} Label TR`, trField.label || "")}
+            ${input(`field.${categoryId}.${index}.placeholder.de`, `${field.name} Platzhalter DE`, field.placeholder || "")}
+            ${input(`field.${categoryId}.${index}.placeholder.tr`, `${field.name} Platzhalter TR`, trField.placeholder || "")}
+          `;
+        }).join("")}
+      </div></div>`;
+    }).join("");
+    $('[data-panel="orderform"]').innerHTML = `<form data-orderform-editor class="admin-grid">
+      ${textKeys.map(([key, label]) => `${input(`order.${key}.de`, `${label} DE`, deOrder[key] || "", key.includes("Placeholder") || key.includes("Message") || key === "categoryHelp" ? "textarea" : "text")}${input(`order.${key}.tr`, `${label} TR`, trOrder[key] || "", key.includes("Placeholder") || key.includes("Message") || key === "categoryHelp" ? "textarea" : "text")}`).join("")}
+      ${optionKeys.map(([key, label]) => `${input(`order.${key}.de`, `${label} DE`, (deOrder[key] || []).join("\n"), "textarea")}${input(`order.${key}.tr`, `${label} TR`, (trOrder[key] || []).join("\n"), "textarea")}`).join("")}
+      ${fieldEditor}
+      <button class="btn btn-primary span-all" type="submit" data-orderform-save>Bestellformular speichern</button>
+    </form>`;
+    $('[data-orderform-editor]')?.addEventListener("submit", saveOrderFormEditor);
+  }
+
+  async function saveOrderFormEditor(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await withButtonLoading(form.querySelector("[data-orderform-save]"), "Speichert...", async () => action("Bestellformular", async () => {
+      content.orderForm = content.orderForm || {};
+      content.translations = content.translations || {};
+      content.translations.tr = content.translations.tr || {};
+      content.translations.tr.orderForm = content.translations.tr.orderForm || {};
+      const textKeys = [
+        "categoryLabel", "categoryHelp", "nameLabel", "emailLabel", "phoneLabel", "songLanguageLabel", "voiceLabel", "musicStyleLabel",
+        "messageLabel", "messagePlaceholder", "selectPlaceholder", "submitLabel", "sending", "success", "error", "requiredMessage", "requestButton"
+      ];
+      const optionKeys = ["songLanguageOptions", "voiceOptions", "musicStyleOptions"];
+      textKeys.forEach((key) => {
+        content.orderForm[key] = form.elements[`order.${key}.de`]?.value || "";
+        content.translations.tr.orderForm[key] = form.elements[`order.${key}.tr`]?.value || "";
+      });
+      optionKeys.forEach((key) => {
+        content.orderForm[key] = splitLines(form.elements[`order.${key}.de`]?.value || "");
+        content.translations.tr.orderForm[key] = splitLines(form.elements[`order.${key}.tr`]?.value || "");
+      });
+      Object.entries(content.orderForm.categoryFields || {}).forEach(([categoryId, fields]) => {
+        content.translations.tr.orderForm.categoryFields = content.translations.tr.orderForm.categoryFields || {};
+        content.translations.tr.orderForm.categoryFields[categoryId] = content.translations.tr.orderForm.categoryFields[categoryId] || [];
+        fields.forEach((field, index) => {
+          field.label = form.elements[`field.${categoryId}.${index}.label.de`]?.value || "";
+          field.placeholder = form.elements[`field.${categoryId}.${index}.placeholder.de`]?.value || "";
+          content.translations.tr.orderForm.categoryFields[categoryId][index] = {
+            ...(content.translations.tr.orderForm.categoryFields[categoryId][index] || {}),
+            ...field,
+            label: form.elements[`field.${categoryId}.${index}.label.tr`]?.value || "",
+            placeholder: form.elements[`field.${categoryId}.${index}.placeholder.tr`]?.value || ""
+          };
+        });
+      });
+      await saveSite("Bestellformular");
+      renderOrderFormEditor();
+    }));
+  }
+
+  function splitLines(value = "") {
+    return String(value).split("\n").map((line) => line.trim()).filter(Boolean);
   }
 
   function renderContact() {
