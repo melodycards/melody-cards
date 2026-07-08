@@ -323,6 +323,41 @@
   margin: 2px 0 0;
   color: var(--ink);
 }
+.order-structured-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.order-summary-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #f8f6f0;
+}
+.order-summary-section h4 {
+  margin: 0;
+  font-size: 14px;
+}
+.order-summary-section dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.order-summary-section dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.order-summary-section dd {
+  margin: 2px 0 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
 .order-config-edit {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -377,5 +412,6 @@
   .admin-row { grid-template-columns: 64px minmax(0, 1fr); }
   .admin-actions { grid-column: 1 / -1; }
   .order-config-summary, .order-config-summary dl { grid-template-columns: 1fr; }
+  .order-structured-summary { grid-template-columns: 1fr; }
   .order-admin-form, .order-config-edit { grid-template-columns: 1fr; }
 }

@@ -25,7 +25,34 @@ create table if not exists public.premium_orders (
   video_url text,
   audio_url text,
   status text not null default 'neu',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  card_type text,
+  language_ui text,
+  customer_email text,
+  customer_phone text,
+  recipient_age text,
+  relationship_to_recipient text,
+  cover_mode text,
+  cover_template text,
+  cover_text text,
+  cover_name text,
+  cover_extra_text text,
+  inside_left_mode text,
+  inside_left_text text,
+  inside_left_melody_notes text,
+  inside_right_photo_enabled boolean default false,
+  inside_right_photo_url text,
+  inside_right_text_enabled boolean default false,
+  inside_right_mode text,
+  inside_right_text text,
+  inside_right_melody_notes text,
+  song_notes text,
+  apology_reason text,
+  mood text,
+  personal_story text,
+  special_details text,
+  personalization_selected boolean default false,
+  price_note text
 );
 
 alter table public.premium_orders add column if not exists customer_name text;
@@ -48,6 +75,33 @@ alter table public.premium_orders add column if not exists video_url text;
 alter table public.premium_orders add column if not exists audio_url text;
 alter table public.premium_orders add column if not exists status text default 'neu';
 alter table public.premium_orders add column if not exists created_at timestamptz default now();
+alter table public.premium_orders add column if not exists card_type text;
+alter table public.premium_orders add column if not exists language_ui text;
+alter table public.premium_orders add column if not exists customer_email text;
+alter table public.premium_orders add column if not exists customer_phone text;
+alter table public.premium_orders add column if not exists recipient_age text;
+alter table public.premium_orders add column if not exists relationship_to_recipient text;
+alter table public.premium_orders add column if not exists cover_mode text;
+alter table public.premium_orders add column if not exists cover_template text;
+alter table public.premium_orders add column if not exists cover_text text;
+alter table public.premium_orders add column if not exists cover_name text;
+alter table public.premium_orders add column if not exists cover_extra_text text;
+alter table public.premium_orders add column if not exists inside_left_mode text;
+alter table public.premium_orders add column if not exists inside_left_text text;
+alter table public.premium_orders add column if not exists inside_left_melody_notes text;
+alter table public.premium_orders add column if not exists inside_right_photo_enabled boolean default false;
+alter table public.premium_orders add column if not exists inside_right_photo_url text;
+alter table public.premium_orders add column if not exists inside_right_text_enabled boolean default false;
+alter table public.premium_orders add column if not exists inside_right_mode text;
+alter table public.premium_orders add column if not exists inside_right_text text;
+alter table public.premium_orders add column if not exists inside_right_melody_notes text;
+alter table public.premium_orders add column if not exists song_notes text;
+alter table public.premium_orders add column if not exists apology_reason text;
+alter table public.premium_orders add column if not exists mood text;
+alter table public.premium_orders add column if not exists personal_story text;
+alter table public.premium_orders add column if not exists special_details text;
+alter table public.premium_orders add column if not exists personalization_selected boolean default false;
+alter table public.premium_orders add column if not exists price_note text;
 alter table public.premium_orders alter column status set default 'neu';
 
 create index if not exists premium_orders_created_at_idx on public.premium_orders (created_at desc);

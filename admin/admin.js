@@ -2134,24 +2134,27 @@
 
   function orderAdminCard(order) {
     const wish = parseMusicWish(order.music_wish);
-    const categoryValue = order.card_category || wish.card_category || "";
+    const categoryValue = order.card_type || order.card_category || wish.card_category || "";
     const recipientValue = order.recipient_name || wish.recipient_name || "";
     const occasionValue = order.occasion || wish.occasion || "";
     const languageValue = order.song_language || wish.song_language || "";
     const voiceValue = order.voice || wish.voice || "";
     const styleValue = order.music_style || wish.music_style || "";
-    const storyValue = order.story || wish.story || order.message || "";
+    const storyValue = order.song_notes || order.personal_story || order.story || wish.story || order.message || "";
     const cardConfig = order.configurator || wish.configurator || {};
-    const photoValue = order.card_photo_url || cardConfig.photo_url || order.image_url || "";
+    const photoValue = order.inside_right_photo_url || order.card_photo_url || cardConfig.photo_url || order.image_url || "";
+    const customerName = order.customer_name || order.name || "Ohne Name";
+    const customerEmail = order.customer_email || order.email || "";
+    const customerPhone = order.customer_phone || order.phone || "";
     return `<article class="order-admin-card">
       <header>
         <div>
-          <strong>${escape(order.name || "Ohne Name")}</strong>
-          <p>${escape(order.email || "")}${order.phone ? ` · ${escape(order.phone)}` : ""}</p>
+          <strong>${escape(customerName)}</strong>
+          <p>${escape(customerEmail)}${customerPhone ? ` · ${escape(customerPhone)}` : ""}</p>
         </div>
         <span class="status-pill">${escape(order.status || "neu")}</span>
       </header>
-      ${orderConfiguratorSummary(cardConfig, order)}
+      ${orderStructuredSummary(order, cardConfig)}
       <form data-order-form="${escape(order.id)}" data-order-table="${escape(order._order_table || "premium_orders")}" class="order-admin-form">
         ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(categoryValue), categoryValue)}
         <label>Name der Person<input name="recipient_name" value="${escape(recipientValue)}" /></label>
@@ -2207,6 +2210,89 @@
         ${summaryRow("QR-Code", config.qr_position === "inside_left_bottom_center" ? "Innen links unten mittig" : config.qr_position)}
       </dl>
     </div>`;
+  }
+
+  function orderStructuredSummary(order = {}, config = {}) {
+    const hasStructuredFields = [
+      "card_type",
+      "language_ui",
+      "customer_email",
+      "recipient_age",
+      "relationship_to_recipient",
+      "cover_mode",
+      "inside_left_mode",
+      "inside_right_mode",
+      "song_notes",
+      "apology_reason",
+      "personalization_selected",
+      "price_note"
+    ].some((key) => order[key] !== undefined && order[key] !== null && order[key] !== "");
+    if (!hasStructuredFields) return orderConfiguratorSummary(config, order);
+    const photo = order.inside_right_photo_url || order.card_photo_url || config.photo_url || order.image_url || "";
+    return `<div class="order-structured-summary">
+      ${summarySection("Allgemein", [
+        ["Kartentyp", order.card_type || order.card_category],
+        ["Sprache Website", order.language_ui],
+        ["Kunde", order.customer_name || order.name],
+        ["E-Mail", order.customer_email || order.email],
+        ["Telefon", order.customer_phone || order.phone],
+        ["Status", order.status]
+      ])}
+      ${summarySection("Empfänger", [
+        ["Name", order.recipient_name],
+        ["Alter", order.recipient_age],
+        ["Beziehung", order.relationship_to_recipient || config.relationship]
+      ])}
+      ${summarySection("Cover", [
+        ["Modus", order.cover_mode || config.design_mode_label],
+        ["Vorlage", order.cover_template || config.template],
+        ["Cover-Text", order.cover_text || config.cover_text],
+        ["Name", order.cover_name || config.cover_name],
+        ["Zusatztext", order.cover_extra_text || config.cover_extra]
+      ])}
+      ${summarySection("Innenseite links", [
+        ["Modus", order.inside_left_mode || config.inside_text_mode_label],
+        ["Text", order.inside_left_text || config.inside_left_text],
+        ["Melody-Notizen", order.inside_left_melody_notes || config.text_brief]
+      ])}
+      ${summarySection("Innenseite rechts", [
+        ["Foto", order.inside_right_photo_enabled ? "Ja" : "Nein"],
+        ["Foto-URL", photo],
+        ["Text aktiv", order.inside_right_text_enabled ? "Ja" : "Nein"],
+        ["Modus", order.inside_right_mode || config.inside_right_text_mode_label],
+        ["Text", order.inside_right_text || config.inside_right_text],
+        ["Melody-Notizen", order.inside_right_melody_notes]
+      ], photo)}
+      ${summarySection("Lied", [
+        ["Sprache", order.song_language],
+        ["Stimme", order.voice],
+        ["Musikrichtung", order.music_style],
+        ["Notizen", order.song_notes || order.story]
+      ])}
+      ${summarySection("Anlass & Details", [
+        ["Entschuldigungsgrund", order.apology_reason],
+        ["Stimmung", order.mood],
+        ["Persönliche Geschichte", order.personal_story],
+        ["Besondere Details", order.special_details || order.message]
+      ])}
+      ${summarySection("Medien & Preis", [
+        ["Bild", order.image_url || photo],
+        ["Video", order.video_url],
+        ["Audio", order.audio_url],
+        ["Personalisierung", order.personalization_selected ? "Ja" : "Nein"],
+        ["Preis-Hinweis", order.price_note || config.price_note]
+      ])}
+    </div>`;
+  }
+
+  function summarySection(title, rows, imageUrl = "") {
+    const body = rows.map(([label, value]) => summaryRow(label, value)).join("");
+    if (!body && !imageUrl) return "";
+    return `<section class="order-summary-section">
+      <h4>${escape(title)}</h4>
+      ${imageUrl ? `<img class="admin-thumb" src="${escape(imageUrl)}" alt="" />` : ""}
+      <dl>${body}</dl>
+    </section>`;
   }
 
   function summaryRow(label, value) {
@@ -2287,6 +2373,8 @@
 
   function collectOrderConfiguratorFromAdmin(form) {
     const mode = form.elements.inside_text_mode?.value || "self";
+    const rightText = form.elements.config_inside_right_text?.value || "";
+    const photoUrl = form.elements.card_photo_url?.value || "";
     return {
       design_mode: "template",
       template: form.elements.config_template?.value || "",
@@ -2297,13 +2385,57 @@
       inside_text_mode_label: mode === "melody" ? "Melody Cards schreibt" : mode === "empty" ? "Innen leer lassen" : "Kunde schreibt selbst",
       inside_left_text: form.elements.config_inside_left_text?.value || "",
       text_brief: form.elements.config_text_brief?.value || "",
-      inside_right_text: form.elements.config_inside_right_text?.value || "",
+      right_photo_enabled: Boolean(photoUrl),
+      right_text_enabled: Boolean(rightText),
+      inside_right_text_mode: rightText ? "self" : "empty",
+      inside_right_text_mode_label: rightText ? "Kunde schreibt selbst" : "leer lassen",
+      inside_right_text: rightText,
       relationship: form.elements.config_relationship?.value || "",
-      photo_url: form.elements.card_photo_url?.value || "",
+      photo_url: photoUrl,
       price: null,
       price_note: form.elements.price_note?.value || "",
       currency: "€",
-      qr_position: "inside_left_bottom_center"
+      qr_position: "inside_right_bottom_center"
+    };
+  }
+
+  function buildAdminStructuredOrderPayload(form, config) {
+    const rightText = form.elements.config_inside_right_text?.value || "";
+    const photoUrl = form.elements.card_photo_url?.value || "";
+    const melodyNotes = form.elements.config_text_brief?.value || "";
+    return {
+      card_type: form.elements.card_category.value,
+      recipient_name: form.elements.recipient_name.value,
+      relationship_to_recipient: form.elements.config_relationship?.value || "",
+      cover_mode: form.elements.config_template?.value ? "Standardkarte" : "",
+      cover_template: form.elements.config_template?.value || "",
+      cover_text: form.elements.config_cover_text?.value || "",
+      cover_name: form.elements.config_cover_name?.value || "",
+      cover_extra_text: form.elements.config_cover_extra?.value || "",
+      inside_left_mode: config.inside_text_mode_label || "",
+      inside_left_text: form.elements.config_inside_left_text?.value || "",
+      inside_left_melody_notes: melodyNotes,
+      inside_right_photo_enabled: Boolean(photoUrl),
+      inside_right_photo_url: photoUrl,
+      inside_right_text_enabled: Boolean(rightText),
+      inside_right_mode: rightText ? "Kunde schreibt selbst" : "leer lassen",
+      inside_right_text: rightText,
+      inside_right_melody_notes: "",
+      song_language: form.elements.song_language.value,
+      voice: form.elements.voice.value,
+      music_style: form.elements.music_style.value,
+      song_notes: form.elements.story.value,
+      special_details: form.elements.message.value,
+      image_url: photoUrl,
+      personalization_selected: Boolean(
+        form.elements.config_cover_text?.value
+        || form.elements.config_cover_name?.value
+        || form.elements.config_inside_left_text?.value
+        || melodyNotes
+        || rightText
+        || photoUrl
+      ),
+      price_note: form.elements.price_note?.value || ""
     };
   }
 
@@ -2317,8 +2449,9 @@
       await action("Bestellung", async () => {
         await refreshClient();
         if (!client) throw new Error("Supabase nicht verbunden.");
+        const config = collectOrderConfiguratorFromAdmin(form);
         const payload = {
-          configurator: collectOrderConfiguratorFromAdmin(form),
+          configurator: config,
           card_category: form.elements.card_category.value,
           recipient_name: form.elements.recipient_name.value,
           occasion: form.elements.occasion.value,
@@ -2331,19 +2464,10 @@
           card_photo_url: form.elements.card_photo_url?.value || "",
           status: form.elements.status.value,
           card_text: form.elements.card_text.value,
-          message: form.elements.message.value
+          message: form.elements.message.value,
+          ...buildAdminStructuredOrderPayload(form, config)
         };
-        let { error } = await client.from(table).update(payload).eq("id", id);
-        if (error && isMissingOrderColumn(error)) {
-          const fallback = {
-            music_wish: payload.music_wish,
-            status: payload.status,
-            card_text: payload.card_text,
-            message: payload.message
-          };
-          const retry = await client.from(table).update(fallback).eq("id", id);
-          error = retry.error;
-        }
+        const { error } = await client.from(table).update(payload).eq("id", id);
         if (error) throw error;
         setStatus("Bestellung wurde gespeichert.", "success");
       });
@@ -2373,8 +2497,8 @@
       if (!client) throw new Error("Supabase nicht verbunden.");
       const checks = [
         ["site_settings", "id,content,design,updated_at"],
-        ["premium_orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,configurator,calculated_price,card_photo_url,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"],
-        ["orders", "id,name,email,phone,address,card_category,recipient_name,occasion,song_language,voice,music_style,story,configurator,calculated_price,card_photo_url,card_text,music_wish,message,file_url,image_url,video_url,audio_url,status,created_at"]
+        ["premium_orders", orderColumnSelect()],
+        ["orders", orderColumnSelect()]
       ];
       const results = [];
       for (const [table, select] of checks) {
@@ -2387,6 +2511,10 @@
       target.textContent = results.join("\n");
       setStatus("Datenbankprüfung abgeschlossen.", "success");
     });
+  }
+
+  function orderColumnSelect() {
+    return "id,created_at,status,card_type,language_ui,customer_name,customer_email,customer_phone,name,email,phone,card_category,recipient_name,recipient_age,relationship_to_recipient,cover_mode,cover_template,cover_text,cover_name,cover_extra_text,inside_left_mode,inside_left_text,inside_left_melody_notes,inside_right_photo_enabled,inside_right_photo_url,inside_right_text_enabled,inside_right_mode,inside_right_text,inside_right_melody_notes,song_language,voice,music_style,song_notes,apology_reason,mood,personal_story,special_details,image_url,video_url,audio_url,personalization_selected,price_note,address,occasion,story,configurator,calculated_price,card_photo_url,card_text,music_wish,message,file_url";
   }
 
   function input(name, label, value, type = "text") {

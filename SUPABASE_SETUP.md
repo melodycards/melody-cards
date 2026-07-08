@@ -31,6 +31,9 @@ Das Script erstellt:
 Nur Bestellformular nachrüsten:
 Wenn deine bestehenden Tabellen schon existieren, kannst du alternativ nur `outputs/premium_orders.sql` im SQL Editor ausführen. Diese Datei erstellt `premium_orders` und erlaubt öffentliche Formular-Einträge sowie Uploads unter `orders/` im Bucket `melody-assets`.
 
+Nur neue Bestellspalten nachrüsten:
+Wenn `premium_orders` bereits existiert und nur einzelne Spalten fehlen, führe `outputs/supabase_order_columns_migration.sql` aus. Diese Migration ergänzt die strukturierten Bestellspalten und lädt den Supabase API-Schema-Cache neu.
+
 ## 3. Auth aktivieren
 
 1. Gehe zu `Authentication` -> `Providers`.

@@ -945,6 +945,7 @@
         uploadedPhotoUrl = await window.MelodySupabase.uploadOrderFile(photoFile, "customer-photos");
       }
       const configuratorDetails = collectConfiguratorDetails(form, copy, uploadedPhotoUrl);
+      const orderPayload = buildPremiumOrderPayload(form, values, copy, categoryLabel, configuratorDetails);
       const orderDetails = {
         card_category: values.card_category || "",
         card_category_label: categoryLabel,
@@ -1004,7 +1005,8 @@
           }
         }),
         message: values.message || "",
-        status: "neu"
+        status: "neu",
+        ...orderPayload
       });
       form.reset();
       updateOrderCategoryHelp({ currentTarget: form.elements.card_category });
@@ -1055,6 +1057,54 @@
       price_note: personalized ? (c.priceCustomText || "") : (c.priceBaseText || ""),
       currency: "€",
       qr_position: "inside_right_bottom_center"
+    };
+  }
+
+  function buildPremiumOrderPayload(form, values, copy, categoryLabel, config = {}) {
+    const dynamicFields = dynamicOrderFields(copy, values.card_category, values);
+    const dynamicSummary = dynamicFields.map((field) => `${field.label}: ${field.value}`).join("\n");
+    const specialDetails = [
+      values.romantic_style ? `Romantischer Stil: ${values.romantic_style}` : "",
+      dynamicSummary,
+      values.message || ""
+    ].filter(Boolean).join("\n\n");
+    const songNotes = config.personal_story || "";
+    return {
+      card_type: categoryLabel,
+      language_ui: currentLanguage,
+      customer_name: (values.name || "").trim(),
+      customer_email: (values.email || "").trim(),
+      customer_phone: (values.phone || "").trim(),
+      recipient_name: recipientName(values),
+      recipient_age: values.age || "",
+      relationship_to_recipient: config.relationship || "",
+      cover_mode: config.design_mode_label || config.design_mode || "",
+      cover_template: config.template || "",
+      cover_text: config.cover_text || "",
+      cover_name: config.cover_name || "",
+      cover_extra_text: config.cover_extra || "",
+      inside_left_mode: config.inside_text_mode_label || config.inside_text_mode || "",
+      inside_left_text: config.inside_left_text || "",
+      inside_left_melody_notes: config.text_brief || "",
+      inside_right_photo_enabled: Boolean(config.right_photo_enabled),
+      inside_right_photo_url: config.photo_url || "",
+      inside_right_text_enabled: Boolean(config.right_text_enabled),
+      inside_right_mode: config.inside_right_text_mode_label || config.inside_right_text_mode || "",
+      inside_right_text: config.inside_right_text || "",
+      inside_right_melody_notes: config.inside_right_text_mode === "melody" ? (config.personal_story || "") : "",
+      song_language: values.song_language || "",
+      voice: values.voice || "",
+      music_style: values.music_style || "",
+      song_notes: songNotes,
+      apology_reason: values.apology_for || "",
+      mood: values.mood || "",
+      personal_story: values.love_story || values.memory || config.personal_story || "",
+      special_details: specialDetails,
+      image_url: config.photo_url || "",
+      video_url: "",
+      audio_url: "",
+      personalization_selected: hasPersonalization(form),
+      price_note: config.price_note || ""
     };
   }
 

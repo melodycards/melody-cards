@@ -119,7 +119,7 @@
       return `Die Supabase-Tabelle ${table} fehlt oder ist nicht im API-Schema erreichbar. Bitte fuehre die aktuelle supabase.sql im Supabase SQL Editor aus.`;
     }
     if (code === "PGRST204" || message.toLowerCase().includes("could not find")) {
-      return `In ${table} fehlt eine Spalte: ${message}. Bitte fuehre die aktuelle supabase.sql aus. Die Bestellung wird automatisch mit den kompatiblen Basisfeldern erneut versucht.`;
+      return `In ${table} fehlt eine Spalte: ${message}. Bitte fuehre die aktuelle supabase.sql aus, damit jede Formularantwort einzeln gespeichert wird.`;
     }
     if (code === "42501" || message.toLowerCase().includes("row-level security") || message.toLowerCase().includes("permission")) {
       return `Supabase verweigert das Speichern in ${table}. Bitte pruefe die RLS-Policy fuer Bestellungen und die Storage-Policy fuer orders-Uploads.`;
@@ -176,20 +176,10 @@
     if (!client) {
       throw new Error("Supabase ist nicht verbunden. Bitte config.js mit URL und Anon Key pruefen.");
     }
-    const preferredTables = ["premium_orders", "orders"];
-    const errors = [];
-    for (const table of preferredTables) {
-      const { error } = await client.from(table).insert(order);
-      if (!error) return { saved: true, table };
-      if (isMissingColumnError(error)) {
-        const retry = await client.from(table).insert(legacyPremiumOrder(order));
-        if (!retry.error) return { saved: true, table, fallback: true };
-        errors.push(`${table}: ${readableOrderError(retry.error, table)}`);
-      } else {
-        errors.push(`${table}: ${readableOrderError(error, table)}`);
-      }
-    }
-    throw new Error(errors.join(" | "));
+    const table = "premium_orders";
+    const { error } = await client.from(table).insert(order);
+    if (!error) return { saved: true, table };
+    throw new Error(readableOrderError(error, table));
   }
 
   window.MelodySupabase = {
