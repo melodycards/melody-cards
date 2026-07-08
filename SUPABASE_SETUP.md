@@ -34,6 +34,8 @@ Wenn deine bestehenden Tabellen schon existieren, kannst du alternativ nur `outp
 Nur neue Bestellspalten nachrüsten:
 Wenn `premium_orders` bereits existiert und nur einzelne Spalten fehlen, führe `outputs/supabase_order_columns_migration.sql` aus. Diese Migration ergänzt die strukturierten Bestellspalten und lädt den Supabase API-Schema-Cache neu.
 
+Falls das Formular danach `row-level security policy` meldet, führe zusätzlich `outputs/supabase_order_rls_fix.sql` aus. Diese Datei erlaubt öffentliche Bestellanfragen und behält Lesen/Bearbeiten/Löschen für Admins.
+
 ## 3. Auth aktivieren
 
 1. Gehe zu `Authentication` -> `Providers`.
