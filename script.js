@@ -530,9 +530,14 @@
             <p class="preview-note">${escape(c.previewHint || "")}</p>
           </div>
           <div class="card-config-panel">
-            <h3>${escape(c.title || "")}</h3>
-            <div class="config-group">
-              <h4>${escape(c.coverSectionTitle || "")}</h4>
+            <div class="config-section-picker" role="group" aria-label="${escape(c.sectionPickerLabel || c.title || "")}">
+              ${configSectionCard("cover", c.coverSectionTitle, c.coverSectionHelp, true)}
+              ${configSectionCard("inside-left", c.insideLeftSectionTitle, c.insideLeftSectionHelp)}
+              ${configSectionCard("inside-right", c.insideRightSectionTitle, c.insideRightSectionHelp)}
+            </div>
+            <h3 class="config-active-heading" data-config-heading>${escape(c.coverActiveTitle || c.coverSectionTitle || "")}</h3>
+            <div class="config-group is-active" data-config-group="cover">
+              <h4>${escape(c.coverActiveTitle || c.coverSectionTitle || "")}</h4>
               <label>${escape(c.templateModeLabel || "")}<select name="design_mode">
                 <option value="template">${escape(c.templateModeTemplate || "")}</option>
                 <option value="custom">${escape(c.templateModeCustom || "")}</option>
@@ -542,8 +547,8 @@
               <label class="cover-custom-field" hidden>${escape(c.coverNameLabel || "")}<input name="cover_name" /></label>
               <label class="cover-custom-field" hidden>${escape(c.coverExtraLabel || "")}<input name="cover_extra" /></label>
             </div>
-            <div class="config-group">
-              <h4>${escape(c.insideLeftSectionTitle || "")}</h4>
+            <div class="config-group" data-config-group="inside-left">
+              <h4>${escape(c.insideLeftActiveTitle || c.insideLeftSectionTitle || "")}</h4>
               <label>${escape(c.textModeLabel || "")}<select name="inside_text_mode">
                 <option value="empty">${escape(c.textModeEmpty || "")}</option>
                 <option value="melody">${escape(c.textModeMelody || "")}</option>
@@ -552,8 +557,8 @@
               <label class="inside-left-field" hidden>${escape(c.insideLeftTextLabel || "")}<textarea name="inside_left_text" rows="4"></textarea></label>
               <label class="text-brief-field" hidden>${escape(c.textBriefLabel || "")}<textarea name="text_brief" rows="3" placeholder="${escape(c.textBriefPlaceholder || "")}"></textarea></label>
             </div>
-            <div class="config-group">
-              <h4>${escape(c.insideRightSectionTitle || "")}</h4>
+            <div class="config-group" data-config-group="inside-right">
+              <h4>${escape(c.insideRightActiveTitle || c.insideRightSectionTitle || "")}</h4>
               <label>${escape(c.rightPhotoToggleLabel || "")}<select name="right_photo_enabled">
                 <option value="no">${escape(c.noLabel || "")}</option>
                 <option value="yes">${escape(c.yesLabel || "")}</option>
@@ -594,6 +599,13 @@
     return `<button class="card-type-card ${selected ? "is-selected" : ""}" type="button" data-card-category-option="${escape(category.id)}" aria-pressed="${selected ? "true" : "false"}">
       <span class="card-type-icon icon-${escape(category.id)}" aria-hidden="true"></span>
       <span><strong>${escape(category.title || "")}</strong><small>${escape(category.description || "")}</small></span>
+    </button>`;
+  }
+
+  function configSectionCard(id, title, help, selected = false) {
+    return `<button class="config-section-card ${selected ? "is-active" : ""}" type="button" data-config-section="${escape(id)}" aria-pressed="${selected ? "true" : "false"}">
+      <span class="config-section-icon icon-${escape(id)}" aria-hidden="true"></span>
+      <span><strong>${escape(title || "")}</strong><small>${escape(help || "")}</small></span>
     </button>`;
   }
 
@@ -727,9 +739,41 @@
         }
       });
     });
+    form.querySelectorAll("[data-config-section]").forEach((button) => {
+      button.addEventListener("click", () => selectConfiguratorSection(form, button.dataset.configSection));
+    });
+    form.querySelectorAll("[data-config-group]").forEach((group) => {
+      group.addEventListener("click", () => selectConfiguratorSection(form, group.dataset.configGroup));
+      group.addEventListener("focusin", () => selectConfiguratorSection(form, group.dataset.configGroup));
+    });
     ["input", "change"].forEach((eventName) => form.addEventListener(eventName, updateCardConfigurator));
     form.elements.customer_photo?.addEventListener("change", previewCustomerPhoto);
+    selectConfiguratorSection(form, "cover");
     updateCardConfigurator();
+  }
+
+  function selectConfiguratorSection(form, section) {
+    if (!form || !section) return;
+    const copy = orderCopy();
+    const c = copy.configurator || {};
+    const titles = {
+      cover: c.coverActiveTitle || c.coverSectionTitle || "",
+      "inside-left": c.insideLeftActiveTitle || c.insideLeftSectionTitle || "",
+      "inside-right": c.insideRightActiveTitle || c.insideRightSectionTitle || ""
+    };
+    form.querySelectorAll("[data-config-section]").forEach((button) => {
+      const active = button.dataset.configSection === section;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    form.querySelectorAll("[data-config-group]").forEach((group) => {
+      group.classList.toggle("is-active", group.dataset.configGroup === section);
+    });
+    const heading = form.querySelector("[data-config-heading]");
+    if (heading) heading.textContent = titles[section] || titles.cover;
+    const targetView = section === "cover" ? "outside" : "inside";
+    const viewButton = form.querySelector(`[data-card-view="${targetView}"]`);
+    if (viewButton && !viewButton.classList.contains("is-active")) viewButton.click();
   }
 
   function updateOrderCategoryHelp(event) {
