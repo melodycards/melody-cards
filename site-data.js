@@ -201,7 +201,7 @@
             active: true,
             order: 9,
             eyebrow: "Bestellung",
-            title: "Geburtstagskarte anfragen",
+            title: "Karte anfragen",
             text: "Sende deine Anfrage. Wir melden uns mit den nächsten Schritten zurück."
           },
           {
@@ -331,7 +331,7 @@
               },
               order: {
                 eyebrow: "Sipariş",
-                title: "Doğum günü kartı talep et",
+                title: "Kart talep et",
                 text: "Talebini gönder. Sonraki adımlar için seninle iletişime geçeriz."
               },
               contact: {

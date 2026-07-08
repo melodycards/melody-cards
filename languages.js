@@ -39,7 +39,7 @@
         musicStyleOptions: ["Pop", "Türkisch emotional", "Ballade", "Rap", "Akustik", "Arabesk", "Überrasch mich"],
         messageLabel: "Nachricht",
         messagePlaceholder: "Gibt es noch etwas, das wir wissen sollen?",
-        submitLabel: "Anfrage senden",
+        submitLabel: "Karte anfragen",
         sending: "Anfrage wird gesendet...",
         success: "Danke. Deine Anfrage wurde gesendet.",
         error: "Die Anfrage konnte nicht gespeichert werden.",
@@ -50,7 +50,7 @@
         musicWishLanguage: "Sprache des Liedes",
         musicWishVoice: "Stimme",
         musicWishStyle: "Musikrichtung",
-        requestButton: "Anfragen",
+        requestButton: "Karte anfragen",
         configurator: {
           title: "Karte gestalten",
           outsideTab: "Außen gestalten",
@@ -127,12 +127,11 @@
         },
         categoryFields: {
           birthday: [
-            { name: "occasion", label: "Anlass", placeholder: "Geburtstag", defaultValue: "Geburtstag", required: true },
             { name: "recipient", label: "Name", placeholder: "z. B. Mama, Sarah, mein Schatz", required: true },
             { name: "age", label: "Alter optional", type: "number", required: false }
           ],
           apology: [
-            { name: "apology_for", label: "Wofür entschuldigen?", type: "textarea", placeholder: "Beschreibe kurz, wofür du dich entschuldigen möchtest.", required: true },
+            { name: "apology_for", label: "Anlass / Entschuldigungsgrund", type: "textarea", placeholder: "Beschreibe kurz, wofür du dich entschuldigen möchtest.", required: true },
             { name: "recipient", label: "Name der Person", placeholder: "z. B. Elif, Sarah, mein Schatz", required: true },
             { name: "mood", label: "Stimmung", placeholder: "z. B. sanft, ehrlich, versöhnlich", required: true }
           ],
@@ -191,7 +190,7 @@
         musicStyleOptions: ["Pop", "Duygusal Türkçe", "Balad", "Rap", "Akustik", "Arabesk", "Beni şaşırt"],
         messageLabel: "Not",
         messagePlaceholder: "Bilmemizi istediğin başka bir şey var mı?",
-        submitLabel: "Talep gönder",
+        submitLabel: "Kart talep et",
         sending: "Talebin gönderiliyor...",
         success: "Teşekkürler. Talebin gönderildi.",
         error: "Talep kaydedilemedi.",
@@ -202,7 +201,7 @@
         musicWishLanguage: "Şarkının dili",
         musicWishVoice: "Ses",
         musicWishStyle: "Müzik tarzı",
-        requestButton: "Talep et",
+        requestButton: "Kart talep et",
         configurator: {
           title: "Kartı tasarla",
           outsideTab: "Dış kısmı tasarla",
@@ -279,12 +278,11 @@
         },
         categoryFields: {
           birthday: [
-            { name: "occasion", label: "Sebep", placeholder: "Doğum günü", defaultValue: "Doğum günü", required: true },
             { name: "recipient", label: "İsim", placeholder: "örn. Anne, Sarah, sevgilim", required: true },
             { name: "age", label: "Yaş isteğe bağlı", type: "number", required: false }
           ],
           apology: [
-            { name: "apology_for", label: "Ne için özür diliyorsun?", type: "textarea", placeholder: "Neden özür dilemek istediğini kısaca anlat.", required: true },
+            { name: "apology_for", label: "Sebep / Özür nedeni", type: "textarea", placeholder: "Neden özür dilemek istediğini kısaca anlat.", required: true },
             { name: "recipient", label: "Kişinin adı", placeholder: "örn. Elif, Sarah, sevgilim", required: true },
             { name: "mood", label: "Duygu", placeholder: "örn. yumuşak, samimi, barışçıl", required: true }
           ],

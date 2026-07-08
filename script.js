@@ -70,7 +70,35 @@
     const defaults = window.MELODY_LANGUAGE_PACK?.[language]?.orderForm || baseOrder;
     const staleMessageLabels = ["Wünsche zur Karte", "Kartenvorgaben", "Kartenwünsche"];
     if (staleMessageLabels.includes(merged.messageLabel || "")) merged.messageLabel = defaults.messageLabel || "Nachricht";
-    return merged;
+    return normalizeOrderForm(merged, defaults);
+  }
+
+  function normalizeOrderForm(order = {}, defaults = {}) {
+    const normalized = { ...order };
+    const staleSubmitLabels = ["Anfrage senden", "Talep gönder", "Geburtstagskarte anfragen", "Doğum günü kartı talep et"];
+    const staleRequestLabels = ["Anfragen", "Talep et", "Geburtstagskarte anfragen", "Doğum günü kartı talep et"];
+    if (!normalized.submitLabel || staleSubmitLabels.includes(normalized.submitLabel) || /Geburtstagskarte|Doğum günü kartı/i.test(normalized.submitLabel)) {
+      normalized.submitLabel = defaults.submitLabel || normalized.submitLabel;
+    }
+    if (!normalized.requestButton || staleRequestLabels.includes(normalized.requestButton) || /Geburtstagskarte|Doğum günü kartı/i.test(normalized.requestButton)) {
+      normalized.requestButton = defaults.requestButton || normalized.requestButton;
+    }
+    normalized.categoryFields = normalizeCategoryFields(normalized.categoryFields || {}, defaults.categoryFields || {});
+    return normalized;
+  }
+
+  function normalizeCategoryFields(fields = {}, defaults = {}) {
+    const result = { ...fields };
+    ["birthday", "apology", "valentine", "mothers_day", "fathers_day"].forEach((categoryId) => {
+      const source = Array.isArray(result[categoryId]) ? result[categoryId] : defaults[categoryId] || [];
+      result[categoryId] = source
+        .filter((field) => field?.name !== "occasion")
+        .map((field) => {
+          if (categoryId !== "apology" || field?.name !== "apology_for") return field;
+          return { ...field, ...(defaults.apology || []).find((item) => item.name === "apology_for") };
+        });
+    });
+    return result;
   }
 
   function mergeConfigurator(baseConfigurator = {}, remoteConfigurator = {}, language = "de") {
