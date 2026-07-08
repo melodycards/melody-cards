@@ -207,6 +207,11 @@ alter table public.blog_posts enable row level security;
 alter table public.premium_orders enable row level security;
 alter table public.orders enable row level security;
 
+grant insert on public.premium_orders to anon, authenticated;
+grant select, update, delete on public.premium_orders to authenticated;
+grant insert on public.orders to anon, authenticated;
+grant select, update, delete on public.orders to authenticated;
+
 drop policy if exists "Admins can read admin profiles" on public.admin_profiles;
 create policy "Admins can read admin profiles"
 on public.admin_profiles for select
@@ -563,3 +568,5 @@ set answer = excluded.answer,
 -- from auth.users
 -- where email = 'koglu@hotmail.de'
 -- on conflict (user_id) do update set role = 'admin';
+
+notify pgrst, 'reload schema';

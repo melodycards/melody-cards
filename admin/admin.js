@@ -120,6 +120,9 @@
     if (!merged.storyPlaceholder || merged.storyPlaceholder.includes("Was macht diese Person") || merged.storyPlaceholder.includes("Bu kişiyi özel yapan")) {
       merged.storyPlaceholder = defaults.storyPlaceholder || merged.storyPlaceholder;
     }
+    const stalePriceTexts = ["Preis ab 17 € – Endpreis je nach Wunsch und Aufwand.", "Fiyat 17 €'dan başlar – son fiyat istek ve emeğe göre belirlenir."];
+    if (!merged.priceBaseText || stalePriceTexts.includes(merged.priceBaseText)) merged.priceBaseText = defaults.priceBaseText || merged.priceBaseText;
+    if (!merged.previewHint) merged.previewHint = defaults.previewHint || "";
     merged.storyPlaceholders = {
       ...(defaults.storyPlaceholders || {}),
       ...(merged.storyPlaceholders || {})

@@ -117,6 +117,11 @@ on public.orders (status);
 alter table public.premium_orders enable row level security;
 alter table public.orders enable row level security;
 
+grant insert on public.premium_orders to anon, authenticated;
+grant select, update, delete on public.premium_orders to authenticated;
+grant insert on public.orders to anon, authenticated;
+grant select, update, delete on public.orders to authenticated;
+
 drop policy if exists "Public can create premium orders" on public.premium_orders;
 create policy "Public can create premium orders"
 on public.premium_orders for insert
@@ -176,3 +181,5 @@ with check (bucket_id = 'melody-assets' and (storage.foldername(name))[1] = 'ord
 -- from auth.users
 -- where email = 'koglu@hotmail.de'
 -- on conflict (user_id) do update set role = 'admin';
+
+notify pgrst, 'reload schema';

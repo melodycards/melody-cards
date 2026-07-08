@@ -185,10 +185,8 @@
         const retry = await client.from(table).insert(legacyPremiumOrder(order));
         if (!retry.error) return { saved: true, table, fallback: true };
         errors.push(`${table}: ${readableOrderError(retry.error, table)}`);
-        if (!isMissingTableError(retry.error)) break;
       } else {
         errors.push(`${table}: ${readableOrderError(error, table)}`);
-        if (!isMissingTableError(error)) break;
       }
     }
     throw new Error(errors.join(" | "));

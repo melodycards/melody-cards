@@ -89,6 +89,9 @@
     if (!merged.storyPlaceholder || merged.storyPlaceholder.includes("Was macht diese Person") || merged.storyPlaceholder.includes("Bu kişiyi özel yapan")) {
       merged.storyPlaceholder = defaults.storyPlaceholder || merged.storyPlaceholder;
     }
+    const stalePriceTexts = ["Preis ab 17 € – Endpreis je nach Wunsch und Aufwand.", "Fiyat 17 €'dan başlar – son fiyat istek ve emeğe göre belirlenir."];
+    if (!merged.priceBaseText || stalePriceTexts.includes(merged.priceBaseText)) merged.priceBaseText = defaults.priceBaseText || merged.priceBaseText;
+    if (!merged.previewHint) merged.previewHint = defaults.previewHint || "";
     merged.storyPlaceholders = {
       ...(defaults.storyPlaceholders || {}),
       ...(merged.storyPlaceholders || {})
@@ -454,7 +457,17 @@
     return `<section class="section order-section section-reveal" id="${escape(section.id)}" data-edit-kind="section" data-edit-id="${escape(section.id)}">
       ${sectionHead(section)}
       <form class="order-form lux-card" id="premium-order-form">
-        <label class="span-all">${escape(copy.categoryLabel || "")}<select name="card_category" required>${categoryOptions}</select><small class="order-category-help" data-category-help>${escape(firstCategory.description || copy.categoryHelp || "")}</small></label>
+        <div class="card-type-picker span-all">
+          <div class="card-type-head">
+            <p class="eyebrow">${escape(copy.categoryLabel || "")}</p>
+            <h3>${escape(copy.categoryTitle || copy.categoryHelp || "")}</h3>
+            <p data-category-help>${escape(firstCategory.description || copy.categoryHelp || "")}</p>
+          </div>
+          <label class="visually-hidden">${escape(copy.categoryLabel || "")}<select name="card_category" required>${categoryOptions}</select></label>
+          <div class="card-type-grid" data-card-type-grid>
+            ${categories.map((category, index) => categoryCard(category, index === 0)).join("")}
+          </div>
+        </div>
         <div class="card-configurator span-all">
           <div class="card-preview-panel">
             <div class="card-view-toggle" role="group" aria-label="${escape(c.title || "")}">
@@ -473,7 +486,6 @@
                 <div class="inside-page inside-left">
                   <small>${escape(c.leftPage || "")}</small>
                   <p data-preview-left-text></p>
-                  <div class="qr-reserved">${escape(c.qrText || "")}</div>
                 </div>
                 <div class="inside-fold" aria-hidden="true"></div>
                 <div class="inside-page inside-right">
@@ -482,10 +494,12 @@
                     <div class="inside-photo" data-inside-photo hidden></div>
                     <p data-preview-right-text></p>
                   </div>
+                  <div class="qr-reserved">${escape(c.qrText || "")}</div>
                 </div>
               </div>
             </div>
             <p class="live-price" data-live-price>${escape(c.priceBaseText || "")}</p>
+            <p class="preview-note">${escape(c.previewHint || "")}</p>
           </div>
           <div class="card-config-panel">
             <h3>${escape(c.title || "")}</h3>
@@ -546,6 +560,13 @@
         <p class="form-status" id="premium-order-status" role="status" aria-live="polite"></p>
       </form>
     </section>`;
+  }
+
+  function categoryCard(category, selected) {
+    return `<button class="card-type-card ${selected ? "is-selected" : ""}" type="button" data-card-category-option="${escape(category.id)}" aria-pressed="${selected ? "true" : "false"}">
+      <span class="card-type-icon icon-${escape(category.id)}" aria-hidden="true"></span>
+      <span><strong>${escape(category.title || "")}</strong><small>${escape(category.description || "")}</small></span>
+    </button>`;
   }
 
   function templateOptions(copy, categoryId) {
@@ -634,12 +655,10 @@
       }, 20);
       const category = event.target.closest("[data-order-category]")?.dataset.orderCategory;
       if (category) setTimeout(() => {
-        const select = $("#premium-order-form select[name='card_category']");
-        if (select) {
-          select.value = category;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-        }
+        setOrderCategory(category);
       }, 20);
+      const categoryCard = event.target.closest("[data-card-category-option]");
+      if (categoryCard) setOrderCategory(categoryCard.dataset.cardCategoryOption);
     });
     $("#premium-order-form select[name='card_category']")?.addEventListener("change", updateOrderCategoryHelp);
     $("#premium-order-form")?.addEventListener("invalid", handleOrderInvalid, true);
@@ -648,6 +667,14 @@
     bindCardConfigurator();
     $("#premium-order-form")?.addEventListener("submit", submitOrder);
     reveal();
+  }
+
+  function setOrderCategory(categoryId) {
+    const form = $("#premium-order-form");
+    const select = form?.elements.card_category;
+    if (!select || !categoryId) return;
+    select.value = categoryId;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   function bindCardConfigurator() {
@@ -681,6 +708,7 @@
     const help = $("[data-category-help]");
     const selected = event.currentTarget.selectedOptions?.[0];
     if (help) help.textContent = selected?.dataset.description || "";
+    updateCategoryCards(event.currentTarget.value);
     updateTemplateOptions(event.currentTarget.value);
     updateStoryPlaceholder(event.currentTarget.value);
     document.querySelectorAll("[data-category-fields]").forEach((group) => {
@@ -692,6 +720,14 @@
       });
     });
     updateCardConfigurator();
+  }
+
+  function updateCategoryCards(categoryId) {
+    document.querySelectorAll("[data-card-category-option]").forEach((button) => {
+      const selected = button.dataset.cardCategoryOption === categoryId;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
   }
 
   function updateStoryPlaceholder(categoryId) {
@@ -990,7 +1026,7 @@
       price: null,
       price_note: personalized ? (c.priceCustomText || "") : (c.priceBaseText || ""),
       currency: "€",
-      qr_position: "inside_left_bottom_center"
+      qr_position: "inside_right_bottom_center"
     };
   }
 
