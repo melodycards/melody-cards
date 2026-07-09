@@ -2155,37 +2155,39 @@
         <span class="status-pill">${escape(order.status || "neu")}</span>
       </header>
       ${orderStructuredSummary(order, cardConfig)}
-      <form data-order-form="${escape(order.id)}" data-order-table="${escape(order._order_table || "premium_orders")}" class="order-admin-form">
-        ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(categoryValue), categoryValue)}
-        <label>Name der Person<input name="recipient_name" value="${escape(recipientValue)}" /></label>
-        <label>Anlass<input name="occasion" value="${escape(occasionValue)}" /></label>
-        ${adminSelect("song_language", "Sprache des Liedes", songLanguageOptions, languageValue)}
-        ${adminSelect("voice", "Stimme", voiceOptions, voiceValue)}
-        ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, styleValue)}
-        ${adminSelect("status", "Status", ["neu", "in_bearbeitung", "fertig", "archiviert", "new", "in_progress", "done", "archived"], order.status || "neu")}
-        <label class="span-all">Kartentext<textarea name="card_text" rows="3">${escape(order.card_text || "")}</textarea></label>
-        <div class="order-config-edit span-all">
-          <strong>Karten-Konfiguration</strong>
-          ${adminSelectWithLabels("inside_text_mode", "Textmodus", [
-            ["self", "Kunde schreibt selbst"],
-            ["melody", "Melody Cards schreibt"],
-            ["empty", "Innen leer lassen"]
-          ], cardConfig.inside_text_mode || "self")}
-          <label>Vorlage<input name="config_template" value="${escape(cardConfig.template || "")}" /></label>
-          <label>Cover-Text<input name="config_cover_text" value="${escape(cardConfig.cover_text || "")}" /></label>
-          <label>Cover-Name<input name="config_cover_name" value="${escape(cardConfig.cover_name || "")}" /></label>
-          <label>Kurzer Zusatztext<input name="config_cover_extra" value="${escape(cardConfig.cover_extra || "")}" /></label>
-          <label class="span-all">Innen links<textarea name="config_inside_left_text" rows="3">${escape(cardConfig.inside_left_text || "")}</textarea></label>
-          <label class="span-all">Melody-Textwunsch<textarea name="config_text_brief" rows="3">${escape(cardConfig.text_brief || "")}</textarea></label>
-          <label class="span-all">Innen rechts<textarea name="config_inside_right_text" rows="3">${escape(cardConfig.inside_right_text || "")}</textarea></label>
-          <label>Beziehung<input name="config_relationship" value="${escape(cardConfig.relationship || "")}" /></label>
-          <label class="span-all">Preis-Hinweis<input name="price_note" value="${escape(cardConfig.price_note || "")}" /></label>
-          <input name="card_photo_url" type="hidden" value="${escape(photoValue)}" />
-        </div>
-        <label class="span-all">Persönliche Infos / Geschichte<textarea name="story" rows="3">${escape(storyValue)}</textarea></label>
-        <label class="span-all">Nachricht<textarea name="message" rows="3">${escape(order.message || "")}</textarea></label>
-        <button class="btn btn-primary span-all" type="submit" data-order-save>Bestellung speichern</button>
-      </form>
+      <details class="order-edit-details">
+        <summary>Status & Bearbeitung</summary>
+        <form data-order-form="${escape(order.id)}" data-order-table="${escape(order._order_table || "premium_orders")}" class="order-admin-form">
+          ${adminSelect("card_category", "Kartentyp", categoryOrderOptions(categoryValue), categoryValue)}
+          <label>Name der Person<input name="recipient_name" value="${escape(recipientValue)}" /></label>
+          <label>Anlass<input name="occasion" value="${escape(occasionValue)}" /></label>
+          ${adminSelect("song_language", "Sprache des Liedes", songLanguageOptions, languageValue)}
+          ${adminSelect("voice", "Stimme", voiceOptions, voiceValue)}
+          ${adminSelect("music_style", "Musikrichtung", musicStyleOptions, styleValue)}
+          ${adminSelect("status", "Status", ["neu", "in_bearbeitung", "fertig", "archiviert", "new", "in_progress", "done", "archived"], order.status || "neu")}
+          <div class="order-config-edit span-all">
+            <strong>Kartenangaben</strong>
+            ${adminSelectWithLabels("inside_text_mode", "Textmodus links", [
+              ["self", "Kunde schreibt selbst"],
+              ["melody", "Melody Cards schreibt"],
+              ["empty", "Innen leer lassen"]
+            ], order.inside_left_mode_id || cardConfig.inside_text_mode || "self")}
+            <label>Vorlage<input name="config_template" value="${escape(order.cover_template || cardConfig.template || "")}" /></label>
+            <label>Cover-Text<input name="config_cover_text" value="${escape(order.cover_text || cardConfig.cover_text || "")}" /></label>
+            <label>Cover-Name<input name="config_cover_name" value="${escape(order.cover_name || cardConfig.cover_name || "")}" /></label>
+            <label>Kurzer Zusatztext<input name="config_cover_extra" value="${escape(order.cover_extra_text || cardConfig.cover_extra || "")}" /></label>
+            <label class="span-all">Innen links<textarea name="config_inside_left_text" rows="3">${escape(order.inside_left_text || cardConfig.inside_left_text || "")}</textarea></label>
+            <label class="span-all">Melody-Textwunsch links<textarea name="config_text_brief" rows="3">${escape(order.inside_left_melody_notes || cardConfig.text_brief || "")}</textarea></label>
+            <label class="span-all">Innen rechts<textarea name="config_inside_right_text" rows="3">${escape(order.inside_right_text || cardConfig.inside_right_text || "")}</textarea></label>
+            <label>Beziehung<input name="config_relationship" value="${escape(order.relationship_to_recipient || cardConfig.relationship || "")}" /></label>
+            <label class="span-all">Preis-Hinweis<input name="price_note" value="${escape(order.price_note || cardConfig.price_note || "")}" /></label>
+            <input name="card_photo_url" type="hidden" value="${escape(photoValue)}" />
+          </div>
+          <label class="span-all">Songwunsch / Geschichte<textarea name="story" rows="3">${escape(storyValue)}</textarea></label>
+          <label class="span-all">Besondere Hinweise<textarea name="message" rows="3">${escape(order.special_details || order.message || "")}</textarea></label>
+          <button class="btn btn-primary span-all" type="submit" data-order-save>Bestellung speichern</button>
+        </form>
+      </details>
     </article>`;
   }
 
@@ -2228,75 +2230,117 @@
       "price_note"
     ].some((key) => order[key] !== undefined && order[key] !== null && order[key] !== "");
     if (!hasStructuredFields) return orderConfiguratorSummary(config, order);
-    const photo = order.inside_right_photo_url || order.card_photo_url || config.photo_url || order.image_url || "";
+    const coverImage = order.cover_image_url || "";
+    const leftImage = order.inside_left_image_url || "";
+    const rightImage = order.inside_right_image_url || order.inside_right_photo_url || order.card_photo_url || config.photo_url || order.image_url || "";
     return `<div class="order-structured-summary">
-      ${summarySection("Allgemein", [
-        ["Kartentyp", order.card_type || order.card_category],
-        ["Sprache Website", order.language_ui],
-        ["Kunde", order.customer_name || order.name],
+      ${summarySection("Kunde", [
+        ["Name", order.customer_name || order.name],
         ["E-Mail", order.customer_email || order.email],
         ["Telefon", order.customer_phone || order.phone],
-        ["Status", order.status]
-      ])}
-      ${summarySection("Empfänger", [
-        ["Name", order.recipient_name],
+        ["Adresse", order.address]
+      ], [], true)}
+      ${summarySection("Bestellung", [
+        ["Kartentyp", order.card_type || order.card_category],
+        ["Kartentyp-ID", order.card_type_id],
+        ["Anlass", order.occasion_label || order.occasion],
+        ["Name der Person", order.recipient_name],
         ["Alter", order.recipient_age],
-        ["Beziehung", order.relationship_to_recipient || config.relationship]
-      ])}
+        ["Beziehung", order.relationship_to_recipient || config.relationship],
+        ["Status", order.status]
+      ], [], true)}
       ${summarySection("Cover", [
-        ["Modus", order.cover_mode || config.design_mode_label],
+        ["Gestaltung", order.cover_mode || config.design_mode_label],
+        ["Gestaltung-ID", order.cover_mode_id],
         ["Vorlage", order.cover_template || config.template],
         ["Cover-Text", order.cover_text || config.cover_text],
         ["Name", order.cover_name || config.cover_name],
-        ["Zusatztext", order.cover_extra_text || config.cover_extra]
+        ["Cover-Bild", boolText(order.cover_image_enabled)],
+        ["Cover-Bild URL", coverImage]
+      ], mediaList([coverImage]), true)}
+      ${summarySection("Kurzer Zusatztext", [
+        ["Text", order.cover_extra_text || config.cover_extra]
       ])}
       ${summarySection("Innenseite links", [
-        ["Modus", order.inside_left_mode || config.inside_text_mode_label],
+        ["Option", order.inside_left_mode || config.inside_text_mode_label],
+        ["Option-ID", order.inside_left_mode_id],
         ["Text", order.inside_left_text || config.inside_left_text],
-        ["Melody-Notizen", order.inside_left_melody_notes || config.text_brief]
-      ])}
+        ["Melody Cards soll schreiben", order.inside_left_melody_notes || config.text_brief],
+        ["Bild", boolText(order.inside_left_image_enabled)],
+        ["Bild URL", leftImage]
+      ], mediaList([leftImage]))}
       ${summarySection("Innenseite rechts", [
-        ["Foto", order.inside_right_photo_enabled ? "Ja" : "Nein"],
-        ["Foto-URL", photo],
-        ["Text aktiv", order.inside_right_text_enabled ? "Ja" : "Nein"],
-        ["Modus", order.inside_right_mode || config.inside_right_text_mode_label],
+        ["Foto einfügen", boolText(order.inside_right_photo_enabled)],
+        ["Foto URL", rightImage],
+        ["Text einfügen", boolText(order.inside_right_text_enabled)],
+        ["Text-Option", order.inside_right_mode || config.inside_right_text_mode_label],
+        ["Text-Option-ID", order.inside_right_mode_id],
         ["Text", order.inside_right_text || config.inside_right_text],
-        ["Melody-Notizen", order.inside_right_melody_notes]
-      ], photo)}
-      ${summarySection("Lied", [
+        ["Melody Cards soll schreiben", order.inside_right_melody_notes]
+      ], mediaList([rightImage]))}
+      ${summarySection("Musik", [
         ["Sprache", order.song_language],
         ["Stimme", order.voice],
-        ["Musikrichtung", order.music_style],
-        ["Notizen", order.song_notes || order.story]
-      ])}
-      ${summarySection("Anlass & Details", [
-        ["Entschuldigungsgrund", order.apology_reason],
+        ["Musikstil", order.music_style],
+        ["Songwunsch", order.song_notes || order.story],
         ["Stimmung", order.mood],
         ["Persönliche Geschichte", order.personal_story],
-        ["Besondere Details", order.special_details || order.message]
+        ["Entschuldigungsgrund", order.apology_reason],
+        ["Kennenlern-Geschichte", order.love_story],
+        ["Romantischer Stil", order.romantic_style],
+        ["Erinnerung", order.memory],
+        ["Besondere Hinweise", order.special_details || order.message]
       ])}
-      ${summarySection("Medien & Preis", [
-        ["Bild", order.image_url || photo],
+      ${summarySection("Dateien", [
+        ["Cover-Bild", coverImage],
+        ["Innenseite links Bild", leftImage],
+        ["Innenseite rechts Bild", rightImage],
+        ["Bild", order.image_url],
         ["Video", order.video_url],
         ["Audio", order.audio_url],
-        ["Personalisierung", order.personalization_selected ? "Ja" : "Nein"],
+        ["Datei", order.file_url],
+        ["QR-Code Position", order.qr_position],
+        ["Personalisierung", boolText(order.personalization_selected)],
         ["Preis-Hinweis", order.price_note || config.price_note]
-      ])}
+      ], mediaList([coverImage, leftImage, rightImage, order.image_url, order.video_url, order.audio_url, order.file_url]))}
     </div>`;
   }
 
-  function summarySection(title, rows, imageUrl = "") {
+  function summarySection(title, rows, media = [], open = false) {
     const body = rows.map(([label, value]) => summaryRow(label, value)).join("");
-    if (!body && !imageUrl) return "";
-    return `<section class="order-summary-section">
-      <h4>${escape(title)}</h4>
-      ${imageUrl ? `<img class="admin-thumb" src="${escape(imageUrl)}" alt="" />` : ""}
+    const previews = media.map(mediaPreview).join("");
+    if (!body && !previews) return "";
+    return `<details class="order-summary-section" ${open ? "open" : ""}>
+      <summary>${escape(title)}</summary>
+      ${previews ? `<div class="order-media-grid">${previews}</div>` : ""}
       <dl>${body}</dl>
-    </section>`;
+    </details>`;
   }
 
   function summaryRow(label, value) {
-    return value ? `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>` : "";
+    if (value === undefined || value === null || value === "") return "";
+    return `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`;
+  }
+
+  function boolText(value) {
+    if (value === undefined || value === null || value === "") return "";
+    return value ? "Ja" : "Nein";
+  }
+
+  function mediaList(items) {
+    return Array.from(new Set(items.filter(Boolean)));
+  }
+
+  function mediaPreview(url = "") {
+    const clean = String(url || "");
+    if (!clean) return "";
+    if (/\.(mp4|webm|mov|ogg)(\?|#|$)/i.test(clean)) {
+      return `<video class="order-media-preview" src="${escape(clean)}" controls playsinline preload="metadata"></video>`;
+    }
+    if (/\.(mp3|wav|m4a|aac|oga)(\?|#|$)/i.test(clean)) {
+      return `<audio class="order-audio-preview" src="${escape(clean)}" controls></audio>`;
+    }
+    return `<img class="order-media-preview" src="${escape(clean)}" alt="" />`;
   }
 
   function categoryOrderOptions(current = "") {
@@ -2405,20 +2449,26 @@
     const melodyNotes = form.elements.config_text_brief?.value || "";
     return {
       card_type: form.elements.card_category.value,
+      card_type_id: "",
       recipient_name: form.elements.recipient_name.value,
       relationship_to_recipient: form.elements.config_relationship?.value || "",
       cover_mode: form.elements.config_template?.value ? "Standardkarte" : "",
+      cover_mode_id: form.elements.config_template?.value ? "template" : "",
       cover_template: form.elements.config_template?.value || "",
       cover_text: form.elements.config_cover_text?.value || "",
       cover_name: form.elements.config_cover_name?.value || "",
       cover_extra_text: form.elements.config_cover_extra?.value || "",
       inside_left_mode: config.inside_text_mode_label || "",
+      inside_left_mode_id: config.inside_text_mode || "",
       inside_left_text: form.elements.config_inside_left_text?.value || "",
       inside_left_melody_notes: melodyNotes,
       inside_right_photo_enabled: Boolean(photoUrl),
       inside_right_photo_url: photoUrl,
+      inside_right_image_enabled: Boolean(photoUrl),
+      inside_right_image_url: photoUrl,
       inside_right_text_enabled: Boolean(rightText),
       inside_right_mode: rightText ? "Kunde schreibt selbst" : "leer lassen",
+      inside_right_mode_id: rightText ? "self" : "empty",
       inside_right_text: rightText,
       inside_right_melody_notes: "",
       song_language: form.elements.song_language.value,
@@ -2427,6 +2477,9 @@
       song_notes: form.elements.story.value,
       special_details: form.elements.message.value,
       image_url: photoUrl,
+      card_text: "",
+      music_wish: "",
+      configurator: null,
       personalization_selected: Boolean(
         form.elements.config_cover_text?.value
         || form.elements.config_cover_name?.value
@@ -2435,7 +2488,8 @@
         || rightText
         || photoUrl
       ),
-      price_note: form.elements.price_note?.value || ""
+      price_note: form.elements.price_note?.value || "",
+      qr_position: "inside_right_bottom_center"
     };
   }
 
@@ -2451,7 +2505,7 @@
         if (!client) throw new Error("Supabase nicht verbunden.");
         const config = collectOrderConfiguratorFromAdmin(form);
         const payload = {
-          configurator: config,
+          configurator: null,
           card_category: form.elements.card_category.value,
           recipient_name: form.elements.recipient_name.value,
           occasion: form.elements.occasion.value,
@@ -2459,11 +2513,11 @@
           voice: form.elements.voice.value,
           music_style: form.elements.music_style.value,
           story: form.elements.story.value,
-          music_wish: serializeMusicWish(form),
+          music_wish: "",
           calculated_price: null,
           card_photo_url: form.elements.card_photo_url?.value || "",
           status: form.elements.status.value,
-          card_text: form.elements.card_text.value,
+          card_text: "",
           message: form.elements.message.value,
           ...buildAdminStructuredOrderPayload(form, config)
         };
@@ -2514,7 +2568,7 @@
   }
 
   function orderColumnSelect() {
-    return "id,created_at,status,card_type,language_ui,customer_name,customer_email,customer_phone,name,email,phone,card_category,recipient_name,recipient_age,relationship_to_recipient,cover_mode,cover_template,cover_text,cover_name,cover_extra_text,inside_left_mode,inside_left_text,inside_left_melody_notes,inside_right_photo_enabled,inside_right_photo_url,inside_right_text_enabled,inside_right_mode,inside_right_text,inside_right_melody_notes,song_language,voice,music_style,song_notes,apology_reason,mood,personal_story,special_details,image_url,video_url,audio_url,personalization_selected,price_note,address,occasion,story,configurator,calculated_price,card_photo_url,card_text,music_wish,message,file_url";
+    return "id,created_at,status,card_type_id,card_type,language_ui,customer_name,customer_email,customer_phone,name,email,phone,address,card_category,occasion,occasion_label,recipient_name,recipient_age,relationship_to_recipient,cover_mode,cover_mode_id,cover_template,cover_text,cover_name,cover_extra_text,cover_image_enabled,cover_image_url,inside_left_mode,inside_left_mode_id,inside_left_text,inside_left_melody_notes,inside_left_image_enabled,inside_left_image_url,inside_right_photo_enabled,inside_right_photo_url,inside_right_image_enabled,inside_right_image_url,inside_right_text_enabled,inside_right_mode,inside_right_mode_id,inside_right_text,inside_right_melody_notes,song_language,voice,music_style,song_notes,apology_reason,mood,love_story,romantic_style,memory,personal_story,special_details,image_url,video_url,audio_url,file_url,card_photo_url,personalization_selected,price_note,qr_position,story,configurator,calculated_price,card_text,music_wish,message";
   }
 
   function input(name, label, value, type = "text") {

@@ -546,6 +546,7 @@
               <label class="cover-custom-field" hidden>${escape(c.coverTextLabel || "")}<input name="cover_text" value="${escape(templateText(copy, firstCategory.id))}" /></label>
               <label class="cover-custom-field" hidden>${escape(c.coverNameLabel || "")}<input name="cover_name" /></label>
               <label class="cover-custom-field" hidden>${escape(c.coverExtraLabel || "")}<input name="cover_extra" /></label>
+              <label>${escape(c.coverImageLabel || "")}<input name="cover_image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /></label>
             </div>
             <div class="config-group" data-config-group="inside-left">
               <h4>${escape(c.insideLeftActiveTitle || c.insideLeftSectionTitle || "")}</h4>
@@ -556,6 +557,7 @@
               </select></label>
               <label class="inside-left-field" hidden>${escape(c.insideLeftTextLabel || "")}<textarea name="inside_left_text" rows="4"></textarea></label>
               <label class="text-brief-field" hidden>${escape(c.textBriefLabel || "")}<textarea name="text_brief" rows="3" placeholder="${escape(c.textBriefPlaceholder || "")}"></textarea></label>
+              <label>${escape(c.insideLeftImageLabel || "")}<input name="inside_left_image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /></label>
             </div>
             <div class="config-group" data-config-group="inside-right">
               <h4>${escape(c.insideRightActiveTitle || c.insideRightSectionTitle || "")}</h4>
@@ -982,44 +984,30 @@
       if (!window.MelodySupabase?.createPremiumOrder) {
         throw new Error(copy.error || "");
       }
+      let uploadedCoverImageUrl = "";
+      let uploadedInsideLeftImageUrl = "";
       let uploadedPhotoUrl = "";
+      const coverImageFile = form.elements.cover_image?.files?.[0] || null;
+      const insideLeftImageFile = form.elements.inside_left_image?.files?.[0] || null;
       const photoFile = form.elements.right_photo_enabled?.value === "yes" ? form.elements.customer_photo?.files?.[0] : null;
+      if (coverImageFile) {
+        if (!window.MelodySupabase?.uploadOrderFile) throw new Error(copy.error || "");
+        uploadedCoverImageUrl = await window.MelodySupabase.uploadOrderFile(coverImageFile, "cover-images");
+      }
+      if (insideLeftImageFile) {
+        if (!window.MelodySupabase?.uploadOrderFile) throw new Error(copy.error || "");
+        uploadedInsideLeftImageUrl = await window.MelodySupabase.uploadOrderFile(insideLeftImageFile, "inside-left-images");
+      }
       if (photoFile) {
         if (!window.MelodySupabase?.uploadOrderFile) throw new Error(copy.error || "");
-        uploadedPhotoUrl = await window.MelodySupabase.uploadOrderFile(photoFile, "customer-photos");
+        uploadedPhotoUrl = await window.MelodySupabase.uploadOrderFile(photoFile, "inside-right-images");
       }
-      const configuratorDetails = collectConfiguratorDetails(form, copy, uploadedPhotoUrl);
+      const configuratorDetails = collectConfiguratorDetails(form, copy, {
+        coverImageUrl: uploadedCoverImageUrl,
+        insideLeftImageUrl: uploadedInsideLeftImageUrl,
+        insideRightImageUrl: uploadedPhotoUrl
+      });
       const orderPayload = buildPremiumOrderPayload(form, values, copy, categoryLabel, configuratorDetails);
-      const orderDetails = {
-        card_category: values.card_category || "",
-        card_category_label: categoryLabel,
-        recipient_name: recipientName(values),
-        occasion: occasionName(values, categoryLabel),
-        category_fields: dynamicOrderFields(copy, values.card_category, values),
-        configurator: configuratorDetails,
-        song_language: values.song_language || "",
-        voice: values.voice || "",
-        music_style: values.music_style || "",
-        story: values.message || "",
-        customer_name: values.name || "",
-        email: values.email || "",
-        phone: values.phone || ""
-      };
-      const cardText = [
-        `${copy.cardTextCategory || ""}: ${categoryLabel}`,
-        `${copy.cardTextRecipient || ""}: ${recipientName(values)}`,
-        `${copy.cardTextOccasion || ""}: ${occasionName(values, categoryLabel)}`,
-        `${copy.configurator?.templateModeLabel || ""}: ${configuratorDetails.design_mode_label}`,
-        `${copy.configurator?.coverTextLabel || ""}: ${configuratorDetails.cover_text}`,
-        `${copy.configurator?.coverNameLabel || ""}: ${configuratorDetails.cover_name}`,
-        `${copy.configurator?.coverExtraLabel || ""}: ${configuratorDetails.cover_extra}`,
-        `${copy.configurator?.insideLeftTitle || ""}: ${configuratorDetails.inside_left_text || configuratorDetails.text_brief || ""}`,
-        `${copy.configurator?.insideRightTitle || ""}: ${configuratorDetails.inside_right_text || configuratorDetails.inside_right_text_mode_label || ""}`,
-        `${copy.configurator?.rightPhotoToggleLabel || ""}: ${configuratorDetails.right_photo_enabled ? copy.configurator?.yesLabel || "Ja" : copy.configurator?.noLabel || "Nein"}`,
-        `${copy.configurator?.rightTextToggleLabel || ""}: ${configuratorDetails.right_text_enabled ? copy.configurator?.yesLabel || "Ja" : copy.configurator?.noLabel || "Nein"}`,
-        `${copy.configurator?.priceLabel || ""}: ${configuratorDetails.price_note}`,
-        ...dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`)
-      ].filter((line) => !line.endsWith(": ")).join("\n");
       await window.MelodySupabase.createPremiumOrder({
         name: (values.name || "").trim(),
         customer_name: (values.name || "").trim(),
@@ -1032,22 +1020,11 @@
         song_language: values.song_language || "",
         voice: values.voice || "",
         music_style: values.music_style || "",
-        story: [dynamicOrderFields(copy, values.card_category, values).map((field) => `${field.label}: ${field.value}`).join("\n"), configuratorDetails.personal_story, values.message || ""].filter(Boolean).join("\n\n"),
-        card_text: cardText,
+        story: values.personal_story || "",
+        card_text: "",
         image_url: configuratorDetails.photo_url || "",
         card_photo_url: configuratorDetails.photo_url || "",
-        configurator: configuratorDetails,
-        music_wish: JSON.stringify({
-          ...orderDetails,
-          labels: {
-            card_category: copy.cardTextCategory || "",
-            recipient_name: copy.cardTextRecipient || "",
-            occasion: copy.cardTextOccasion || "",
-            song_language: copy.musicWishLanguage || "",
-            voice: copy.musicWishVoice || "",
-            music_style: copy.musicWishStyle || ""
-          }
-        }),
+        music_wish: "",
         message: values.message || "",
         status: "neu",
         ...orderPayload
@@ -1069,7 +1046,7 @@
       .filter((field) => field.value);
   }
 
-  function collectConfiguratorDetails(form, copy, uploadedPhotoUrl = "") {
+  function collectConfiguratorDetails(form, copy, uploadedMedia = {}) {
     const c = copy.configurator || {};
     const designMode = form.elements.design_mode?.value || "template";
     const textMode = form.elements.inside_text_mode?.value || "empty";
@@ -1088,6 +1065,8 @@
       inside_text_mode_label: textMode === "melody" ? c.textModeMelody : textMode === "empty" ? c.textModeEmpty : c.textModeSelf,
       inside_left_text: textMode === "self" ? (form.elements.inside_left_text?.value || "") : "",
       text_brief: textMode === "melody" ? (form.elements.text_brief?.value || "") : "",
+      cover_image_url: uploadedMedia.coverImageUrl || "",
+      inside_left_image_url: uploadedMedia.insideLeftImageUrl || "",
       right_photo_enabled: rightPhotoEnabled,
       right_text_enabled: rightTextEnabled,
       inside_right_text_mode: rightTextMode,
@@ -1096,7 +1075,7 @@
       relationship: form.elements.relationship?.value || "",
       personal_story: form.elements.personal_story?.value || "",
       complex_design: false,
-      photo_url: rightPhotoEnabled ? uploadedPhotoUrl : "",
+      photo_url: rightPhotoEnabled ? (uploadedMedia.insideRightImageUrl || "") : "",
       price: null,
       price_note: personalized ? (c.priceCustomText || "") : (c.priceBaseText || ""),
       currency: "€",
@@ -1105,15 +1084,9 @@
   }
 
   function buildPremiumOrderPayload(form, values, copy, categoryLabel, config = {}) {
-    const dynamicFields = dynamicOrderFields(copy, values.card_category, values);
-    const dynamicSummary = dynamicFields.map((field) => `${field.label}: ${field.value}`).join("\n");
-    const specialDetails = [
-      values.romantic_style ? `Romantischer Stil: ${values.romantic_style}` : "",
-      dynamicSummary,
-      values.message || ""
-    ].filter(Boolean).join("\n\n");
     const songNotes = config.personal_story || "";
     return {
+      card_type_id: values.card_category || "",
       card_type: categoryLabel,
       language_ui: currentLanguage,
       customer_name: (values.name || "").trim(),
@@ -1122,18 +1095,28 @@
       recipient_name: recipientName(values),
       recipient_age: values.age || "",
       relationship_to_recipient: config.relationship || "",
+      occasion_label: categoryLabel,
       cover_mode: config.design_mode_label || config.design_mode || "",
+      cover_mode_id: config.design_mode || "",
       cover_template: config.template || "",
       cover_text: config.cover_text || "",
       cover_name: config.cover_name || "",
       cover_extra_text: config.cover_extra || "",
+      cover_image_enabled: Boolean(config.cover_image_url),
+      cover_image_url: config.cover_image_url || "",
       inside_left_mode: config.inside_text_mode_label || config.inside_text_mode || "",
+      inside_left_mode_id: config.inside_text_mode || "",
       inside_left_text: config.inside_left_text || "",
       inside_left_melody_notes: config.text_brief || "",
+      inside_left_image_enabled: Boolean(config.inside_left_image_url),
+      inside_left_image_url: config.inside_left_image_url || "",
       inside_right_photo_enabled: Boolean(config.right_photo_enabled),
       inside_right_photo_url: config.photo_url || "",
+      inside_right_image_enabled: Boolean(config.right_photo_enabled),
+      inside_right_image_url: config.photo_url || "",
       inside_right_text_enabled: Boolean(config.right_text_enabled),
       inside_right_mode: config.inside_right_text_mode_label || config.inside_right_text_mode || "",
+      inside_right_mode_id: config.inside_right_text_mode || "",
       inside_right_text: config.inside_right_text || "",
       inside_right_melody_notes: config.inside_right_text_mode === "melody" ? (config.personal_story || "") : "",
       song_language: values.song_language || "",
@@ -1142,13 +1125,17 @@
       song_notes: songNotes,
       apology_reason: values.apology_for || "",
       mood: values.mood || "",
+      love_story: values.love_story || "",
+      romantic_style: values.romantic_style || "",
+      memory: values.memory || "",
       personal_story: values.love_story || values.memory || config.personal_story || "",
-      special_details: specialDetails,
+      special_details: values.message || "",
       image_url: config.photo_url || "",
       video_url: "",
       audio_url: "",
       personalization_selected: hasPersonalization(form),
-      price_note: config.price_note || ""
+      price_note: config.price_note || "",
+      qr_position: config.qr_position || ""
     };
   }
 
